@@ -97,6 +97,24 @@ Supabase 키를 저장소에 두고 싶지 않으면 **Settings → Secrets and 
 
 ---
 
+### 3-4. 실행 도구 (`_tools/`)
+
+| 도구 | 용도 |
+|---|---|
+| `00_로컬서버_실행.cmd` | 더블클릭하면 로컬 서버를 띄우고 브라우저를 엽니다 |
+| `supabase_check.mjs` | Supabase 연결·테이블 존재·RLS 동작을 점검합니다 (데이터 변경 없음) |
+| `github_deploy.ps1` | JS 문법검사 + 키 노출 점검 후 GitHub에 푸시합니다 |
+
+```bash
+node _tools/supabase_check.mjs https://xxxx.supabase.co eyJhbGciOi...
+```
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File "_tools\github_deploy.ps1" -CheckOnly
+```
+
+---
+
 ## 4. 화면 구성
 
 | 메뉴 | 하는 일 |
