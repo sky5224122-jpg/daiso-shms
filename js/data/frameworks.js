@@ -1,0 +1,507 @@
+/* ============================================================
+   법령 · 국제표준 기준 데이터 (Compliance Framework Master)
+   - MSSA : 중대재해 처벌 등에 관한 법률 (중처법)
+   - OSHA : 산업안전보건법 (산안법)
+   - ISO  : ISO 45001:2018 안전보건경영시스템
+   ※ 조문 요지는 실무 요약본입니다. 최종 법적 판단은 국가법령정보센터
+      원문(https://www.law.go.kr)을 기준으로 확인하십시오.
+   ============================================================ */
+
+export const STATUS = {
+  done:     { key:'done',     label:'이행완료',   cls:'st-done',     itemCls:'s-done',     score:100 },
+  progress: { key:'progress', label:'이행중',     cls:'st-progress', itemCls:'s-progress', score:60  },
+  hold:     { key:'hold',     label:'보완필요',   cls:'st-hold',     itemCls:'s-hold',     score:30  },
+  none:     { key:'none',     label:'미이행',     cls:'st-none',     itemCls:'s-none',     score:0   },
+  na:       { key:'na',       label:'해당없음',   cls:'st-na',       itemCls:'s-na',       score:null}
+};
+export const STATUS_ORDER = ['done','progress','hold','none','na'];
+
+export const CYCLES = ['수시','월 1회','분기 1회','반기 1회','연 1회','2년 1회','최초 1회'];
+
+export const ROLES = {
+  master:  { key:'master',  label:'시스템 관리자',   scope:'all'   },
+  safety:  { key:'safety',  label:'안전보건팀',      scope:'all'   },
+  head:    { key:'head',    label:'안전보건팀장',    scope:'all'   },
+  auditor: { key:'auditor', label:'심사원/감사(읽기)', scope:'read' },
+  part:    { key:'part',    label:'파트장',          scope:'part'  },
+  store:   { key:'store',   label:'점장(관리감독자)', scope:'store' },
+  ref:     { key:'ref',     label:'참조(임원/부서장)', scope:'read' }
+};
+
+export const DOC_TYPES = {
+  manual:      { key:'manual',      label:'매뉴얼',   prefix:'SHM', desc:'안전보건경영시스템 최상위 문서' },
+  procedure:   { key:'procedure',   label:'절차서',   prefix:'SHP', desc:'무엇을·누가·언제 하는지 정하는 2단계 문서' },
+  instruction: { key:'instruction', label:'지침서',   prefix:'SHI', desc:'현장에서 어떻게 하는지 정하는 3단계 문서' },
+  form:        { key:'form',        label:'양식/기록', prefix:'SHF', desc:'이행 증빙이 남는 4단계 기록' }
+};
+
+export const DOC_STATUS = {
+  draft:    { label:'초안',   cls:'st-hold'     },
+  review:   { label:'검토중', cls:'st-progress' },
+  approved: { label:'제정/승인', cls:'st-done'  },
+  obsolete: { label:'폐지',   cls:'st-na'       }
+};
+
+/* ------------------------------------------------------------
+   1. 중대재해처벌법 (MSSA)
+   법 제4조 제1항 제1호 → 시행령 제4조 (9개 호)
+   법 제4조 제1항 제4호 → 시행령 제5조 (4개 호)
+------------------------------------------------------------ */
+export const MSSA_ITEMS = [
+  {
+    id:'MSSA-4-1', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 1호', title:'안전·보건에 관한 목표와 경영방침의 설정',
+    clause:'사업 또는 사업장의 안전·보건에 관한 목표와 경영방침을 설정할 것.',
+    requirement:'경영책임자 명의의 안전보건 경영방침을 문서로 선언하고, 연간 안전보건 목표(재해율·점검율·교육이수율 등 계량지표)를 수립하여 전 사업장에 게시·공표한다. 목표는 매년 실적을 평가하여 갱신한다.',
+    evidence:['안전보건 경영방침 선언문(대표이사 서명본)','연간 안전보건 목표 및 세부추진계획','게시·공표 증빙(매장 게시 사진, 사내공지)','목표 대비 실적 평가서'],
+    cycle:'연 1회', docRefs:['SHP-02'], isoRefs:['5.2','6.2.1','6.2.2'], severity:'high'
+  },
+  {
+    id:'MSSA-4-2', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 2호', title:'안전보건 업무 총괄·관리 전담 조직 설치',
+    clause:'안전·보건에 관한 업무를 총괄·관리하는 전담 조직을 둘 것(상시근로자 500명 이상 등 요건 해당 시).',
+    requirement:'2명 이상으로 구성된 안전보건 전담조직을 설치하고 조직도·직무기술서·인사발령을 문서화한다. 전담조직은 다른 업무를 겸직하지 않고 전사 안전보건을 총괄한다.',
+    evidence:['조직도(안전보건팀 표기)','인사발령 문서','직무기술서(R&R)','전담조직 설치 요건 판단 근거(상시근로자 수 산정표)'],
+    cycle:'연 1회', docRefs:['SHP-03'], isoRefs:['5.3','7.1'], severity:'high'
+  },
+  {
+    id:'MSSA-4-3', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 3호', title:'유해·위험요인 확인·개선 절차 마련 및 반기 1회 이상 점검',
+    clause:'사업장의 유해·위험요인을 확인하여 개선하는 업무절차를 마련하고, 해당 절차에 따라 유해·위험요인의 확인 및 개선이 이루어지는지를 반기 1회 이상 점검한 후 필요한 조치를 할 것.',
+    requirement:'위험성평가 절차서를 제정하고 전 사업장 위험성평가를 실시한다. 산업안전보건법 제36조의 위험성평가를 실시하고 개선조치 이행까지 확인하면 본 호의 점검을 한 것으로 본다. 점검 결과 미흡사항은 CAPA로 등록하여 종결한다.',
+    evidence:['위험성평가 절차서','사업장별 위험성평가표(4M/KRAS)','개선조치 요구서 및 완료 증빙(전·후 사진)','반기 점검 결과보고서'],
+    cycle:'반기 1회', docRefs:['SHP-05','SHI-01'], isoRefs:['6.1.2','8.1.2'], severity:'critical'
+  },
+  {
+    id:'MSSA-4-4', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 4호', title:'재해예방에 필요한 예산 편성 및 집행',
+    clause:'재해예방을 위해 필요한 안전·보건에 관한 인력·시설 및 장비의 구비, 유해·위험요인의 개선에 필요한 예산을 편성하고 그 편성된 용도에 맞게 집행하도록 할 것.',
+    requirement:'연간 안전보건 예산을 별도 계정으로 편성하고 분기별 집행실적을 관리한다. 인력·시설·장비·개선·교육·보호구 항목별로 구분하여 편성 목적 외 전용이 없도록 한다.',
+    evidence:['연간 안전보건 예산 편성표(항목별)','분기별 집행실적 대비표','집행 증빙(품의·계약·세금계산서)','예산 미집행 사유서 및 조치'],
+    cycle:'분기 1회', docRefs:['SHP-19'], isoRefs:['7.1'], severity:'high'
+  },
+  {
+    id:'MSSA-4-5', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 5호', title:'안전보건관리책임자등의 업무수행 평가기준 마련 및 반기 1회 이상 평가·관리',
+    clause:'안전보건관리책임자·관리감독자·안전보건총괄책임자가 해당 업무를 충실하게 수행할 수 있도록 권한과 예산을 주고, 업무수행 평가기준을 마련하여 반기 1회 이상 평가·관리할 것.',
+    requirement:'안전보건관리책임자·관리감독자(점장)·안전보건총괄책임자의 법정 직무를 평가항목으로 구성한 평가기준을 제정하고, 반기 1회 이상 평가하여 인사·성과평가에 반영한다.',
+    evidence:['업무수행 평가기준(평가표 양식)','반기 평가 실시 결과(대상자별 점수)','평가결과 인사반영 근거','권한·예산 부여 근거 문서'],
+    cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3','9.1.1'], severity:'critical'
+  },
+  {
+    id:'MSSA-4-6', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 6호', title:'안전관리자·보건관리자·안전보건관리담당자·산업보건의 배치',
+    clause:'산업안전보건법에 따른 안전관리자, 보건관리자, 안전보건관리담당자 및 산업보건의를 정해진 수 이상으로 배치할 것.',
+    requirement:'법정 선임 인원을 산정하여 배치하고 선임 신고를 완료한다. 겸직 가능 여부와 자격 요건(자격증·경력)을 확인하고, 결원 발생 시 지체 없이 충원한다.',
+    evidence:['선임계 및 고용노동부 신고 증빙','자격증 사본','선임 인원 산정표(사업장별 상시근로자 수 기준)','결원·대체 이력'],
+    cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3','7.2'], severity:'high'
+  },
+  {
+    id:'MSSA-4-7', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 7호', title:'종사자 의견 청취 절차 마련 및 반기 1회 이상 청취·개선',
+    clause:'사업 또는 사업장의 안전·보건에 관한 사항에 대해 종사자의 의견을 듣는 절차를 마련하고, 그 절차에 따라 의견을 들어 재해예방에 필요하다고 인정하는 경우에는 그에 대한 개선방안을 마련하여 이행하는지를 반기 1회 이상 점검한 후 필요한 조치를 할 것.',
+    requirement:'산업안전보건위원회 또는 안전보건협의체·현장 의견함·설문 등 의견청취 채널을 운영하고, 접수 → 검토 → 개선 → 회신의 처리 결과를 기록한다. 반기 1회 이상 이행 점검을 실시한다.',
+    evidence:['의견청취 절차서','산업안전보건위원회 회의록(분기)','종사자 의견 접수·처리대장','개선방안 이행 결과 및 회신 증빙'],
+    cycle:'반기 1회', docRefs:['SHP-04'], isoRefs:['5.4','7.4'], severity:'critical'
+  },
+  {
+    id:'MSSA-4-8', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 8호', title:'중대산업재해 대응 매뉴얼 마련 및 반기 1회 이상 점검',
+    clause:'중대산업재해가 발생하거나 발생할 급박한 위험이 있을 경우를 대비하여 ①작업 중지·근로자 대피·위험요인 제거 등 대응조치, ②구호조치, ③추가 피해방지 조치가 포함된 매뉴얼을 마련하고, 해당 매뉴얼에 따라 조치하는지를 반기 1회 이상 점검할 것.',
+    requirement:'비상대응 매뉴얼(작업중지·대피·구호·추가피해방지)을 제정하고, 매장별 비상대응훈련을 반기 1회 이상 실시하여 매뉴얼대로 조치되는지 점검한다. ※ 별도 운영 중인 「비상대응훈련 앱」의 실적과 연계하여 관리한다.',
+    evidence:['중대산업재해 대응 매뉴얼','비상대응훈련 계획·실행기록·전자서명','119 신고·구호 조치 기록','반기 점검 결과보고서 및 개선사항'],
+    cycle:'반기 1회', docRefs:['SHP-13','SHI-08','SHI-12'], isoRefs:['8.2'], severity:'critical',
+    linkedApp:{ label:'비상대응훈련 앱', url:'https://asung-daiso-emergency-training.web.app' }
+  },
+  {
+    id:'MSSA-4-9', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
+    code:'영 제4조 9호', title:'도급·용역·위탁 시 산업재해 예방 기준·절차 마련 및 반기 1회 이상 점검',
+    clause:'제3자에게 도급, 용역, 위탁 등을 하는 경우 종사자의 안전·보건을 확보하기 위해 ①안전보건 확보 능력에 관한 평가기준·절차, ②안전보건 관리비용에 관한 기준, ③안전보건 확보를 위한 공사기간·근로기간에 관한 기준을 마련하고 이행되는지를 반기 1회 이상 점검할 것.',
+    requirement:'수급업체 안전보건 수준 평가기준을 제정하고 계약 전 평가를 실시한다. 계약서에 안전보건 관리비용과 적정 공사·근로기간을 명시하고, 반기 1회 이상 이행 점검한다.',
+    evidence:['수급인 안전보건 평가기준 및 평가결과표','계약서 내 안전보건 조항·관리비용 명시본','도급 사업장 합동 안전점검 결과','반기 점검 결과보고서'],
+    cycle:'반기 1회', docRefs:['SHP-12'], isoRefs:['8.1.4'], severity:'critical'
+  },
+  {
+    id:'MSSA-5-1', framework:'mssa', group:'시행령 제5조 · 안전보건 관계 법령 의무이행 관리조치',
+    code:'영 제5조 1호', title:'안전보건 관계 법령 의무이행 여부 반기 1회 이상 점검',
+    clause:'안전·보건 관계 법령에 따른 의무를 이행했는지를 반기 1회 이상 점검(해당 안전·보건 관계 법령에 따라 중앙행정기관의 장이 지정한 기관 등에 위탁하여 점검하는 경우 포함)할 것.',
+    requirement:'적용 법규 목록(Legal Register)을 최신화하고 조항별 준수 여부를 반기 1회 이상 점검한다. 본 시스템의 「산업안전보건법 규정 등록부」가 점검대장 역할을 한다.',
+    evidence:['적용 법규 목록 및 최신 개정 반영 이력','반기 준수평가(점검) 결과보고서','위탁점검 계약서 및 결과보고서(위탁 시)'],
+    cycle:'반기 1회', docRefs:['SHP-06','SHP-15'], isoRefs:['6.1.3','9.1.2'], severity:'critical'
+  },
+  {
+    id:'MSSA-5-2', framework:'mssa', group:'시행령 제5조 · 안전보건 관계 법령 의무이행 관리조치',
+    code:'영 제5조 2호', title:'점검결과에 따른 인력 배치·예산 추가편성 등 조치',
+    clause:'점검 또는 보고 결과 안전·보건 관계 법령에 따른 의무가 이행되지 않은 사실이 확인되는 경우에는 인력을 배치하거나 예산을 추가로 편성·집행하도록 하는 등 해당 의무 이행에 필요한 조치를 할 것.',
+    requirement:'준수평가에서 확인된 미이행 사항은 CAPA로 등록하고, 필요한 인력·예산 조치를 경영책임자 결재로 확정한 뒤 완료까지 추적한다.',
+    evidence:['미이행 사항 목록 및 CAPA 등록번호','인력 배치·예산 추가편성 결재문서','조치 완료 확인 증빙'],
+    cycle:'반기 1회', docRefs:['SHP-15','SHP-18','SHP-19'], isoRefs:['10.2'], severity:'high'
+  },
+  {
+    id:'MSSA-5-3', framework:'mssa', group:'시행령 제5조 · 안전보건 관계 법령 의무이행 관리조치',
+    code:'영 제5조 3호', title:'안전보건 교육 실시 여부 반기 1회 이상 점검',
+    clause:'안전·보건 관계 법령에 따라 의무적으로 실시해야 하는 유해·위험한 작업에 관한 안전·보건에 관한 교육이 실시되었는지를 반기 1회 이상 점검할 것.',
+    requirement:'법정 안전보건교육(정기·채용시·작업내용 변경시·특별교육·관리감독자 교육)의 실시 여부와 이수율을 반기 1회 이상 점검한다.',
+    evidence:['교육계획 및 실시 결과(교육일지·서명부)','대상자별 이수율 집계표','반기 점검 결과보고서'],
+    cycle:'반기 1회', docRefs:['SHP-07'], isoRefs:['7.2','7.3'], severity:'high'
+  },
+  {
+    id:'MSSA-5-4', framework:'mssa', group:'시행령 제5조 · 안전보건 관계 법령 의무이행 관리조치',
+    code:'영 제5조 4호', title:'교육 미실시 확인 시 실시에 필요한 조치',
+    clause:'교육이 실시되지 않은 사실이 확인되는 경우에는 지체 없이 그 이행의 지시, 예산의 확보 등 교육 실시에 필요한 조치를 할 것.',
+    requirement:'미이수자를 식별하여 보충교육을 지시하고, 예산·강사·교재 확보 등 필요한 조치를 시행한 뒤 이수 완료를 확인한다.',
+    evidence:['미이수자 명단 및 보충교육 지시 공문','보충교육 실시 결과','교육 예산 확보 근거'],
+    cycle:'반기 1회', docRefs:['SHP-07'], isoRefs:['7.2'], severity:'medium'
+  }
+];
+
+/* ------------------------------------------------------------
+   2. 산업안전보건법 (OSHA) — 유통·물류업 적용 중심
+------------------------------------------------------------ */
+export const OSHA_ITEMS = [
+  { id:'OSHA-014', framework:'osha', group:'경영책임 · 조직', code:'법 제14조', title:'대표이사의 안전보건계획 수립 및 이사회 보고·승인',
+    clause:'상법상 주식회사 중 대통령령으로 정하는 회사의 대표이사는 매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.',
+    requirement:'매년 안전보건계획(안전보건 경영방침·조직·예산·시설·업무절차·모니터링)을 수립하여 이사회 보고·승인을 받고 이사회 의사록에 남긴다.',
+    evidence:['안전 및 보건에 관한 계획서','이사회 의사록(보고·승인 확인)','계획 대비 실적 보고서'], cycle:'연 1회', docRefs:['SHP-02'], isoRefs:['5.1'], severity:'critical' },
+
+  { id:'OSHA-015', framework:'osha', group:'경영책임 · 조직', code:'법 제15조', title:'안전보건관리책임자 선임 및 직무 수행',
+    clause:'사업주는 사업장을 실질적으로 총괄하여 관리하는 사람에게 산업재해 예방계획 수립 등의 업무를 총괄하여 관리하도록 하여야 한다.',
+    requirement:'사업장별 안전보건관리책임자를 선임하고 법정 9개 직무(재해예방계획, 안전보건관리규정, 교육, 작업환경측정, 건강관리, 재해원인조사, 통계기록, 안전장치·보호구 적격품 여부 확인 등)를 수행·기록한다.',
+    evidence:['선임 문서','직무수행 기록(회의·점검·결재 이력)','업무수행 평가 결과'], cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3'], severity:'high' },
+
+  { id:'OSHA-016', framework:'osha', group:'경영책임 · 조직', code:'법 제16조', title:'관리감독자 지정 및 직무 수행',
+    clause:'사업주는 사업장의 생산과 관련되는 업무와 그 소속 직원을 직접 지휘·감독하는 직위에 있는 사람에게 산업안전 및 보건에 관한 업무를 수행하도록 하여야 한다.',
+    requirement:'매장 점장 등을 관리감독자로 지정하고, 위험성평가 참여·일상점검·보호구 착용 지도·응급조치 등 법정 직무를 수행하게 한다.',
+    evidence:['관리감독자 지정서(매장별)','일상점검 기록','관리감독자 정기교육 이수 증빙'], cycle:'반기 1회', docRefs:['SHP-03','SHI-01'], isoRefs:['5.3'], severity:'high' },
+
+  { id:'OSHA-017', framework:'osha', group:'경영책임 · 조직', code:'법 제17~19조', title:'안전관리자·보건관리자·안전보건관리담당자 선임',
+    clause:'사업주는 사업장에 안전관리자·보건관리자·안전보건관리담당자를 두어 안전·보건에 관한 기술적인 사항에 관하여 사업주 또는 안전보건관리책임자를 보좌하고 관리감독자에게 지도·조언하도록 하여야 한다.',
+    requirement:'업종·상시근로자 수에 따른 법정 선임 인원을 산정하여 배치하고 14일 이내 선임 신고한다.',
+    evidence:['선임 신고서 및 접수증','자격 요건 증빙','선임 인원 산정표'], cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3','7.2'], severity:'high' },
+
+  { id:'OSHA-024', framework:'osha', group:'참여 · 협의', code:'법 제24조', title:'산업안전보건위원회 구성·운영(분기 1회)',
+    clause:'사업주는 사업장의 안전 및 보건에 관한 중요 사항을 심의·의결하기 위하여 근로자위원과 사용자위원이 같은 수로 구성되는 산업안전보건위원회를 구성·운영하여야 한다.',
+    requirement:'노사 동수로 위원회를 구성하고 분기 1회 이상 개최하여 심의·의결한다. 회의록은 2년간 보존한다.',
+    evidence:['위원 구성 명단','분기별 회의록(서명 포함)','심의·의결 사항 이행결과'], cycle:'분기 1회', docRefs:['SHP-04'], isoRefs:['5.4'], severity:'critical' },
+
+  { id:'OSHA-025', framework:'osha', group:'참여 · 협의', code:'법 제25~26조', title:'안전보건관리규정 작성·게시 및 변경 시 동의',
+    clause:'사업주는 사업장의 안전 및 보건을 유지하기 위하여 안전보건관리규정을 작성하여야 하며, 작성·변경 시 산업안전보건위원회의 심의·의결을 거쳐야 한다.',
+    requirement:'안전보건관리규정을 제정하여 상시 게시하고, 변경 시 위원회 심의·의결(또는 근로자대표 동의)을 거친다.',
+    evidence:['안전보건관리규정 원본','게시 증빙','제·개정 시 심의·의결 회의록'], cycle:'연 1회', docRefs:['SHM-00','SHP-09'], isoRefs:['7.5'], severity:'high' },
+
+  { id:'OSHA-029', framework:'osha', group:'교육', code:'법 제29조', title:'근로자 안전보건교육(정기·채용시·변경시·특별)',
+    clause:'사업주는 소속 근로자에게 고용노동부령으로 정하는 바에 따라 정기적으로 안전보건교육을 하여야 하며, 채용할 때 및 작업내용을 변경할 때에도 교육을 하여야 한다.',
+    requirement:'정기교육(사무직 외 근로자 분기 3시간 이상 등), 채용 시 교육, 작업내용 변경 시 교육, 유해·위험작업 특별교육을 실시하고 기록을 3년간 보존한다.',
+    evidence:['연간 교육계획서','교육일지 및 참석 서명부','교재·강사 이력','대상자별 이수율 집계'], cycle:'분기 1회', docRefs:['SHP-07'], isoRefs:['7.2','7.3'], severity:'critical' },
+
+  { id:'OSHA-032', framework:'osha', group:'교육', code:'법 제32조', title:'안전보건관리책임자 등에 대한 직무교육',
+    clause:'사업주는 안전보건관리책임자, 안전관리자, 보건관리자, 안전보건관리담당자 등에게 직무와 관련한 안전보건교육을 이수하도록 하여야 한다.',
+    requirement:'선임 후 3개월 이내 신규교육, 이후 2년마다 보수교육을 이수하게 하고 수료증을 보관한다.',
+    evidence:['직무교육 수료증','이수 대상자 관리대장','미이수자 조치 내역'], cycle:'2년 1회', docRefs:['SHP-07'], isoRefs:['7.2'], severity:'high' },
+
+  { id:'OSHA-034', framework:'osha', group:'정보 제공', code:'법 제34조', title:'법령 요지 및 안전보건관리규정 게시',
+    clause:'사업주는 이 법과 이 법에 따른 명령의 요지 및 안전보건관리규정을 각 사업장의 근로자가 쉽게 볼 수 있는 장소에 게시하거나 갖추어 두어야 한다.',
+    requirement:'전 매장·사업장 게시판에 법령 요지와 안전보건관리규정을 상시 게시하고 게시 상태를 점검한다.',
+    evidence:['게시물 사진(사업장별)','게시 점검 체크리스트'], cycle:'반기 1회', docRefs:['SHP-08'], isoRefs:['7.4'], severity:'medium' },
+
+  { id:'OSHA-036', framework:'osha', group:'위험성평가', code:'법 제36조', title:'위험성평가 실시 및 기록 보존(3년)',
+    clause:'사업주는 건설물, 기계·기구·설비, 원재료, 가스, 증기, 분진, 근로자의 작업행동 또는 그 밖의 업무로 인한 유해·위험 요인을 찾아내어 부상 및 질병으로 이어질 수 있는 위험성의 크기가 허용 가능한 범위인지를 평가하여야 한다.',
+    requirement:'최초평가 → 수시평가 → 정기평가(매년) 체계로 실시하고, 근로자를 참여시키며, 결과와 개선조치를 3년간 보존한다. ※ 별도 운영 중인 「위험성평가 앱」과 연계 관리한다.',
+    evidence:['위험성평가 실시규정','사업장별 위험성평가표','근로자 참여 증빙(서명)','개선조치 완료 증빙','평가결과 공유·교육 기록'], cycle:'연 1회', docRefs:['SHP-05'], isoRefs:['6.1.2'], severity:'critical' },
+
+  { id:'OSHA-037', framework:'osha', group:'현장 안전조치', code:'법 제37~38조', title:'안전보건표지 부착 및 안전조치',
+    clause:'사업주는 유해하거나 위험한 장소·시설·물질에 대한 경고 등을 표시하는 안전보건표지를 설치하거나 부착하여야 하며, 기계·기구 등에 의한 위험, 추락·붕괴 등의 위험을 방지하기 위하여 필요한 조치를 하여야 한다.',
+    requirement:'매장·창고·물류센터의 위험구역에 안전보건표지를 부착하고, 롤테이너·사다리·적재물·전기설비 등에 대한 방호조치를 시행한다.',
+    evidence:['표지 부착 현황 및 사진','안전조치 점검 체크리스트','미비사항 개선 전후 사진'], cycle:'분기 1회', docRefs:['SHI-01','SHI-02','SHI-03','SHI-06'], isoRefs:['8.1.2'], severity:'high' },
+
+  { id:'OSHA-039', framework:'osha', group:'현장 안전조치', code:'법 제39조', title:'보건조치(근골격계 부담작업 등)',
+    clause:'사업주는 원재료·가스·증기·분진 등에 의한 건강장해, 단순반복작업 또는 인체에 과도한 부담을 주는 작업에 의한 건강장해 등을 예방하기 위하여 필요한 조치를 하여야 한다.',
+    requirement:'중량물 취급·반복작업 등 근골격계 부담작업 유해요인조사를 3년마다 실시하고 개선한다. 혹서기·혹한기 건강장해 예방조치를 시행한다.',
+    evidence:['근골격계 유해요인조사 결과','작업환경 개선 내역','온열질환 예방조치 기록'], cycle:'연 1회', docRefs:['SHP-20','SHI-11'], isoRefs:['8.1.2'], severity:'high' },
+
+  { id:'OSHA-041', framework:'osha', group:'현장 안전조치', code:'법 제41조', title:'고객응대근로자 건강장해 예방조치(감정노동)',
+    clause:'사업주는 고객응대근로자에 대하여 고객의 폭언 등으로 인한 건강장해를 예방하기 위하여 필요한 조치를 하여야 하며, 건강장해가 발생하거나 발생할 현저한 우려가 있는 경우 업무의 일시적 중단 또는 전환 등 필요한 조치를 하여야 한다.',
+    requirement:'유통업 핵심 의무. 폭언 금지 안내문 게시, 응대 매뉴얼 배포, 피해 근로자 업무 중단·전환·상담 지원 체계를 운영한다.',
+    evidence:['고객응대 매뉴얼','폭언 금지 게시물 사진','사건 접수·조치 대장','피해자 상담·치료 지원 기록'], cycle:'반기 1회', docRefs:['SHP-21','SHI-09'], isoRefs:['8.1.2'], severity:'critical' },
+
+  { id:'OSHA-051', framework:'osha', group:'비상 · 사고대응', code:'법 제51~52조', title:'사업주·근로자의 작업중지권',
+    clause:'사업주는 산업재해가 발생할 급박한 위험이 있을 때에는 즉시 작업을 중지시키고 근로자를 작업장소에서 대피시키는 등 필요한 안전보건상의 조치를 한 후 작업을 다시 시작하여야 한다. 근로자도 급박한 위험이 있는 경우 작업을 중지하고 대피할 수 있다.',
+    requirement:'작업중지권 행사 절차를 문서화하고 전 종사자에게 교육한다. 중지권 행사자에게 불리한 처우를 하지 않음을 명문화한다.',
+    evidence:['작업중지 절차·지침서','작업중지 행사 기록','불이익 금지 선언문','교육 실시 기록'], cycle:'반기 1회', docRefs:['SHI-12','SHP-13'], isoRefs:['8.2'], severity:'high' },
+
+  { id:'OSHA-054', framework:'osha', group:'비상 · 사고대응', code:'법 제54~57조', title:'중대재해 발생 시 조치·보고 및 은폐 금지',
+    clause:'사업주는 중대재해가 발생하였을 때에는 즉시 해당 작업을 중지시키고 근로자를 대피시키는 등 필요한 안전보건상의 조치를 한 후 지체 없이 관할 지방고용노동관서의 장에게 보고하여야 하며, 산업재해 발생 사실을 은폐해서는 아니 된다.',
+    requirement:'중대재해 발생 즉시 작업중지·대피·구호 조치를 하고 지체 없이(1개월 이내 산업재해조사표 제출, 중대재해는 즉시) 보고한다. 사고조사 후 재발방지대책을 수립·이행한다.',
+    evidence:['중대재해 보고 기록','산업재해조사표 사본','사고조사 보고서 및 재발방지대책','대책 이행 완료 증빙'], cycle:'수시', docRefs:['SHP-13','SHP-18'], isoRefs:['10.2'], severity:'critical' },
+
+  { id:'OSHA-062', framework:'osha', group:'도급 · 협력사', code:'법 제62~66조', title:'도급인의 안전보건조치 및 합동점검',
+    clause:'도급인은 관계수급인 근로자가 도급인의 사업장에서 작업을 하는 경우 자신의 근로자와 관계수급인 근로자의 산업재해를 예방하기 위하여 안전 및 보건 시설의 설치 등 필요한 안전조치 및 보건조치를 하여야 한다.',
+    requirement:'안전보건총괄책임자를 지정하고, 안전보건협의체를 매월 1회 이상 운영하며, 합동 안전보건점검을 분기 1회(건설업 2개월 1회) 이상 실시한다. 수급인 근로자 교육 실시 여부를 확인한다.',
+    evidence:['안전보건총괄책임자 지정서','협의체 회의록(월별)','합동점검 결과서','수급인 교육 확인 자료'], cycle:'분기 1회', docRefs:['SHP-12'], isoRefs:['8.1.4'], severity:'critical' },
+
+  { id:'OSHA-125', framework:'osha', group:'보건관리', code:'법 제125조', title:'작업환경측정 실시 및 결과 보고·공지',
+    clause:'사업주는 유해인자로부터 근로자의 건강을 보호하고 쾌적한 작업환경을 조성하기 위하여 인체에 해로운 작업을 하는 작업장으로서 고용노동부령으로 정하는 작업장에 대하여 작업환경측정을 하여야 한다.',
+    requirement:'해당 유해인자 취급 사업장은 6개월에 1회 이상 측정하고, 결과를 근로자에게 알리며 30일 이내 보고한다. 비해당 시 판단 근거를 남긴다.',
+    evidence:['작업환경측정 결과보고서','근로자 공지 증빙','측정 대상 해당 여부 판단서'], cycle:'반기 1회', docRefs:['SHP-20'], isoRefs:['9.1.1'], severity:'medium' },
+
+  { id:'OSHA-129', framework:'osha', group:'보건관리', code:'법 제129~130조', title:'일반건강진단 및 특수건강진단 실시',
+    clause:'사업주는 상시 사용하는 근로자의 건강관리를 위하여 건강진단을 실시하여야 하며, 특수건강진단 대상 업무 종사 근로자에 대해서는 특수건강진단을 실시하여야 한다.',
+    requirement:'사무직 2년 1회, 그 외 1년 1회 일반건강진단을 실시하고, 특수건강진단 대상자를 식별하여 주기별로 실시한다. 사후관리(업무전환·근로시간 단축 등)를 이행한다.',
+    evidence:['건강진단 실시 계획 및 결과','수검률 집계','사후관리 조치 기록','미수검자 조치 내역'], cycle:'연 1회', docRefs:['SHP-20'], isoRefs:['8.1.2','9.1.1'], severity:'high' },
+
+  { id:'OSHA-164', framework:'osha', group:'기록 · 보존', code:'법 제164조', title:'서류의 보존(2년/3년/5년/30년)',
+    clause:'사업주는 이 법에 따른 안전보건관리책임자 선임에 관한 서류, 산업안전보건위원회 회의록, 위험성평가 결과, 안전보건교육 실시 기록, 건강진단 결과 등을 법정 기간 보존하여야 한다.',
+    requirement:'문서별 법정 보존연한을 문서관리대장에 명시하고, 보존기한 도래 시 폐기 심의를 거친다. 전자문서 보존 시 무결성을 확보한다.',
+    evidence:['문서관리대장(보존연한 표기)','보존 서류 목록 및 보관 위치','폐기 심의 기록'], cycle:'연 1회', docRefs:['SHP-09'], isoRefs:['7.5.3'], severity:'medium' }
+];
+
+/* ------------------------------------------------------------
+   3. ISO 45001:2018 — 조항 4~10
+------------------------------------------------------------ */
+export const ISO_ITEMS = [
+  { id:'ISO-4.1', framework:'iso', group:'4. 조직상황', code:'4.1', title:'조직과 조직상황의 이해',
+    clause:'조직은 조직의 목적과 관련되고 안전보건경영시스템의 의도된 결과를 달성하기 위한 능력에 영향을 주는 외부와 내부 이슈를 정하여야 한다.',
+    requirement:'유통·물류업 특성을 반영한 내·외부 이슈(법규 강화, 인력구조, 고객응대, 물류 자동화 등)를 SWOT/PESTLE로 도출하고 주기적으로 검토한다.',
+    evidence:['내·외부 이슈 분석표','검토 회의록'], cycle:'연 1회', docRefs:['SHP-01'], lawRefs:[], severity:'medium' },
+  { id:'ISO-4.2', framework:'iso', group:'4. 조직상황', code:'4.2', title:'근로자 및 기타 이해관계자의 니즈와 기대 이해',
+    clause:'조직은 안전보건경영시스템과 관련이 있는 근로자 외 기타 이해관계자, 그리고 이들의 관련 요구사항을 정하여야 한다.',
+    requirement:'근로자·협력사·고객·행정기관·지역사회 등 이해관계자를 식별하고 요구사항 및 준수의무 여부를 표로 관리한다.',
+    evidence:['이해관계자 요구사항 등록부'], cycle:'연 1회', docRefs:['SHP-01'], severity:'medium' },
+  { id:'ISO-4.3', framework:'iso', group:'4. 조직상황', code:'4.3', title:'안전보건경영시스템 적용범위 결정',
+    clause:'조직은 안전보건경영시스템의 경계와 적용 가능성을 정하여 적용범위를 정하여야 한다.',
+    requirement:'본사·물류센터·직영매장 등 적용범위를 문서화하고 제외 사유(가맹·위탁 등)를 명확히 한다.',
+    evidence:['적용범위 기술서(사업장 목록 포함)'], cycle:'연 1회', docRefs:['SHM-00'], severity:'high' },
+  { id:'ISO-4.4', framework:'iso', group:'4. 조직상황', code:'4.4', title:'안전보건경영시스템',
+    clause:'조직은 이 표준의 요구사항에 따라 필요한 프로세스와 그 상호작용을 포함하는 안전보건경영시스템을 수립, 실행, 유지 및 지속적으로 개선하여야 한다.',
+    requirement:'프로세스 맵(PDCA)과 프로세스 간 상호작용을 문서화한다. 본 시스템이 그 이행 증빙 플랫폼이다.',
+    evidence:['프로세스 맵','안전보건경영매뉴얼'], cycle:'연 1회', docRefs:['SHM-00'], severity:'high' },
+
+  { id:'ISO-5.1', framework:'iso', group:'5. 리더십과 근로자 참여', code:'5.1', title:'리더십과 의지표명',
+    clause:'최고경영자는 안전보건경영시스템에 대한 리더십과 의지표명을 실증하여야 한다.',
+    requirement:'경영책임자의 안전보건 활동 참여(현장점검, 경영검토 주재, 자원 제공)를 기록으로 남긴다.',
+    evidence:['경영책임자 현장점검 기록','경영검토 회의록','자원 배정 결재문서'], cycle:'반기 1회', docRefs:['SHM-00'], lawRefs:['OSHA-014'], severity:'critical' },
+  { id:'ISO-5.2', framework:'iso', group:'5. 리더십과 근로자 참여', code:'5.2', title:'안전보건방침',
+    clause:'최고경영자는 안전하고 건강한 근로조건 제공, 위험요인 제거 및 안전보건 리스크 감소, 근로자 협의 및 참여에 대한 의지표명을 포함하는 안전보건방침을 수립하여야 한다.',
+    requirement:'방침에 ①상해·건강상 장해 예방 ②법규 준수 ③위험요인 제거·리스크 감소 ④지속적 개선 ⑤근로자 협의·참여 5개 요소를 반드시 포함한다.',
+    evidence:['안전보건방침 선언문','게시·전달 증빙'], cycle:'연 1회', docRefs:['SHP-02'], lawRefs:['MSSA-4-1'], severity:'critical' },
+  { id:'ISO-5.3', framework:'iso', group:'5. 리더십과 근로자 참여', code:'5.3', title:'조직의 역할, 책임 및 권한',
+    clause:'최고경영자는 안전보건경영시스템 내의 관련된 역할에 대한 책임과 권한이 조직 내 모든 계층에 부여되고, 의사소통되며, 문서화된 정보로 유지됨을 보장하여야 한다.',
+    requirement:'경영책임자–안전보건관리책임자–관리감독자–근로자 계층별 R&R을 문서화하고 전달한다.',
+    evidence:['R&R 매트릭스','직무기술서','전달 증빙'], cycle:'연 1회', docRefs:['SHP-03'], lawRefs:['MSSA-4-2','MSSA-4-5','OSHA-015'], severity:'critical' },
+  { id:'ISO-5.4', framework:'iso', group:'5. 리더십과 근로자 참여', code:'5.4', title:'근로자 협의 및 참여',
+    clause:'조직은 안전보건경영시스템의 개발, 기획, 실행, 성과평가 및 개선을 위한 조치에 모든 적용 가능한 계층과 기능에서 비관리직 근로자의 협의 및 참여를 위한 프로세스를 수립, 실행 및 유지하여야 한다.',
+    requirement:'비관리직 근로자의 참여를 보장하고 참여 장애요인(언어·시간·보복 우려)을 제거한다. 산업안전보건위원회가 핵심 채널이다.',
+    evidence:['위원회 회의록','근로자 의견 접수·처리대장','참여 장애요인 제거 조치'], cycle:'분기 1회', docRefs:['SHP-04'], lawRefs:['MSSA-4-7','OSHA-024'], severity:'critical' },
+
+  { id:'ISO-6.1.1', framework:'iso', group:'6. 기획', code:'6.1.1', title:'리스크와 기회를 다루는 조치 — 일반',
+    clause:'안전보건경영시스템을 기획할 때 조직은 4.1의 이슈, 4.2의 요구사항 및 적용범위를 고려하고 다루어야 할 리스크와 기회를 정하여야 한다.',
+    requirement:'안전보건 리스크·기회와 시스템 리스크·기회를 구분하여 등록부로 관리한다.',
+    evidence:['리스크·기회 등록부'], cycle:'연 1회', docRefs:['SHP-05'], severity:'high' },
+  { id:'ISO-6.1.2', framework:'iso', group:'6. 기획', code:'6.1.2', title:'위험요인 파악 및 리스크와 기회의 평가',
+    clause:'조직은 지속적이고 선제적인 위험요인 파악 프로세스를 수립, 실행 및 유지하여야 하며, 안전보건 리스크와 그 밖의 리스크를 평가하기 위한 프로세스를 수립하여야 한다.',
+    requirement:'위험성평가 절차서에 따라 전 사업장 평가를 실시하고, 평가 방법론(4M·KRAS·체크리스트)과 판정기준을 문서화한다.',
+    evidence:['위험성평가 절차서 및 평가표','위험요인 등록부','근로자 참여 증빙'], cycle:'연 1회', docRefs:['SHP-05'], lawRefs:['MSSA-4-3','OSHA-036'], severity:'critical' },
+  { id:'ISO-6.1.3', framework:'iso', group:'6. 기획', code:'6.1.3', title:'법적 요구사항 및 기타 요구사항 결정',
+    clause:'조직은 위험요인, 안전보건 리스크 및 안전보건경영시스템에 적용되는 최신의 법적 요구사항 및 기타 요구사항을 결정하고 접근하기 위한 프로세스를 수립, 실행 및 유지하여야 한다.',
+    requirement:'적용 법규 등록부를 운영하고 개정사항을 정기적으로 확인·반영하여 전달한다. 본 시스템의 「법규 등록부」가 해당 프로세스다.',
+    evidence:['법규 등록부','법령 개정 모니터링 기록','개정사항 전달 증빙'], cycle:'분기 1회', docRefs:['SHP-06'], lawRefs:['MSSA-5-1'], severity:'critical' },
+  { id:'ISO-6.1.4', framework:'iso', group:'6. 기획', code:'6.1.4', title:'조치의 기획',
+    clause:'조직은 안전보건 리스크와 기회, 법적 요구사항 및 기타 요구사항, 비상시 대비 및 대응을 다루기 위한 조치를 기획하여야 한다.',
+    requirement:'평가된 리스크에 대해 관리 위계(제거→대체→공학적→행정적→PPE) 순으로 조치를 기획한다.',
+    evidence:['개선조치 계획서','관리 위계 적용 근거'], cycle:'반기 1회', docRefs:['SHP-05'], severity:'high' },
+  { id:'ISO-6.2', framework:'iso', group:'6. 기획', code:'6.2.1~6.2.2', title:'안전보건 목표 및 목표 달성 기획',
+    clause:'조직은 안전보건경영시스템 및 안전보건성과를 유지 및 지속적으로 개선하기 위하여 관련 기능 및 계층에서 안전보건목표를 수립하여야 하며, 목표 달성 방법을 기획하여야 한다.',
+    requirement:'측정 가능한 목표(SMART)와 실행계획(무엇을·자원·책임자·완료시기·평가방법)을 수립한다.',
+    evidence:['안전보건 목표 및 세부추진계획','목표 달성도 평가'], cycle:'연 1회', docRefs:['SHP-02'], lawRefs:['MSSA-4-1'], severity:'critical' },
+
+  { id:'ISO-7.1', framework:'iso', group:'7. 지원', code:'7.1', title:'자원',
+    clause:'조직은 안전보건경영시스템의 수립, 실행, 유지 및 지속적 개선에 필요한 자원을 정하고 제공하여야 한다.',
+    requirement:'인력·예산·시설·정보시스템 자원을 확보하고 예산 편성·집행 실적으로 입증한다.',
+    evidence:['안전보건 예산 편성·집행 내역','인력 현황'], cycle:'분기 1회', docRefs:['SHP-19'], lawRefs:['MSSA-4-4','MSSA-4-6'], severity:'high' },
+  { id:'ISO-7.2', framework:'iso', group:'7. 지원', code:'7.2', title:'적격성',
+    clause:'조직은 안전보건성과에 영향을 미치거나 미칠 수 있는 근로자에게 필요한 적격성을 정하고, 교육훈련을 바탕으로 근로자가 적격함을 보장하여야 한다.',
+    requirement:'직무별 요구 적격성(자격·교육·경력)을 정의하고 갭 분석 후 교육을 실시하여 적격성을 평가한다.',
+    evidence:['직무별 적격성 요건표','교육 실시·평가 기록','자격증 관리대장'], cycle:'연 1회', docRefs:['SHP-07'], lawRefs:['OSHA-029','OSHA-032','MSSA-5-3'], severity:'critical' },
+  { id:'ISO-7.3', framework:'iso', group:'7. 지원', code:'7.3', title:'인식',
+    clause:'근로자는 안전보건방침, 자신의 활동과 관련된 안전보건 리스크, 사건 및 조사 결과, 급박하고 심각한 위험 상황에서 벗어날 수 있는 권리에 대하여 인식하여야 한다.',
+    requirement:'작업중지권·대피권을 포함한 인식 교육을 실시하고 이해도를 확인한다.',
+    evidence:['인식 교육 자료 및 실시 기록','이해도 평가 결과'], cycle:'반기 1회', docRefs:['SHP-07','SHI-12'], lawRefs:['OSHA-051'], severity:'high' },
+  { id:'ISO-7.4', framework:'iso', group:'7. 지원', code:'7.4', title:'의사소통',
+    clause:'조직은 안전보건경영시스템에 관련되는 내부 및 외부 의사소통에 필요한 프로세스를 수립, 실행 및 유지하여야 한다.',
+    requirement:'무엇을·언제·누구와·어떻게 소통할지 정의하고, 근로자 의견이 반영되는 양방향 채널을 운영한다.',
+    evidence:['의사소통 계획표','사내 공지·게시 증빙','외부 의사소통 기록'], cycle:'반기 1회', docRefs:['SHP-08'], lawRefs:['OSHA-034'], severity:'medium' },
+  { id:'ISO-7.5', framework:'iso', group:'7. 지원', code:'7.5.1~7.5.3', title:'문서화된 정보의 작성·갱신 및 관리',
+    clause:'조직의 안전보건경영시스템은 이 표준에서 요구하는 문서화된 정보와 안전보건경영시스템의 효과성을 위하여 필요한 것으로 조직이 정한 문서화된 정보를 포함하여야 한다.',
+    requirement:'문서 식별·검토·승인·배포·개정·폐기 규칙과 보존연한을 정하고 최신본 관리를 보장한다. 본 시스템의 「문서체계」가 관리 도구다.',
+    evidence:['문서관리 절차서','문서관리대장(개정이력·보존연한)','최신본 배포 증빙'], cycle:'반기 1회', docRefs:['SHP-09'], lawRefs:['OSHA-164','OSHA-025'], severity:'critical' },
+
+  { id:'ISO-8.1.1', framework:'iso', group:'8. 운용', code:'8.1.1', title:'운용 기획 및 관리 — 일반',
+    clause:'조직은 안전보건경영시스템의 요구사항을 충족하기 위하여 필요한 프로세스를 수립, 실행, 관리 및 유지하여야 한다.',
+    requirement:'작업별 안전작업기준(지침서)을 정하고 준수 여부를 점검한다.',
+    evidence:['작업 안전관리 절차서','현장 지침서','일상점검 기록'], cycle:'월 1회', docRefs:['SHP-10','SHI-01'], severity:'high' },
+  { id:'ISO-8.1.2', framework:'iso', group:'8. 운용', code:'8.1.2', title:'위험요인 제거 및 안전보건 리스크 감소',
+    clause:'조직은 관리 위계(제거, 대체, 공학적 관리, 행정적 관리, 개인보호구)를 사용하여 위험요인 제거 및 안전보건 리스크 감소를 위한 프로세스를 수립, 실행 및 유지하여야 한다.',
+    requirement:'개선조치는 반드시 관리 위계 순으로 검토하고, PPE 의존 개선은 사유를 기록한다.',
+    evidence:['개선조치 이력(위계 표기)','개선 전·후 사진','보호구 지급대장'], cycle:'분기 1회', docRefs:['SHP-10','SHI-07'], lawRefs:['OSHA-037','OSHA-039','OSHA-041'], severity:'critical' },
+  { id:'ISO-8.1.3', framework:'iso', group:'8. 운용', code:'8.1.3', title:'변경관리',
+    clause:'조직은 안전보건성과에 영향을 미치는 계획된 일시적 및 영구적 변경의 실행 및 관리를 위한 프로세스를 수립하여야 한다.',
+    requirement:'신규 매장 오픈, 리뉴얼, 설비 변경, 인력·조직 변경, 법규 변경 시 사전 위험성평가를 실시한다.',
+    evidence:['변경관리 신청·승인서','변경 전 위험성평가','변경 후 확인 점검'], cycle:'수시', docRefs:['SHP-11'], severity:'high' },
+  { id:'ISO-8.1.4', framework:'iso', group:'8. 운용', code:'8.1.4', title:'조달 — 계약자 및 외주처리',
+    clause:'조직은 안전보건경영시스템에 적합함을 보장하기 위하여 제품 및 서비스의 조달을 관리하는 프로세스와, 계약자와 조직 간 조달 프로세스를 조정하여야 한다.',
+    requirement:'수급업체 안전보건 수준평가·계약 반영·현장 관리·성과 평가의 4단계 관리체계를 운영한다.',
+    evidence:['수급인 평가기준·평가결과','계약서 안전보건 조항','합동점검 결과','협의체 회의록'], cycle:'분기 1회', docRefs:['SHP-12'], lawRefs:['MSSA-4-9','OSHA-062'], severity:'critical' },
+  { id:'ISO-8.2', framework:'iso', group:'8. 운용', code:'8.2', title:'비상시 대비 및 대응',
+    clause:'조직은 파악된 잠재적인 비상상황에 대한 대비 및 대응에 필요한 프로세스를 수립, 실행 및 유지하여야 하며, 계획된 대응을 주기적으로 시험하고 훈련하여야 한다.',
+    requirement:'화재·정전·지진·화학물질 누출·중대재해 등 시나리오별 대응계획을 수립하고 반기 1회 이상 훈련·평가한다.',
+    evidence:['비상대응 매뉴얼','비상연락망','훈련 계획·실시·평가 기록','훈련 사진 및 서명부'], cycle:'반기 1회', docRefs:['SHP-13','SHI-04','SHI-08'], lawRefs:['MSSA-4-8'], severity:'critical' },
+
+  { id:'ISO-9.1.1', framework:'iso', group:'9. 성과평가', code:'9.1.1', title:'모니터링, 측정, 분석 및 성과평가',
+    clause:'조직은 안전보건성과의 모니터링, 측정, 분석 및 성과평가를 위한 프로세스를 수립, 실행 및 유지하여야 한다.',
+    requirement:'선행지표(점검 실시율·교육 이수율·개선 완료율)와 후행지표(재해율·강도율)를 정의하고 정기 분석한다.',
+    evidence:['안전보건 지표 정의서','월/분기 성과 리포트','측정장비 교정 기록(해당 시)'], cycle:'월 1회', docRefs:['SHP-14'], severity:'high' },
+  { id:'ISO-9.1.2', framework:'iso', group:'9. 성과평가', code:'9.1.2', title:'준수평가',
+    clause:'조직은 법적 요구사항 및 기타 요구사항의 준수를 평가하기 위한 프로세스를 수립, 실행 및 유지하여야 한다.',
+    requirement:'법규 등록부 기준으로 반기 1회 이상 준수평가를 실시하고 결과를 문서화한다. 중처법 시행령 제5조 이행과 직결된다.',
+    evidence:['준수평가 계획·결과보고서','부적합 사항 및 조치'], cycle:'반기 1회', docRefs:['SHP-15'], lawRefs:['MSSA-5-1','MSSA-5-2'], severity:'critical' },
+  { id:'ISO-9.2', framework:'iso', group:'9. 성과평가', code:'9.2', title:'내부심사',
+    clause:'조직은 안전보건경영시스템이 조직 자체의 요구사항 및 이 표준의 요구사항에 적합한지, 효과적으로 실행되고 유지되는지에 대한 정보를 제공하기 위하여 계획된 주기로 내부심사를 실시하여야 한다.',
+    requirement:'연 1회 이상 내부심사를 실시한다. 심사원은 자기 업무를 심사하지 않도록 독립성을 확보한다.',
+    evidence:['내부심사 계획서·체크리스트','심사원 자격 증빙','부적합 보고서 및 시정조치','내부심사 결과보고서'], cycle:'연 1회', docRefs:['SHP-16'], severity:'critical' },
+  { id:'ISO-9.3', framework:'iso', group:'9. 성과평가', code:'9.3', title:'경영검토',
+    clause:'최고경영자는 계획된 주기로 조직의 안전보건경영시스템의 지속적인 적절성, 충족성 및 효과성을 보장하기 위하여 안전보건경영시스템을 검토하여야 한다.',
+    requirement:'경영검토 입력(이전 조치 상태, 이슈 변화, 목표 달성도, 사건·부적합, 심사 결과, 근로자 협의, 리스크·기회, 자원 충족성)을 모두 다루고, 출력(개선 결정, 자원 필요성 등)을 기록한다.',
+    evidence:['경영검토 회의록(입력·출력 항목별)','경영검토 후속조치 이행 결과'], cycle:'연 1회', docRefs:['SHP-17'], lawRefs:['OSHA-014'], severity:'critical' },
+
+  { id:'ISO-10.1', framework:'iso', group:'10. 개선', code:'10.1', title:'개선 — 일반',
+    clause:'조직은 개선 기회를 정하고, 안전보건경영시스템의 의도된 결과를 달성하기 위하여 필요한 조치를 실행하여야 한다.',
+    requirement:'개선 기회를 상시 수집(제안제도, 점검 지적, 심사 관찰사항)하고 등록·추적한다.',
+    evidence:['개선 제안 접수·처리 대장'], cycle:'분기 1회', docRefs:['SHP-18'], severity:'medium' },
+  { id:'ISO-10.2', framework:'iso', group:'10. 개선', code:'10.2', title:'사건, 부적합 및 시정조치',
+    clause:'조직은 사건 및 부적합의 결정과 관리를 포함하는 프로세스를 수립, 실행 및 유지하여야 하며, 근본원인을 조사하고 시정조치의 효과성을 검토하여야 한다.',
+    requirement:'사건·아차사고·부적합을 접수 → 응급조치 → 근본원인 분석(5Why/RCA) → 시정조치 → 효과성 검증 → 종결의 CAPA 흐름으로 관리한다.',
+    evidence:['사고·아차사고 보고서','근본원인 분석서','시정조치 요구서 및 완료 확인','효과성 검증 기록'], cycle:'수시', docRefs:['SHP-18'], lawRefs:['OSHA-054'], severity:'critical' },
+  { id:'ISO-10.3', framework:'iso', group:'10. 개선', code:'10.3', title:'지속적 개선',
+    clause:'조직은 안전보건경영시스템의 적절성, 충족성 및 효과성을 지속적으로 개선하여야 한다.',
+    requirement:'개선 성과를 지표로 추적하고 근로자에게 결과를 알린다.',
+    evidence:['개선 성과 추이 자료','개선 결과 공유 증빙'], cycle:'반기 1회', docRefs:['SHP-18'], severity:'medium' }
+];
+
+/* ------------------------------------------------------------
+   4. 안전보건 문서체계 (매뉴얼 → 절차서 → 지침서 → 양식)
+------------------------------------------------------------ */
+export const DOC_MASTER = [
+  { docNo:'SHM-00', type:'manual', title:'안전보건경영 매뉴얼', category:'최상위',
+    purpose:'ISO 45001 및 중대재해처벌법·산업안전보건법 요구사항을 충족하는 안전보건경영시스템의 전체 구조와 운영 원칙을 규정한다.',
+    isoRefs:['4.3','4.4','5.1','5.2'], lawRefs:['MSSA-4-1'] },
+
+  { docNo:'SHP-01', type:'procedure', title:'조직상황 및 이해관계자 관리 절차서', category:'조직상황',
+    purpose:'조직의 내·외부 이슈와 이해관계자 요구사항을 파악·검토하는 방법을 규정한다.', isoRefs:['4.1','4.2'], lawRefs:[] },
+  { docNo:'SHP-02', type:'procedure', title:'안전보건방침 및 목표관리 절차서', category:'리더십',
+    purpose:'안전보건방침 수립·공표 및 연간 목표 설정·평가 방법을 규정한다.', isoRefs:['5.2','6.2'], lawRefs:['MSSA-4-1','OSHA-014'] },
+  { docNo:'SHP-03', type:'procedure', title:'역할·책임·권한 및 선임관리 절차서', category:'리더십',
+    purpose:'계층별 R&R, 법정 선임자 배치 및 업무수행 평가 방법을 규정한다.', isoRefs:['5.3'], lawRefs:['MSSA-4-2','MSSA-4-5','MSSA-4-6','OSHA-015','OSHA-016','OSHA-017'] },
+  { docNo:'SHP-04', type:'procedure', title:'근로자 협의 및 참여 절차서', category:'리더십',
+    purpose:'산업안전보건위원회 운영과 종사자 의견청취·개선 절차를 규정한다.', isoRefs:['5.4'], lawRefs:['MSSA-4-7','OSHA-024'] },
+  { docNo:'SHP-05', type:'procedure', title:'위험성평가 절차서', category:'기획',
+    purpose:'유해·위험요인 파악, 위험성 추정·결정, 감소대책 수립 및 이행 확인 방법을 규정한다.', isoRefs:['6.1.1','6.1.2','6.1.4'], lawRefs:['MSSA-4-3','OSHA-036'] },
+  { docNo:'SHP-06', type:'procedure', title:'법규 및 기타 요구사항 관리 절차서', category:'기획',
+    purpose:'적용 법규 파악·등록·개정 모니터링 및 전달 방법을 규정한다.', isoRefs:['6.1.3'], lawRefs:['MSSA-5-1'] },
+  { docNo:'SHP-07', type:'procedure', title:'안전보건 교육훈련 절차서', category:'지원',
+    purpose:'법정교육 및 적격성 확보를 위한 교육의 계획·실시·평가·기록 방법을 규정한다.', isoRefs:['7.2','7.3'], lawRefs:['OSHA-029','OSHA-032','MSSA-5-3','MSSA-5-4'] },
+  { docNo:'SHP-08', type:'procedure', title:'의사소통 및 정보제공 절차서', category:'지원',
+    purpose:'내·외부 안전보건 의사소통 방법과 법령 요지 게시 관리를 규정한다.', isoRefs:['7.4'], lawRefs:['OSHA-034'] },
+  { docNo:'SHP-09', type:'procedure', title:'문서 및 기록관리 절차서', category:'지원',
+    purpose:'문서의 제·개정·배포·폐기와 기록의 법정 보존연한 관리 방법을 규정한다.', isoRefs:['7.5'], lawRefs:['OSHA-164','OSHA-025'] },
+  { docNo:'SHP-10', type:'procedure', title:'작업 안전관리 절차서', category:'운용',
+    purpose:'매장·물류센터 작업의 안전기준 수립과 일상점검·관리 위계 적용 방법을 규정한다.', isoRefs:['8.1.1','8.1.2'], lawRefs:['OSHA-037','OSHA-038'] },
+  { docNo:'SHP-11', type:'procedure', title:'변경관리 절차서', category:'운용',
+    purpose:'신규 오픈·리뉴얼·설비/인력/법규 변경 시 사전 안전성 검토 방법을 규정한다.', isoRefs:['8.1.3'], lawRefs:[] },
+  { docNo:'SHP-12', type:'procedure', title:'도급·용역·위탁 안전보건 관리 절차서', category:'운용',
+    purpose:'수급인 평가·계약·현장관리·합동점검 및 안전보건협의체 운영을 규정한다.', isoRefs:['8.1.4'], lawRefs:['MSSA-4-9','OSHA-062'] },
+  { docNo:'SHP-13', type:'procedure', title:'비상시 대비 및 대응 절차서', category:'운용',
+    purpose:'중대산업재해 및 화재·정전 등 비상상황의 대응조치·구호조치·추가피해 방지조치와 훈련 방법을 규정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8','OSHA-051','OSHA-054'] },
+  { docNo:'SHP-14', type:'procedure', title:'성과 모니터링 및 측정 절차서', category:'성과평가',
+    purpose:'안전보건 선행·후행 지표의 측정·분석·보고 방법을 규정한다.', isoRefs:['9.1.1'], lawRefs:[] },
+  { docNo:'SHP-15', type:'procedure', title:'준수평가 절차서', category:'성과평가',
+    purpose:'법적 요구사항 준수 여부를 반기 1회 이상 평가하는 방법을 규정한다.', isoRefs:['9.1.2'], lawRefs:['MSSA-5-1','MSSA-5-2'] },
+  { docNo:'SHP-16', type:'procedure', title:'내부심사 절차서', category:'성과평가',
+    purpose:'내부심사 계획·실시·부적합 처리·보고 방법과 심사원 자격을 규정한다.', isoRefs:['9.2'], lawRefs:[] },
+  { docNo:'SHP-17', type:'procedure', title:'경영검토 절차서', category:'성과평가',
+    purpose:'최고경영자의 경영검토 입력·출력 항목과 실시 주기를 규정한다.', isoRefs:['9.3'], lawRefs:['OSHA-014'] },
+  { docNo:'SHP-18', type:'procedure', title:'사건조사·부적합 및 시정조치(CAPA) 절차서', category:'개선',
+    purpose:'사고·아차사고·부적합의 조사, 근본원인 분석, 시정조치 및 효과성 검증 방법을 규정한다.', isoRefs:['10.1','10.2','10.3'], lawRefs:['OSHA-054'] },
+  { docNo:'SHP-19', type:'procedure', title:'안전보건 예산관리 절차서', category:'지원',
+    purpose:'안전보건 예산의 편성·집행·실적관리 방법을 규정한다.', isoRefs:['7.1'], lawRefs:['MSSA-4-4'] },
+  { docNo:'SHP-20', type:'procedure', title:'근로자 건강관리 절차서', category:'운용',
+    purpose:'건강진단, 작업환경측정, 근골격계 유해요인조사 및 사후관리 방법을 규정한다.', isoRefs:['8.1.2','9.1.1'], lawRefs:['OSHA-125','OSHA-129','OSHA-039'] },
+  { docNo:'SHP-21', type:'procedure', title:'고객응대근로자 보호 절차서', category:'운용',
+    purpose:'폭언 등으로 인한 건강장해 예방조치와 피해 근로자 보호 절차를 규정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-041'] },
+
+  { docNo:'SHI-01', type:'instruction', title:'매장 일상 안전점검 지침서', category:'현장', purpose:'점장(관리감독자)이 매일 수행하는 안전점검 항목과 방법을 정한다.', isoRefs:['8.1.1'], lawRefs:['OSHA-016'] },
+  { docNo:'SHI-02', type:'instruction', title:'롤테이너·중량물 취급 안전 지침서', category:'현장', purpose:'롤테이너 이동·적재 및 중량물 취급 시 부딪힘·끼임·근골격계 재해 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-039'] },
+  { docNo:'SHI-03', type:'instruction', title:'사다리·고소작업 안전 지침서', category:'현장', purpose:'진열대 상단 작업 등 사다리 사용 시 추락 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-04', type:'instruction', title:'화재예방 및 소방시설 관리 지침서', category:'현장', purpose:'소방시설 점검, 피난통로 확보, 화기취급 관리 방법을 정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
+  { docNo:'SHI-05', type:'instruction', title:'미끄러짐·넘어짐 예방 지침서', category:'현장', purpose:'바닥 물기·장애물 제거 및 통로 확보 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-06', type:'instruction', title:'전기·설비 안전 지침서', category:'현장', purpose:'분전반·조명·냉난방 설비의 안전점검과 감전 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-07', type:'instruction', title:'개인보호구 지급 및 관리 지침서', category:'현장', purpose:'작업별 보호구 선정·지급·착용·폐기 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-08', type:'instruction', title:'응급처치 및 구호 지침서', category:'비상', purpose:'재해자 발생 시 응급처치, 119 신고, 병원 인계 절차를 정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
+  { docNo:'SHI-09', type:'instruction', title:'고객 폭언·폭행 대응 지침서', category:'현장', purpose:'감정노동 상황 발생 시 현장 대응 단계와 보고 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-041'] },
+  { docNo:'SHI-10', type:'instruction', title:'물류센터 지게차·컨베이어 안전 지침서', category:'물류', purpose:'물류센터 하역장비 운용 시 안전기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-11', type:'instruction', title:'혹서기·혹한기 건강장해 예방 지침서', category:'보건', purpose:'온열·한랭 질환 예방을 위한 물·그늘·휴식 관리 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-039'] },
+  { docNo:'SHI-12', type:'instruction', title:'작업중지권 행사 지침서', category:'비상', purpose:'급박한 위험 시 근로자·관리감독자의 작업중지 판단과 재개 승인 절차를 정한다.', isoRefs:['7.3','8.2'], lawRefs:['OSHA-051'] },
+
+  { docNo:'SHF-01', type:'form', title:'위험성평가표(4M/KRAS)', category:'양식', purpose:'위험성평가 실시 결과를 기록한다.', isoRefs:['6.1.2'], lawRefs:['OSHA-036'] },
+  { docNo:'SHF-02', type:'form', title:'일상점검 체크리스트', category:'양식', purpose:'매장 일상 안전점검 결과를 기록한다.', isoRefs:['8.1.1'], lawRefs:['OSHA-016'] },
+  { docNo:'SHF-03', type:'form', title:'안전보건교육 일지 및 참석 서명부', category:'양식', purpose:'법정 교육 실시 사실을 기록한다.', isoRefs:['7.2'], lawRefs:['OSHA-029'] },
+  { docNo:'SHF-04', type:'form', title:'산업안전보건위원회 회의록', category:'양식', purpose:'분기별 위원회 심의·의결 내용을 기록한다.', isoRefs:['5.4'], lawRefs:['OSHA-024'] },
+  { docNo:'SHF-05', type:'form', title:'비상대응훈련 결과보고서', category:'양식', purpose:'훈련 실시 결과와 개선사항을 기록한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
+  { docNo:'SHF-06', type:'form', title:'사고·아차사고 조사보고서', category:'양식', purpose:'사건 발생 경위, 근본원인, 재발방지대책을 기록한다.', isoRefs:['10.2'], lawRefs:['OSHA-054'] },
+  { docNo:'SHF-07', type:'form', title:'시정조치 요구서(CAPA)', category:'양식', purpose:'부적합 사항의 시정조치 요구와 완료 확인을 기록한다.', isoRefs:['10.2'], lawRefs:['MSSA-5-2'] },
+  { docNo:'SHF-08', type:'form', title:'수급인 안전보건 평가표', category:'양식', purpose:'도급 계약 전·후 수급인의 안전보건 수준을 평가한다.', isoRefs:['8.1.4'], lawRefs:['MSSA-4-9'] },
+  { docNo:'SHF-09', type:'form', title:'안전보건 목표 및 세부추진계획서', category:'양식', purpose:'연간 목표와 실행계획을 기록한다.', isoRefs:['6.2'], lawRefs:['MSSA-4-1'] },
+  { docNo:'SHF-10', type:'form', title:'경영검토 회의록', category:'양식', purpose:'경영검토 입력·출력 항목을 기록한다.', isoRefs:['9.3'], lawRefs:['OSHA-014'] },
+  { docNo:'SHF-11', type:'form', title:'내부심사 체크리스트 및 부적합 보고서', category:'양식', purpose:'내부심사 수행 결과를 기록한다.', isoRefs:['9.2'], lawRefs:[] },
+  { docNo:'SHF-12', type:'form', title:'안전보건 예산 편성·집행 대장', category:'양식', purpose:'예산 편성과 집행 실적을 기록한다.', isoRefs:['7.1'], lawRefs:['MSSA-4-4'] }
+];
+
+/* 절차서 본문 기본 목차 — 수기 작성 시 시작 템플릿 */
+export const DOC_BODY_TEMPLATE = `1. 목 적
+   (본 절차서를 제정한 목적을 기술)
+
+2. 적용 범위
+   (적용되는 사업장·조직·업무 범위를 기술)
+
+3. 용어의 정의
+   3.1
+   3.2
+
+4. 책임과 권한
+   4.1 경영책임자 :
+   4.2 안전보건관리책임자 :
+   4.3 안전보건팀 :
+   4.4 관리감독자(점장) :
+   4.5 근로자 :
+
+5. 업무 절차
+   5.1
+   5.2
+   5.3
+
+6. 관련 법규
+   (산업안전보건법 제○조, 중대재해처벌법 시행령 제○조 등)
+
+7. 관련 문서 및 양식
+   7.1
+   7.2
+
+8. 기록의 보존
+   (기록명 / 보존기간 / 보존부서)`;
+
+export const ALL_ITEMS = [...MSSA_ITEMS, ...OSHA_ITEMS, ...ISO_ITEMS];
+
+export const FRAMEWORKS = {
+  mssa:{ key:'mssa', label:'중대재해처벌법', short:'중처법', items:MSSA_ITEMS, color:'var(--brand-red)', icon:'⚖️' },
+  osha:{ key:'osha', label:'산업안전보건법', short:'산안법', items:OSHA_ITEMS, color:'var(--brand-navy)', icon:'📕' },
+  iso: { key:'iso',  label:'ISO 45001:2018', short:'ISO', items:ISO_ITEMS, color:'#0f766e', icon:'🌐' }
+};

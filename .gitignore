@@ -1,0 +1,13 @@
+# 로컬 작업 파일
+.DS_Store
+Thumbs.db
+*.log
+_local_*/
+_backup_*/
+node_modules/
+
+# 개인 백업 JSON (전사 저장소에 올리지 않음)
+안전보건관리체계_이행관리_백업_*.json
+
+# 실제 운영 키가 들어간 config — 필요 시 주석 해제해서 사용
+# config.js

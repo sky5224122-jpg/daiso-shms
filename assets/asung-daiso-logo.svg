@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="아성다이소 심볼">
+  <rect width="120" height="120" fill="none"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 80 C38 30 57 15 74 40 C91 67 80 93 55 85 C36 79 31 63 42 54 C53 45 66 49 82 70"
+          stroke="#ed174f" stroke-width="12"/>
+    <path d="M33 82 C57 91 81 86 96 69 C78 36 61 22 48 34 C35 46 45 68 67 81"
+          stroke="#174f9a" stroke-width="12"/>
+    <path d="M37 82 C56 88 78 84 94 70"
+          stroke="#2b83d3" stroke-width="8"/>
+  </g>
+</svg>

@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+# main 브랜치에 push 하면 GitHub Pages로 자동 배포합니다.
+# 사전 설정: 저장소 → Settings → Pages → Source = "GitHub Actions"
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 자바스크립트 문법 검사
+        run: |
+          for f in js/*.js js/data/*.js config.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Supabase 설정 주입 (선택)
+        # 저장소 Settings → Secrets and variables → Actions 에
+        # SUPABASE_URL / SUPABASE_ANON_KEY 를 등록하면 배포 시 자동 주입됩니다.
+        # 등록하지 않으면 이 단계는 아무것도 하지 않고, 사용자가 앱 [설정] 화면에서 직접 입력합니다.
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
+            printf "window.SHMS_SUPABASE = {\n  url: '%s',\n  anonKey: '%s'\n};\n" \
+              "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > config.js
+            echo "config.js 생성 완료"
+          else
+            echo "Secrets 미등록 — config.js 원본을 그대로 사용합니다."
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
