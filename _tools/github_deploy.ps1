@@ -74,7 +74,9 @@ if($CheckOnly){ Write-Host ""; Ok "검사만 수행했습니다. 배포하지 �
 # ── 3. 원격 저장소 연결 ────────────────────────────────────
 Write-Host ""
 Write-Host "--- 3. 원격 저장소 ---"
-$origin = (git remote get-url origin 2>$null)
+# git remote get-url 은 원격이 없을 때 stderr 를 내보내 PowerShell 이 오류로 처리하므로 config 로 조회한다
+$origin = ""
+if((git remote) -contains "origin"){ $origin = (git config --get remote.origin.url) }
 if($RepoUrl){
   if($origin){ git remote set-url origin $RepoUrl } else { git remote add origin $RepoUrl }
   $origin = $RepoUrl
