@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260731_n2';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260731_bk1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -288,7 +288,7 @@ export async function saveRecord(itemId, patch, half = state.half) {
   const row = { ...getRecord(itemId, half), ...patch, item_id: itemId, half, ...stamp() };
   state.records[key] = row;
   lsSet('records', state.records);
-  emit();
+  emit(); autoBackup();
   return remoteUpsert(TABLES.records, row, 'item_id,half');
 }
 
@@ -297,7 +297,7 @@ export async function saveDocument(doc) {
   const i = state.documents.findIndex(d => d.id === row.id);
   if (i >= 0) state.documents[i] = row; else state.documents.push(row);
   lsSet('documents', state.documents);
-  emit();
+  emit(); autoBackup();
   return remoteUpsert(TABLES.documents, row, 'id');
 }
 
@@ -308,15 +308,73 @@ export async function saveRow(kind, row) {
   const i = list.findIndex(x => x.id === r.id);
   if (i >= 0) list[i] = r; else list.push(r);
   lsSet(kind, list);
-  emit();
+  emit(); autoBackup();
   return remoteUpsert(table, r, 'id');
 }
 
 export async function deleteRow(kind, id) {
   state[kind] = state[kind].filter(x => x.id !== id);
   lsSet(kind, state[kind]);
-  emit();
+  emit(); autoBackup();
   return remoteDelete(TABLES[kind], id);
+}
+
+/* ---------------- 자동 백업 ---------------- */
+const BK_PREFIX = 'shms.backup.';
+const BK_MAX = 5;
+let lastBkTime = 0;
+const BK_INTERVAL = 60_000;
+
+function autoBackup() {
+  const now = Date.now();
+  if (now - lastBkTime < BK_INTERVAL) return;
+  lastBkTime = now;
+  try {
+    const snap = {
+      ts: new Date().toISOString(),
+      records: state.records, documents: state.documents, capa: state.capa,
+      inspections: state.inspections, org: state.org, evidence: state.evidence
+    };
+    const keys = Object.keys(localStorage)
+      .filter(k => k.startsWith(BK_PREFIX)).sort();
+    while (keys.length >= BK_MAX) {
+      localStorage.removeItem(keys.shift());
+    }
+    localStorage.setItem(BK_PREFIX + now, JSON.stringify(snap));
+  } catch (_) {}
+}
+
+export function getBackups() {
+  return Object.keys(localStorage)
+    .filter(k => k.startsWith(BK_PREFIX))
+    .sort().reverse()
+    .map(k => {
+      try {
+        const d = JSON.parse(localStorage.getItem(k));
+        const rc = Object.keys(d.records || {}).length;
+        const dc = (d.documents || []).length;
+        const cc = (d.capa || []).length;
+        const ic = (d.inspections || []).length;
+        return { key: k, ts: d.ts, records: rc, documents: dc, capa: cc, inspections: ic };
+      } catch (_) { return null; }
+    }).filter(Boolean);
+}
+
+export function restoreBackup(key) {
+  const raw = localStorage.getItem(key);
+  if (!raw) return false;
+  try {
+    const d = JSON.parse(raw);
+    ['records','documents','capa','inspections','org','evidence'].forEach(k => {
+      if (d[k]) { state[k] = d[k]; lsSet(k, state[k]); }
+    });
+    emit();
+    return true;
+  } catch (_) { return false; }
+}
+
+export function deleteBackup(key) {
+  localStorage.removeItem(key);
 }
 
 /* ---------------- 통계 ---------------- */

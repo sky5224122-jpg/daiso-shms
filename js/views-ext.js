@@ -6,13 +6,14 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260731_n2';
+} from './data/frameworks.js?v=20260731_bk1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
-  getSupabaseConfig, setSupabaseConfig, conn, APP
-} from './core.js?v=20260731_n2';
-import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260731_n2';
+  getSupabaseConfig, setSupabaseConfig, conn, APP,
+  getBackups, restoreBackup, deleteBackup
+} from './core.js?v=20260731_bk1';
+import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260731_bk1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -862,6 +863,25 @@ export function renderSettings() {
           점검 ${state.inspections.length}건 · 개선조치 ${state.capa.length}건 ·
           증빙 ${state.evidence.length}건 · 선임 ${state.org.length}건
         </div>
+        <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+          <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:600">🔄 자동 백업 (최근 5개)</h4>
+          <p style="font-size:12px;color:var(--text-2);margin:0 0 12px;line-height:1.6">
+            데이터를 저장할 때마다 브라우저에 자동으로 백업됩니다 (1분 간격, 최대 5개 보관).</p>
+          ${(()=>{
+            const bks = getBackups();
+            if (!bks.length) return '<div style="font-size:12.5px;color:var(--muted);padding:8px 0">자동 백업이 아직 없습니다. 데이터를 저장하면 자동으로 생성됩니다.</div>';
+            return '<div class="tbl-wrap"><table class="tbl" style="min-width:0;font-size:12.5px"><thead><tr><th>시각</th><th>이행기록</th><th>문서</th><th>개선조치</th><th>점검</th><th></th></tr></thead><tbody>'
+              + bks.map(b => {
+                const dt = new Date(b.ts);
+                const tStr = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')
+                  +' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+                return '<tr><td>'+esc(tStr)+'</td><td>'+b.records+'</td><td>'+b.documents+'</td><td>'+b.capa+'</td><td>'+b.inspections+'</td>'
+                  +'<td style="white-space:nowrap"><button class="btn primary" style="font-size:11px;padding:3px 8px" data-bk-restore="'+esc(b.key)+'">복원</button> '
+                  +'<button class="btn" style="font-size:11px;padding:3px 8px" data-bk-del="'+esc(b.key)+'">삭제</button></td></tr>';
+              }).join('')
+              + '</tbody></table></div>';
+          })()}
+        </div>
       </div>
     </div>
   </div>
@@ -941,4 +961,22 @@ export function bindSettingsEvents(root, rerender) {
       inp.value = '';
     });
   }
+
+  root.querySelectorAll('[data-bk-restore]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.bkRestore;
+      if (!confirmDel('현재 데이터를 이 백업 시점으로 되돌립니다. 계속할까요?')) return;
+      if (restoreBackup(key)) { toast('자동 백업을 복원했습니다.', 'ok'); rerender(); }
+      else toast('복원 실패', 'bad');
+    });
+  });
+  root.querySelectorAll('[data-bk-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.bkDel;
+      if (!confirmDel('이 백업을 삭제할까요?')) return;
+      deleteBackup(key);
+      toast('백업을 삭제했습니다.', 'ok');
+      rerender();
+    });
+  });
 }
