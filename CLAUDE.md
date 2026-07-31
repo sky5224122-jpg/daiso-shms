@@ -50,17 +50,50 @@ saveRecord() → ① state.records 갱신 → ② localStorage 저장 → ③ Su
 ③이 실패해도 ①②는 유지되며, 화면에 "로컬 저장됨 · 동기화 실패" 토스트가 뜹니다.
 **동기화 실패를 성공이라고 표시하지 않습니다.**
 
-## 4. 캐시버스트 규칙
+## 4. 캐시버스트 규칙 ★ 실제로 두 번 사고가 난 부분
 
-`index.html`의 버전 문자열을 수정할 때마다 변경합니다.
+### 규칙 두 가지
+
+**① `?v=` 값은 `index.html`과 `js/**/*.js`의 모든 상대 import에 "똑같이" 들어가야 한다.**
 
 ```html
-<link rel="stylesheet" href="css/style.css?v=YYYYMMDD_설명">
-<script type="module" src="js/app.js?v=YYYYMMDD_설명"></script>
+<!-- index.html -->
+<link rel="stylesheet" href="css/style.css?v=20260731_pw2">
+<script type="module" src="js/app.js?v=20260731_pw2"></script>
+```
+```js
+// js/app.js, js/core.js, js/views-*.js — 전부 동일한 값
+import { ... } from './core.js?v=20260731_pw2';
+import { ... } from './data/frameworks.js?v=20260731_pw2';
 ```
 
-> `js/app.js`만 캐시버스트해도 `core.js` 등 하위 모듈은 갱신되지 않습니다.
-> 하위 모듈을 고쳤으면 **import 경로에도 쿼리를 붙이거나**, 배포 후 강력 새로고침(Ctrl+F5)으로 확인하십시오.
+- `js/app.js`만 버전을 붙이면 `core.js` 등 하위 모듈은 **캐시된 옛 버전이 그대로 남는다.**
+  (`./core.js` 는 쿼리 없이 해석되므로 별개 URL이 아니다)
+- 반대로 **일부만 붙이면 같은 모듈이 두 번 로드되어 `state` 가 분리된다.** 저장은 되는데
+  화면에 반영이 안 되는 유령 버그가 생기므로 반드시 전부 동일해야 한다.
+
+**② 소스를 고쳤으면 `?v=` 값을 반드시 새 값으로 올린다.**
+
+같은 값으로 두 번 배포하면 URL이 같아 브라우저가 **직전 배포본을 계속 사용한다.**
+
+### 일괄 변경 방법
+
+```powershell
+$OLD="20260731_pw2"; $NEW="20260801_x"
+foreach($f in @("index.html","js\app.js","js\core.js","js\views-core.js","js\views-ext.js")){
+  $c=[IO.File]::ReadAllText($f,[Text.UTF8Encoding]::new($false))
+  [IO.File]::WriteAllText($f,$c.Replace("?v=$OLD","?v=$NEW"),[Text.UTF8Encoding]::new($false))
+}
+```
+
+### 자동 검사
+
+`_tools/github_deploy.ps1` 이 배포 전에 위 두 규칙을 검사하고, 위반하면 **배포를 중단**합니다.
+검사만 하려면:
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File "_tools\github_deploy.ps1" -CheckOnly
+```
 
 ## 5. 배포
 
@@ -82,11 +115,33 @@ node --check js/views-ext.js
 node --check js/data/frameworks.js
 ```
 
-## 6. 권한 처리
+## 6. 인증 · 권한 처리
 
-- 화면 편집 권한 판정: `canEdit()` — `role`이 `master|safety|head`인 경우만 true
+### 현재 방식 (2026-07-31 변경)
+
+아이디 없이 **공용 비밀번호 하나**로 진입합니다.
+
+- `js/core.js` 의 `GATE_HASH` = 비밀번호의 SHA-256 해시
+- 진입한 사용자는 모두 `role: 'safety'` (작성·수정 가능)
+- 비밀번호 변경:
+  ```bash
+  node -e "console.log(require('crypto').createHash('sha256').update('새비밀번호','utf8').digest('hex'))"
+  ```
+  출력값으로 `GATE_HASH` 교체 → 캐시버스트 버전 올리고 배포
+
+> ⚠️ **이 해시는 공개 저장소 소스에 포함됩니다.** 외부 유출을 막는 보안장치가 아니라
+> "아무나 실수로 들어오지 않게 하는 문턱"입니다. 실제 데이터 접근 통제는
+> Supabase 연결 시 RLS 정책으로 걸어야 합니다.
+
+### 권한 판정
+
+- 화면 편집 권한: `canEdit()` — `role`이 `master|safety|head`인 경우만 true
 - **화면의 버튼 비활성화는 편의 기능일 뿐**이며, 실제 통제는 Supabase RLS의 `shms_can_edit()`가 수행
 - 권한 로직을 바꿀 때는 `core.js`의 `canEdit()`와 `schema.sql`의 `shms_can_edit()`를 **함께** 수정
+
+> ⚠️ 현재 공용 비밀번호 방식은 Supabase Auth 로그인을 하지 않으므로,
+> Supabase를 연결하면 `shms_can_edit()`가 false가 되어 **저장이 거부됩니다.**
+> Supabase 연결 시 인증 방식을 함께 재설계해야 합니다. (미해결 과제)
 
 ## 7. 절대 하면 안 되는 것
 
