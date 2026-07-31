@@ -69,6 +69,39 @@ if(Test-Path "config.js"){
   }
 }
 
+# ── 2-1. 캐시버스트 버전 일치 검사 ─────────────────────────
+# index.html 의 ?v= 값과 js 내부 상대 import 의 ?v= 값이 모두 같아야 한다.
+# 하나라도 다르면 브라우저가 같은 모듈을 두 번 로드해 state 가 분리되는 버그가 난다.
+Write-Host ""
+Write-Host "--- 2-1. 캐시버스트 버전 일치 검사 ---"
+# @(...) 로 감싸지 않으면 결과가 1개일 때 문자열이 되어 [0] 이 첫 글자를 반환한다
+$htmlVer = @([regex]::Matches((Get-Content "index.html" -Raw), "\?v=([A-Za-z0-9_\-\.]+)") |
+            ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+if($htmlVer.Count -ne 1){
+  Fail "index.html 안의 ?v= 값이 일치하지 않습니다: $($htmlVer -join ', ')"; exit 1
+}
+$V = $htmlVer[0]
+Ok "index.html 버전 = $V"
+
+$mismatch = @()
+$noVersion = @()
+foreach($f in (Get-ChildItem "js" -Recurse -Filter *.js)){
+  $src = Get-Content $f.FullName -Raw
+  foreach($m in [regex]::Matches($src, "from\s+'(\.{1,2}/[^']+?\.js)(\?v=([^']*))?'")){
+    if(-not $m.Groups[2].Success){ $noVersion += "$($f.Name) → $($m.Groups[1].Value)" }
+    elseif($m.Groups[3].Value -ne $V){ $mismatch += "$($f.Name) → $($m.Groups[1].Value)?v=$($m.Groups[3].Value)" }
+  }
+}
+if($noVersion.Count){ Fail "버전 쿼리가 없는 import:"; $noVersion | ForEach-Object { Info "    $_" } }
+if($mismatch.Count){ Fail "버전이 다른 import:";      $mismatch  | ForEach-Object { Info "    $_" } }
+if($noVersion.Count -or $mismatch.Count){
+  Info ""
+  Info "  모든 상대 import 에 index.html 과 동일한 ?v=$V 를 붙여야 합니다."
+  Info "  (붙이지 않으면 하위 모듈이 캐시된 옛 버전으로 남습니다)"
+  exit 1
+}
+Ok "js 내부 import 버전 전부 일치 ($V)"
+
 if($CheckOnly){ Write-Host ""; Ok "검사만 수행했습니다. 배포하지 않았습니다."; exit 0 }
 
 # ── 3. 원격 저장소 연결 ────────────────────────────────────
