@@ -356,16 +356,27 @@ export function docStats() {
   return { by, total, approved, pct: total ? Math.round(approved / total * 100) : 0 };
 }
 
-/* ---------------- 인증 ---------------- */
+/* ---------------- 인증 (공용 비밀번호 방식) ----------------
+   아이디 없이 공용 비밀번호 하나로 진입한다.
+   ⚠ 이 해시는 소스에 포함되므로 외부 유출을 막는 보안장치가 아니라
+     "아무나 실수로 들어오지 않게 하는 문턱"이다.
+     실제 데이터 접근 통제는 Supabase 연결 시 RLS 정책이 수행해야 한다.
+   비밀번호를 바꾸려면 새 해시를 만들어 GATE_HASH 를 교체한다.
+     node -e "console.log(require('crypto').createHash('sha256').update('새비밀번호','utf8').digest('hex'))"
+------------------------------------------------------------- */
 const SESSION_KEY = 'shms.session';
+const GATE_HASH = 'f2e5aafc64a04ac704c644ce38c34d1d7f7493561687c66e43eeda8186744134';
 
-/** Supabase 미연결 상태에서 사용하는 로컬 계정 (구축·심사 시연용) */
-export const LOCAL_ACCOUNTS = [
-  { email:'safeteam119@gmail.com', name:'안전보건팀 관리자', role:'master', dept:'안전보건팀' },
-  { email:'safety@asung.local',    name:'안전보건팀 담당',   role:'safety', dept:'안전보건팀' },
-  { email:'head@asung.local',      name:'안전보건팀장',     role:'head',   dept:'안전보건팀' },
-  { email:'auditor@asung.local',   name:'심사원(읽기전용)', role:'auditor',dept:'외부심사' }
-];
+/** 진입 성공 시 부여되는 사용자 (작성·수정 권한) */
+const GATE_USER = {
+  id: 'shms_gate', email: '', name: '안전보건팀',
+  role: 'safety', dept: '안전보건팀', source: 'gate'
+};
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text)));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export function restoreSession() {
   try {
@@ -375,32 +386,15 @@ export function restoreSession() {
   return null;
 }
 
-export async function signIn({ email, password, role, remember }) {
-  const mail = String(email || '').trim().toLowerCase();
-  if (!mail) throw new Error('이메일(아이디)을 입력하세요.');
-
-  if (conn.mode === 'supabase' && password) {
-    const { data, error } = await conn.client.auth.signInWithPassword({ email: mail, password });
-    if (error) throw new Error(`로그인 실패: ${error.message}`);
-    let profile = null;
-    try {
-      const { data: p } = await conn.client.from('shms_profiles').select('*').eq('id', data.user.id).maybeSingle();
-      profile = p;
-    } catch (_) {}
-    state.user = {
-      id: data.user.id, email: mail,
-      name: profile?.name || data.user.email,
-      role: profile?.role || role || 'safety',
-      dept: profile?.dept || '',
-      source: 'supabase'
-    };
-  } else {
-    const acc = LOCAL_ACCOUNTS.find(a => a.email === mail);
-    state.user = acc
-      ? { ...acc, id: 'local_' + mail, source: 'local' }
-      : { id: 'local_' + mail, email: mail, name: mail.split('@')[0], role: role || 'store', dept: '', source: 'local' };
+export async function signIn({ password, remember }) {
+  const pw = String(password || '');
+  if (!pw) throw new Error('비밀번호를 입력하세요.');
+  if (!window.crypto?.subtle) {
+    throw new Error('보안 연결(https) 또는 localhost 에서만 로그인할 수 있습니다.');
   }
+  if (await sha256Hex(pw) !== GATE_HASH) throw new Error('비밀번호가 올바르지 않습니다.');
 
+  state.user = { ...GATE_USER };
   const raw = JSON.stringify(state.user);
   sessionStorage.setItem(SESSION_KEY, raw);
   if (remember) localStorage.setItem(SESSION_KEY, raw); else localStorage.removeItem(SESSION_KEY);

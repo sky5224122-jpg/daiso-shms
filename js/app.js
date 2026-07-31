@@ -5,7 +5,7 @@
 import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signOut, canEdit, currentHalf, recentHalves, halfLabel,
-  getRecord, toast, LOCAL_ACCOUNTS
+  getRecord, toast
 } from './core.js';
 import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js';
 import {
@@ -64,28 +64,20 @@ function renderLogin() {
         </div>
       </div>
       <form id="loginForm" autocomplete="on">
-        <label for="lgEmail">아이디 (이메일)</label>
-        <input id="lgEmail" type="email" autocomplete="username" placeholder="safeteam119@gmail.com" required>
-        <label for="lgPw">비밀번호 ${conn.mode === 'supabase' ? '' : '<span style="font-weight:600;color:#98a2b3">(로컬 모드에서는 생략 가능)</span>'}</label>
-        <input id="lgPw" type="password" autocomplete="current-password" placeholder="${conn.mode === 'supabase' ? 'Supabase 계정 비밀번호' : '로컬 모드 — 입력하지 않아도 됩니다'}">
-        ${conn.mode === 'supabase' ? '' : `
-        <label for="lgRole">권한 (로컬 모드 전용)</label>
-        <select id="lgRole">
-          ${Object.values(ROLES).map(r => `<option value="${r.key}" ${r.key === 'safety' ? 'selected' : ''}>${r.label}</option>`).join('')}
-        </select>`}
+        <label for="lgPw">접속 비밀번호</label>
+        <input id="lgPw" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" required autofocus>
         <label style="display:flex;align-items:center;gap:7px;font-weight:700;margin-top:14px">
           <input type="checkbox" id="lgRemember" style="width:auto;margin:0"> 이 브라우저에서 로그인 유지
         </label>
-        <button class="login-btn" type="submit">로그인</button>
+        <button class="login-btn" type="submit">들어가기</button>
         <div class="login-err" id="lgErr"></div>
       </form>
       <div class="login-hint">
         <b>${conn.mode === 'supabase' ? '🟢 Supabase 연결됨' : '🟡 로컬 저장 모드'}</b><br>
         ${conn.mode === 'supabase'
-          ? 'Supabase Auth 계정으로 로그인합니다. 권한은 shms_profiles 테이블의 role 값을 따릅니다.'
-          : `Supabase 미설정 상태입니다. 아무 이메일로 로그인해 앱을 바로 확인할 수 있으며, 작성 자료는 이 브라우저에만 저장됩니다.<br>
-             기본 관리자 계정: <b>${esc(LOCAL_ACCOUNTS[0].email)}</b><br>
-             연결은 로그인 후 <b>[설정 · 백업]</b> 화면에서 진행합니다.`}
+          ? '작성 자료는 Supabase에 저장되고 이 브라우저에도 캐시됩니다.'
+          : `작성 자료는 이 브라우저에만 저장됩니다. 여러 명이 함께 쓰려면
+             로그인 후 <b>[설정 · 백업]</b> 화면에서 Supabase를 연결하십시오.`}
       </div>
       <div style="margin-top:14px;text-align:center;font-size:11px;color:#98a2b3">
         ${esc(APP.org)} · ${esc(APP.version)}
@@ -99,9 +91,7 @@ function renderLogin() {
     err.textContent = '';
     try {
       await signIn({
-        email: $('#lgEmail').value,
         password: $('#lgPw').value,
-        role: $('#lgRole')?.value,
         remember: $('#lgRemember').checked
       });
       await boot();
@@ -301,23 +291,6 @@ async function boot() {
   document.title = `${APP.name} | ${APP.org}`;
   await initSupabase();
   restoreSession();
-
-  // Supabase 세션이 살아 있으면 자동 복원
-  if (conn.mode === 'supabase' && !state.user) {
-    try {
-      const { data } = await conn.client.auth.getSession();
-      if (data?.session?.user) {
-        const su = data.session.user;
-        let profile = null;
-        try {
-          const { data: p } = await conn.client.from('shms_profiles').select('*').eq('id', su.id).maybeSingle();
-          profile = p;
-        } catch (_) {}
-        state.user = { id: su.id, email: su.email, name: profile?.name || su.email,
-                       role: profile?.role || 'safety', dept: profile?.dept || '', source: 'supabase' };
-      }
-    } catch (_) {}
-  }
 
   onChange(() => { if (state.user && $('#navRoot')) renderNav(); });
   await boot();

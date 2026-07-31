@@ -871,14 +871,17 @@ export function renderSettings() {
     <div class="card-body">
       <div class="tbl-wrap"><table class="tbl" style="min-width:0">
         <tbody>
-          <tr><th style="width:150px">사용자</th><td>${esc(state.user?.name || '-')} (${esc(state.user?.email || '-')})</td></tr>
+          <tr><th style="width:150px">사용자</th><td>${esc(state.user?.name || '-')}</td></tr>
           <tr><th>권한</th><td>${esc(ROLES[state.user?.role]?.label || state.user?.role || '-')} — ${canEdit() ? '작성·수정 가능' : '읽기 전용'}</td></tr>
-          <tr><th>인증 방식</th><td>${state.user?.source === 'supabase' ? 'Supabase Auth' : '로컬 계정(구축 단계)'}</td></tr>
+          <tr><th>인증 방식</th><td>공용 접속 비밀번호 (아이디 없음)</td></tr>
           <tr><th>저장 모드</th><td>${conn.mode === 'supabase' ? 'Supabase + 로컬 캐시' : '로컬(localStorage) 전용'}</td></tr>
           <tr><th>버전</th><td>${esc(APP.version)}</td></tr>
         </tbody></table></div>
-      <div class="help" style="margin-top:12px">권한 체계 — 시스템관리자·안전보건팀·안전보건팀장은 작성/수정 가능,
-        심사원·참조 권한은 읽기 전용입니다. Supabase 연결 시 <code>shms_profiles</code> 테이블의 role 값이 우선 적용됩니다.</div>
+      <div class="help" style="margin-top:12px">
+        <b>접속 방식</b> — 아이디 없이 공용 비밀번호 하나로 진입합니다. 진입한 사용자는 모두 작성·수정 권한을 갖습니다.<br>
+        <b>⚠ 주의</b> — 비밀번호 해시는 앱 소스에 포함되어 있어 외부 유출을 막는 보안장치가 아닙니다.
+        비밀번호를 바꾸려면 <code>js/core.js</code> 의 <code>GATE_HASH</code> 를 교체하십시오.
+        실제 데이터 접근 통제가 필요하면 Supabase 연결 후 RLS 정책으로 제한해야 합니다.</div>
     </div>
   </div>`;
 }
