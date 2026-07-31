@@ -5,11 +5,11 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260731_n1';
+} from './data/frameworks.js?v=20260731_n2';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast
-} from './core.js?v=20260731_n1';
+} from './core.js?v=20260731_n2';
 
 /* ---------------- 공용 조각 ---------------- */
 
