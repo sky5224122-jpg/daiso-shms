@@ -102,6 +102,23 @@ if($noVersion.Count -or $mismatch.Count){
 }
 Ok "js 내부 import 버전 전부 일치 ($V)"
 
+# ── 2-2. 같은 버전으로 재배포하는지 검사 ───────────────────
+# 소스는 바뀌었는데 ?v= 값이 직전 배포와 같으면 브라우저가 옛 파일을 계속 씁니다.
+$prevHtml = (git show HEAD:index.html 2>$null) -join "`n"
+if($prevHtml){
+  $prevVer = @([regex]::Matches($prevHtml, "\?v=([A-Za-z0-9_\-\.]+)") |
+              ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)[0]
+  $srcChanged = (git status --porcelain -- index.html css js) -ne $null
+  if($srcChanged -and $prevVer -eq $V){
+    Fail "소스가 변경되었는데 캐시버스트 버전이 직전 배포와 같습니다 (?v=$V)"
+    Info ""
+    Info "  브라우저가 옛 파일을 계속 사용하게 됩니다. 버전을 올린 뒤 다시 실행하십시오."
+    Info "  index.html 과 js 안의 모든 ?v=$V 를 새 값(예: ${V}b)으로 일괄 변경하면 됩니다."
+    exit 1
+  }
+  if($srcChanged){ Ok "버전 갱신 확인 ($prevVer → $V)" }
+}
+
 if($CheckOnly){ Write-Host ""; Ok "검사만 수행했습니다. 배포하지 않았습니다."; exit 0 }
 
 # ── 3. 원격 저장소 연결 ────────────────────────────────────
