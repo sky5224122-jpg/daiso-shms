@@ -5,11 +5,11 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260731_bk1';
+} from './data/frameworks.js?v=20260803_n1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast
-} from './core.js?v=20260731_bk1';
+} from './core.js?v=20260803_n1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -408,6 +408,19 @@ export function openItemDrawer(itemId, onSaved) {
       <div class="t">📎 권장 증빙자료 (심사 시 제시 항목)</div>
       <div class="c">${(item.evidence || []).map((e, n) => `${n + 1}. ${esc(e)}`).join('\n')}</div>
     </div>
+
+    ${(item.requiredDocs && item.requiredDocs.length) ? `<div class="ref-box">
+      <div class="t">📋 작성 및 보관자료 목록</div>
+      <div class="c">${item.requiredDocs.map((d, n) => `${n + 1}. ${esc(d)}`).join('\n')}</div>
+    </div>` : ''}
+    ${item.companyStatus ? `<div class="ref-box">
+      <div class="t">🏢 당사 준비현황</div>
+      <div class="c">${esc(item.companyStatus)}</div>
+    </div>` : ''}
+    ${(item.evidenceFiles && item.evidenceFiles.length) ? `<div class="ref-box">
+      <div class="t">📁 증빙자료</div>
+      <div class="c">${item.evidenceFiles.map((f, n) => `${n + 1}. ${esc(f)}`).join('\n')}</div>
+    </div>` : ''}
 
     <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">이행 내용 작성</h2><div class="l"></div></div>
 
