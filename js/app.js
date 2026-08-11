@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast
-} from './core.js?v=20260803_n1';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260803_n1';
+} from './core.js?v=20260811_pw';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260811_pw';
 import {
   renderDashboard, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260803_n1';
+} from './views-core.js?v=20260811_pw';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260803_n1';
+} from './views-ext.js?v=20260811_pw';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -65,7 +65,10 @@ function renderLogin() {
       </div>
       <form id="loginForm" autocomplete="on">
         <label for="lgPw">접속 비밀번호</label>
-        <input id="lgPw" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" required autofocus>
+        <div style="position:relative;display:flex;align-items:center">
+          <input id="lgPw" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" required autofocus style="padding-right:44px;width:100%;box-sizing:border-box">
+          <button type="button" id="lgPwToggle" title="비밀번호 표시/숨김" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;padding:4px;color:#667085;font-size:18px;line-height:1">👁</button>
+        </div>
         <label style="display:flex;align-items:center;gap:7px;font-weight:700;margin-top:14px">
           <input type="checkbox" id="lgRemember" style="width:auto;margin:0"> 이 브라우저에서 로그인 유지
         </label>
@@ -84,6 +87,20 @@ function renderLogin() {
       </div>
     </div>
   </div>`;
+
+  $('#lgPwToggle').addEventListener('click', () => {
+    const inp = $('#lgPw');
+    const btn = $('#lgPwToggle');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      btn.textContent = '🙈';
+      btn.title = '비밀번호 숨기기';
+    } else {
+      inp.type = 'password';
+      btn.textContent = '👁';
+      btn.title = '비밀번호 표시';
+    }
+  });
 
   $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault();
