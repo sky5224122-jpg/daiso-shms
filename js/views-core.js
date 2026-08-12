@@ -5,11 +5,11 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260811_pw';
+} from './data/frameworks.js?v=20260812_ed';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast
-} from './core.js?v=20260811_pw';
+} from './core.js?v=20260812_ed';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -409,18 +409,41 @@ export function openItemDrawer(itemId, onSaved) {
       <div class="c">${(item.evidence || []).map((e, n) => `${n + 1}. ${esc(e)}`).join('\n')}</div>
     </div>
 
-    ${(item.requiredDocs && item.requiredDocs.length) ? `<div class="ref-box">
-      <div class="t">📋 작성 및 보관자료 목록</div>
-      <div class="c">${item.requiredDocs.map((d, n) => `${n + 1}. ${esc(d)}`).join('\n')}</div>
-    </div>` : ''}
-    ${item.companyStatus ? `<div class="ref-box">
-      <div class="t">🏢 당사 준비현황</div>
-      <div class="c">${esc(item.companyStatus)}</div>
-    </div>` : ''}
-    ${(item.evidenceFiles && item.evidenceFiles.length) ? `<div class="ref-box">
-      <div class="t">📁 증빙자료</div>
-      <div class="c">${item.evidenceFiles.map((f, n) => `${n + 1}. ${esc(f)}`).join('\n')}</div>
-    </div>` : ''}
+    <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">📋 작성 및 보관자료 · 준비현황 · 증빙</h2><div class="l"></div></div>
+
+    <div class="fld">
+      <label>작성 및 보관자료 목록</label>
+      <textarea class="inp" id="fDocs" style="min-height:90px" placeholder="심사에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
+      ${(item.requiredDocs && item.requiredDocs.length && !r.userDocs) ? `<div class="help" style="color:var(--info)">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
+    </div>
+
+    <div class="fld">
+      <label>당사 준비현황</label>
+      <textarea class="inp" id="fCompany" style="min-height:70px" placeholder="현재 준비·이행 상황을 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userStatus || item.companyStatus || ''))}</textarea>
+    </div>
+
+    <div class="fld">
+      <label>증빙자료 목록</label>
+      <textarea class="inp" id="fEvFiles" style="min-height:90px" placeholder="보유 중인 증빙자료 파일명·문서번호를 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userEvidence || (item.evidenceFiles || []).join('\n')))}</textarea>
+    </div>
+
+    <div class="fld">
+      <label>첨부파일 등록</label>
+      <div class="attach-list" id="fAttachList">
+        ${(r.attachments || []).map((a, i) => `<div class="attach-row" data-idx="${i}">
+          <span class="attach-name">${esc(a.name)}</span>
+          ${a.note ? `<span class="attach-note">${esc(a.note)}</span>` : ''}
+          <span class="attach-date">${esc(a.date || '')}</span>
+          ${editable ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
+        </div>`).join('')}
+        ${!(r.attachments || []).length ? '<div class="attach-empty">등록된 첨부파일이 없습니다</div>' : ''}
+      </div>
+      ${editable ? `<div class="attach-add" id="fAttachAdd">
+        <input class="inp" id="fAttachName" placeholder="파일명 또는 문서번호 (예: AAD-HSHT-G-2022-014.docx)" style="flex:1">
+        <input class="inp" id="fAttachNote" placeholder="비고 (선택)" style="width:140px">
+        <button type="button" class="btn sm" id="fAttachBtn">추가</button>
+      </div>` : ''}
+    </div>
 
     <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">이행 내용 작성</h2><div class="l"></div></div>
 
@@ -472,6 +495,40 @@ export function openItemDrawer(itemId, onSaved) {
   saveBtn.style.display = '';
   saveBtn.disabled = !editable;
   saveBtn.textContent = editable ? '저장' : '읽기 전용';
+  let attachments = [...(r.attachments || [])];
+
+  function renderAttachList() {
+    const list = drawer.querySelector('#fAttachList');
+    if (!list) return;
+    list.innerHTML = attachments.length
+      ? attachments.map((a, i) => `<div class="attach-row" data-idx="${i}">
+          <span class="attach-name">${esc(a.name)}</span>
+          ${a.note ? `<span class="attach-note">${esc(a.note)}</span>` : ''}
+          <span class="attach-date">${esc(a.date || '')}</span>
+          ${editable ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
+        </div>`).join('')
+      : '<div class="attach-empty">등록된 첨부파일이 없습니다</div>';
+  }
+
+  if (editable) {
+    const addBtn = drawer.querySelector('#fAttachBtn');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      const nameEl = drawer.querySelector('#fAttachName');
+      const noteEl = drawer.querySelector('#fAttachNote');
+      const name = nameEl.value.trim();
+      if (!name) { nameEl.focus(); return; }
+      attachments.push({ name, note: noteEl.value.trim(), date: new Date().toISOString().slice(0, 10) });
+      nameEl.value = ''; noteEl.value = '';
+      renderAttachList();
+    });
+    drawer.querySelector('#fAttachList')?.addEventListener('click', e => {
+      const del = e.target.closest('.attach-del');
+      if (!del) return;
+      attachments.splice(Number(del.dataset.idx), 1);
+      renderAttachList();
+    });
+  }
+
   saveBtn.onclick = async () => {
     const patch = {
       status:        drawer.querySelector('#fStatus').value,
@@ -480,7 +537,11 @@ export function openItemDrawer(itemId, onSaved) {
       due_date:      drawer.querySelector('#fDue').value,
       implementation:drawer.querySelector('#fImpl').value.trim(),
       evidence:      drawer.querySelector('#fEvi').value.trim(),
-      findings:      drawer.querySelector('#fFind').value.trim()
+      findings:      drawer.querySelector('#fFind').value.trim(),
+      userDocs:      drawer.querySelector('#fDocs').value.trim(),
+      userStatus:    drawer.querySelector('#fCompany').value.trim(),
+      userEvidence:  drawer.querySelector('#fEvFiles').value.trim(),
+      attachments
     };
     saveBtn.disabled = true;
     const res = await saveRecord(itemId, patch, half);

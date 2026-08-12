@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260811_pw';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260812_ed';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -169,6 +169,8 @@ export function getRecord(itemId, half = state.half) {
     item_id: itemId, half, status: 'none',
     owner: '', due_date: '', last_checked: '',
     implementation: '', evidence: '', findings: '',
+    userDocs: '', userStatus: '', userEvidence: '',
+    attachments: [],
     updated_at: '', updated_by: ''
   };
 }

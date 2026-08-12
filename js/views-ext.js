@@ -6,14 +6,14 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260811_pw';
+} from './data/frameworks.js?v=20260812_ed';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup
-} from './core.js?v=20260811_pw';
-import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260811_pw';
+} from './core.js?v=20260812_ed';
+import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260812_ed';
 
 const confirmDel = msg => window.confirm(msg);
 

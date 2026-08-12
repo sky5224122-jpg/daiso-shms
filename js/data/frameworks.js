@@ -57,7 +57,7 @@ export const MSSA_ITEMS = [
     cycle:'연 1회', docRefs:['SHP-02'], isoRefs:['5.2','6.2.1','6.2.2'], severity:'high',
     requiredDocs:["안전보건 경영방침 및 목표 시달 공문","각 사업장 게시 현황 증빙","경영목표 평가결과 보고서(이행상태 평가 보고서)","대표이사 이사회보고 안건 및 결재서"],
     companyStatus:'2026년 안전보건 경영방침 및 목표 작성·시달 완료. 본사·매장·허브센터 실제 게시 및 포탈 내 게시. 매년 반기 이행상태 결과보고서 작성 및 대표이사 결재. 매년 안전보건관리계획서 작성 및 이사회 승인 중',
-    evidenceFiles:["아성다이소 2026년 안전보건경영방침_260107.pdf","안전보건경영방침 게시 예시.jpg","중대재해처벌법 이행 상태 평가 보고서(22~25년 각 반기별)"]
+    evidenceFiles:['아성다이소 2026년 안전보건경영방침_260107.pdf','안전보건경영방침 게시 예시.jpg','[전자결재] 22~25년 각 반기 중대재해처벌법 이행 상태 평가 보고서','포탈 전자결재 등록(연도별 계획서)']
   },
   {
     id:'MSSA-4-2', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
@@ -78,8 +78,8 @@ export const MSSA_ITEMS = [
     evidence:['위험성평가 절차서','사업장별 위험성평가표(4M/KRAS)','개선조치 요구서 및 완료 증빙(전·후 사진)','반기 점검 결과보고서'],
     cycle:'반기 1회', docRefs:['SHP-05','SHI-01'], isoRefs:['6.1.2','8.1.2'], severity:'critical',
     requiredDocs:["각 사업장의 위험성평가 계획서(연도별)","중처법 이행상태결과 보고서(반기1회)","점검결과 조치 관련 문서"],
-    companyStatus:'각 사업장 위험성평가 계획서 작성 완료. 중처법 이행상태결과 보고서 반기1회 작성. 각 사업장 위험성평가 조치 진행',
-    evidenceFiles:[]
+    companyStatus:'각 사업장 위험성평가 계획서(연도별) 작성 완료. 중처법 이행상태결과 보고서 반기1회 작성. 각 사업장 위험성평가 조치 진행',
+    evidenceFiles:['중처법 이행상태결과 보고서(반기1회)']
   },
   {
     id:'MSSA-4-4', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
@@ -89,7 +89,7 @@ export const MSSA_ITEMS = [
     evidence:['연간 안전보건 예산 편성표(항목별)','분기별 집행실적 대비표','집행 증빙(품의·계약·세금계산서)','예산 미집행 사유서 및 조치'],
     cycle:'분기 1회', docRefs:['SHP-19'], isoRefs:['7.1'], severity:'high',
     requiredDocs:["안전보건 예산편성 기준","각 사업장별 안전보건관련 예산","집행(결산) 결과 보고서"],
-    companyStatus:'안전보건 예산편성 기준 수립. 각 사업장별 예산 편성. 반기 이행상태 결과보고서 내 작성',
+    companyStatus:'안전보건 예산편성 기준 수립. 각 사업장별 예산 편성. 반기 이행상태 결과보고서 내 작성 됨',
     evidenceFiles:[]
   },
   {
@@ -100,7 +100,7 @@ export const MSSA_ITEMS = [
     evidence:['업무수행 평가기준(평가표 양식)','반기 평가 실시 결과(대상자별 점수)','평가결과 인사반영 근거','권한·예산 부여 근거 문서'],
     cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3','9.1.1'], severity:'critical',
     requiredDocs:["책임자·관리감독자 선임·배치·권한·책임 관련 내규","업무수행평가 기준 및 절차 문서","업무수행 평가 결과(반기1회)"],
-    companyStatus:'안전보건관리규정 내 명시. 업무수행 평가 및 절차 문서 구비. 평가 결과 반기1회 작성',
+    companyStatus:'안전보건관리규정 내 명시. 업무수행평가 기준 및 절차 문서 구비. 업무수행 평가 결과 반기1회 작성',
     evidenceFiles:[]
   },
   {
@@ -111,7 +111,7 @@ export const MSSA_ITEMS = [
     evidence:['선임계 및 고용노동부 신고 증빙','자격증 사본','선임 인원 산정표(사업장별 상시근로자 수 기준)','결원·대체 이력'],
     cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3','7.2'], severity:'high',
     requiredDocs:["법정 전문인력 선임 신고서","전문인력 직무교육 이수증","전문인력 직무·업무형태별 배치기준 관련 문서"],
-    companyStatus:'[본사] 안전관리자 2명, 보건관리자 2명 [물류] 안전관리자 3명, 보건관리자 3명(각 센터별). 직무교육 수료 후 이수증 보관',
+    companyStatus:'[본사] 안전관리자 2명, 보건관리자 2명 [물류] 안전관리자 3명, 보건관리자 3명(각 센터별). 직무교육 수료 후 이수증 보관. 전문인력 직무·업무형태별 배치기준 관련 문서 구비',
     evidenceFiles:[]
   },
   {
@@ -123,7 +123,7 @@ export const MSSA_ITEMS = [
     cycle:'반기 1회', docRefs:['SHP-04'], isoRefs:['5.4','7.4'], severity:'critical',
     requiredDocs:["산업안전보건위원회(협의체) 운영 결과 문서","개선의견 수렴 결과 서류(반기1회)","협력업체 및 기타 종사자의 의견청취 방법 확인"],
     companyStatus:'매분기 산업안전보건위원회 운영 및 회의록 작성(본사·물류). 반기 이행상태 결과보고서 내 작성. 본사 입고/공사 협력업체 협의체 운영, 허브센터 자체 협의체 운영 중',
-    evidenceFiles:["AAD-HSHT-P-2022-018(3) 근로자 참여 및 협의 절차서.docx"]
+    evidenceFiles:['AAD-HSHT-P-2022-018(3) 근로자 참여 및 협의 절차서.docx']
   },
   {
     id:'MSSA-4-8', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
@@ -132,10 +132,10 @@ export const MSSA_ITEMS = [
     requirement:'비상대응 매뉴얼(작업중지·대피·구호·추가피해방지)을 제정하고, 매장별 비상대응훈련을 반기 1회 이상 실시하여 매뉴얼대로 조치되는지 점검한다. ※ 별도 운영 중인 「비상대응훈련 앱」의 실적과 연계하여 관리한다.',
     evidence:['중대산업재해 대응 매뉴얼','비상대응훈련 계획·실행기록·전자서명','119 신고·구호 조치 기록','반기 점검 결과보고서 및 개선사항'],
     cycle:'반기 1회', docRefs:['SHP-13','SHI-08','SHI-12'], isoRefs:['8.2'], severity:'critical',
-    linkedApp:{ label:'비상대응훈련 앱', url:'https://asung-daiso-emergency-training.web.app',
+    linkedApp:{ label:'비상대응훈련 앱', url:'https://asung-daiso-emergency-training.web.app' },
     requiredDocs:["각 사업장의 대응 매뉴얼 및 결재 문서","교육훈련 계획 및 실적 문서","대응훈련 등 점검 문서(반기 1회)"],
     companyStatus:'비상사태 대비 및 대응관리 절차서 있음. 매년 안전보건교육계획 수립 및 결과 보고 진행 중. 본사·허브센터 반기 1회 대응훈련 실행 중',
-    evidenceFiles:[] }
+    evidenceFiles:[]
   },
   {
     id:'MSSA-4-9', framework:'mssa', group:'시행령 제4조 · 안전보건관리체계의 구축 및 이행',
@@ -156,7 +156,7 @@ export const MSSA_ITEMS = [
     evidence:['적용 법규 목록 및 최신 개정 반영 이력','반기 준수평가(점검) 결과보고서','위탁점검 계약서 및 결과보고서(위탁 시)'],
     cycle:'반기 1회', docRefs:['SHP-06','SHP-15'], isoRefs:['6.1.3','9.1.2'], severity:'critical',
     requiredDocs:["점검계획 수립 문서","점검결과 보고 관련 문서","점검결과 조치 및 이행상태확인 관련 문서"],
-    companyStatus:'이행상태 평가 절차서 준비 중. 본사·물류 각 반기 점검 및 결과 보고 작성 후 대표이사 승인. 이행조치 부분 점검결과 보고서 보완 필요',
+    companyStatus:'이행상태 평가 절차서 준비 중(3월 내). 본사·물류 각 반기 점검 및 결과 보고 작성 후 대표이사 승인. 이행조치에 대한 부분이 점검결과 보고서에 기재 되지 않은 부분 보완 필요',
     evidenceFiles:[]
   },
   {
@@ -205,7 +205,7 @@ export const OSHA_ITEMS = [
     penalty:'과태료 5천만원 이하 (법 제175조)',
     requiredDocs:["이사회 보고 안전보건관리계획서","이사회 의사록(보고·승인 확인)"],
     companyStatus:'매년 보고 중(2022년~), 관련 자료는 법무팀 원본 보관',
-    evidenceFiles:["포탈 전자결재 등록(연도별 계획서)"] },
+    evidenceFiles:['포탈 전자결재 등록(연도별 계획서)','2023년 계획: 20230106A-0683','2024년 계획: 20240125A-0511','2025년 계획: 20250123A-1346','2026년 계획: 20260325A-1364'] },
 
   { id:'OSHA-015', framework:'osha', group:'경영책임 · 조직', code:'법 제15조', title:'안전보건관리책임자 선임 및 직무 수행',
     clause:'사업주는 사업장을 실질적으로 총괄하여 관리하는 사람에게 산업재해 예방계획 수립 등의 업무를 총괄하여 관리하도록 하여야 한다.',
@@ -213,8 +213,8 @@ export const OSHA_ITEMS = [
     evidence:['선임 문서','직무수행 기록(회의·점검·결재 이력)','업무수행 평가 결과'], cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3'], severity:'high',
     penalty:'과태료 5천만원 이하 (법 제175조)',
     requiredDocs:["선임계","교육 이수증"],
-    companyStatus:'대표이사 지정 완료, 신규 교육 이수(2023년), 2025년 보수 교육 이수',
-    evidenceFiles:["포탈 전자결재 등록"] },
+    companyStatus:'2023년 대표이사 지정. 신규 교육 이수(2023년). 2025년 보수 교육 이수',
+    evidenceFiles:['포탈 전자결재 등록(문서번호) 20260325A-1561'] },
 
   { id:'OSHA-016', framework:'osha', group:'경영책임 · 조직', code:'법 제16조', title:'관리감독자 지정 및 직무 수행',
     clause:'사업주는 사업장의 생산과 관련되는 업무와 그 소속 직원을 직접 지휘·감독하는 직위에 있는 사람에게 산업안전 및 보건에 관한 업무를 수행하도록 하여야 한다.',
@@ -222,7 +222,7 @@ export const OSHA_ITEMS = [
     evidence:['관리감독자 지정서(매장별)','일상점검 기록','관리감독자 정기교육 이수 증빙'], cycle:'반기 1회', docRefs:['SHP-03','SHI-01'], isoRefs:['5.3'], severity:'high',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["관리감독자 지정 보고서","관리감독자 임명장","관리감독자 지정 검토서"],
-    companyStatus:'2026년 관리감독자 지정 및 전자결재 상신(파트장/팀장)',
+    companyStatus:'2026년 관리감독자 지정 및 전자결재 상신(파트장/팀장)_3월',
     evidenceFiles:[] },
 
   { id:'OSHA-017', framework:'osha', group:'경영책임 · 조직', code:'법 제17~19조', title:'안전관리자·보건관리자·안전보건관리담당자 선임',
@@ -231,8 +231,8 @@ export const OSHA_ITEMS = [
     evidence:['선임 신고서 및 접수증','자격 요건 증빙','선임 인원 산정표'], cycle:'반기 1회', docRefs:['SHP-03'], isoRefs:['5.3','7.2'], severity:'high',
     penalty:'과태료 5천만원 이하 (법 제175조)',
     requiredDocs:["안전관리자 선임계","보건관리자 선임계","안전관리담당자 선임계(해당 시)"],
-    companyStatus:'안전관리자·보건관리자 선임 등록 완료. 포탈 전자결재 등록 완료',
-    evidenceFiles:["포탈 전자결재 등록(선임계)"] },
+    companyStatus:'선임계 등록 완료',
+    evidenceFiles:['포탈 전자결재 등록 20260325A-1561','포탈 전자결재 등록 20251016A-0840','포탈 전자결재 등록 20250618A-0750','포탈 전자결재 등록 20251224A-0728'] },
 
   { id:'OSHA-024', framework:'osha', group:'참여 · 협의', code:'법 제24조', title:'산업안전보건위원회 구성·운영(분기 1회)',
     clause:'사업주는 사업장의 안전 및 보건에 관한 중요 사항을 심의·의결하기 위하여 근로자위원과 사용자위원이 같은 수로 구성되는 산업안전보건위원회를 구성·운영하여야 한다.',
@@ -240,8 +240,8 @@ export const OSHA_ITEMS = [
     evidence:['위원 구성 명단','분기별 회의록(서명 포함)','심의·의결 사항 이행결과'], cycle:'분기 1회', docRefs:['SHP-04'], isoRefs:['5.4'], severity:'critical',
     penalty:'과태료 1천만원 이하 (법 제175조)',
     requiredDocs:["산업안전보건위원회 회의록(서명록 첨부 pdf)"],
-    companyStatus:'26년은 실제 산안위 진행 추진 계획. 근로자대표 및 위원 선정: 기업문화관리부. 산안위원 선정 기준정리 필요',
-    evidenceFiles:["산업안전위원회 회의록 모음"] },
+    companyStatus:'26년은 실제 산안위가 진행 될 수 있도록 기업문화관리부와 추진 계획. 근로자대표 및 위원 선정: 기업문화관리부. 산안위원 선정 기준정리 필요',
+    evidenceFiles:['산업안전위원회 회의록 모음'] },
 
   { id:'OSHA-025', framework:'osha', group:'참여 · 협의', code:'법 제25~26조', title:'안전보건관리규정 작성·게시 및 변경 시 동의',
     clause:'사업주는 사업장의 안전 및 보건을 유지하기 위하여 안전보건관리규정을 작성하여야 하며, 작성·변경 시 산업안전보건위원회의 심의·의결을 거쳐야 한다.',
@@ -250,7 +250,7 @@ export const OSHA_ITEMS = [
     penalty:'과태료 1천만원 이하 (법 제175조)',
     requiredDocs:["안전보건관리규정"],
     companyStatus:'2026년 신규법규 검토 필요',
-    evidenceFiles:["AAD-HGRA-M-2021-002(5) 안전보건관리규정_25_0110.docx"] },
+    evidenceFiles:['AAD-HGRA-M-2021-002(5) 안전보건관리규정_25_0110.docx'] },
 
   { id:'OSHA-029', framework:'osha', group:'교육', code:'법 제29조', title:'근로자 안전보건교육(정기·채용시·변경시·특별)',
     clause:'사업주는 소속 근로자에게 고용노동부령으로 정하는 바에 따라 정기적으로 안전보건교육을 하여야 하며, 채용할 때 및 작업내용을 변경할 때에도 교육을 하여야 한다.',
@@ -258,8 +258,8 @@ export const OSHA_ITEMS = [
     evidence:['연간 교육계획서','교육일지 및 참석 서명부','교재·강사 이력','대상자별 이수율 집계'], cycle:'분기 1회', docRefs:['SHP-07'], isoRefs:['7.2','7.3'], severity:'critical',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["연간안전보건관리 계획서 내 교육계획","연간안전보건교육 계획서 및 결과 보고서"],
-    companyStatus:'[본사] 온라인교육 실행. [매장] TBM으로 전환. [채용 시 교육] 교육자료 보완 및 접근성 향상 필요',
-    evidenceFiles:["www.asungcorp.com(온라인교육)","26년도 아성다이소(본사·매장) 연간 안전보건관리 계획서 260204.pptx"] },
+    companyStatus:'[본사] 온라인교육실행 [매장] TBM으로 전환 [채용 시 교육] 교육자료 보완 및 접근성 향상 필요',
+    evidenceFiles:['www.asungcorp.com','26년도 아성다이소(본사,매장) 연간 안전보건관리 계획서 260204.pptx'] },
 
   { id:'OSHA-032', framework:'osha', group:'교육', code:'법 제32조', title:'안전보건관리책임자 등에 대한 직무교육',
     clause:'사업주는 안전보건관리책임자, 안전관리자, 보건관리자, 안전보건관리담당자 등에게 직무와 관련한 안전보건교육을 이수하도록 하여야 한다.',
@@ -267,8 +267,8 @@ export const OSHA_ITEMS = [
     evidence:['직무교육 수료증','이수 대상자 관리대장','미이수자 조치 내역'], cycle:'2년 1회', docRefs:['SHP-07'], isoRefs:['7.2'], severity:'high',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["직무교육 수료증"],
-    companyStatus:'직무교육 이수 진행 중. 교육 수료증 첨부 필요',
-    evidenceFiles:["보건관리자 신규교육 이수증.pdf","포탈 전자결재 등록(교육 이수증 등)"] },
+    companyStatus:'4월, 5월 20~23일(예정). 2월(완료). 교육 수료증 등록 필요',
+    evidenceFiles:['보건관리자 신규교육 이수증','보수교육 이수증','포탈 전자결재 등록 20260325A-1561 (교육 이수증등)'] },
 
   { id:'OSHA-034', framework:'osha', group:'정보 제공', code:'법 제34조', title:'법령 요지 및 안전보건관리규정 게시',
     clause:'사업주는 이 법과 이 법에 따른 명령의 요지 및 안전보건관리규정을 각 사업장의 근로자가 쉽게 볼 수 있는 장소에 게시하거나 갖추어 두어야 한다.',
@@ -276,8 +276,8 @@ export const OSHA_ITEMS = [
     evidence:['게시물 사진(사업장별)','게시 점검 체크리스트'], cycle:'반기 1회', docRefs:['SHP-08'], isoRefs:['7.4'], severity:'medium',
     penalty:'과태료 3백만원 이하 (법 제175조)',
     requiredDocs:["법령 요지 게시물(사업장별)","게시 사진 증빙"],
-    companyStatus:'최신본 1월 게시 완료. 게시본 증빙 첨부 필요',
-    evidenceFiles:["산업안전보건법령요지_2026년 1월 기준.pdf"] },
+    companyStatus:'최신본 1월 게시 완료. 1월 게시본 첨부해야됨',
+    evidenceFiles:['산업안전보건법령요지_2026년 1월 기준.pdf'] },
 
   { id:'OSHA-036', framework:'osha', group:'위험성평가', code:'법 제36조', title:'위험성평가 실시 및 기록 보존(3년)',
     clause:'사업주는 건설물, 기계·기구·설비, 원재료, 가스, 증기, 분진, 근로자의 작업행동 또는 그 밖의 업무로 인한 유해·위험 요인을 찾아내어 부상 및 질병으로 이어질 수 있는 위험성의 크기가 허용 가능한 범위인지를 평가하여야 한다.',
@@ -285,8 +285,8 @@ export const OSHA_ITEMS = [
     evidence:['위험성평가 실시규정','사업장별 위험성평가표','근로자 참여 증빙(서명)','개선조치 완료 증빙','평가결과 공유·교육 기록'], cycle:'연 1회', docRefs:['SHP-05'], isoRefs:['6.1.2'], severity:'critical',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["위험성평가 계획서(연도별)","위험성평가 실시 결과"],
-    companyStatus:'최초: 22년 부터 미실시. 정기: 22년부터 년 2회 진행 중. 수시: 24년 부터 진행',
-    evidenceFiles:["다이소웹하드 22년~25년 상반기 자료","전자결재 등록"] },
+    companyStatus:'최초: 22년 부터 안했음. 정기: 22년부터 년 2회 진행 중. 수시: 24년 부터 진행 함',
+    evidenceFiles:['https://daisofile.daiso.co.kr:5001/','다이소웹하드에 22년부터 25년 상반기까지 자료 들어가 있음','전자결재 등록'] },
 
   { id:'OSHA-037', framework:'osha', group:'현장 안전조치', code:'법 제37~38조', title:'안전보건표지 부착 및 안전조치',
     clause:'사업주는 유해하거나 위험한 장소·시설·물질에 대한 경고 등을 표시하는 안전보건표지를 설치하거나 부착하여야 하며, 기계·기구 등에 의한 위험, 추락·붕괴 등의 위험을 방지하기 위하여 필요한 조치를 하여야 한다.',
@@ -312,8 +312,8 @@ export const OSHA_ITEMS = [
     evidence:['근골격계 부담작업 목록','유해요인조사 결과보고서','개선대책 및 이행 실적','근골격계 질환 예방 교육 기록'], cycle:'연 1회', docRefs:['SHP-20'], isoRefs:['8.1.2','9.1.1'], severity:'high',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["근골격계 유해요인 조사 결과 보고서"],
-    companyStatus:'2023년 최초 시행. 2026년 4~5월 예정. 수시조사기준 보완 필요',
-    evidenceFiles:["AAD-HSHT-G-2022-010(2) 근골격계질환 예방 지침서.docx","23년 근골격계 부담작업 유해요인조사 종합보고서.pdf"] },
+    companyStatus:'2023년 최초 시행. 2026년 4월~5월 예정. 수시조사기준 보완 필요',
+    evidenceFiles:['AAD-HSHT-G-2022-010(2) 근골격계질환 예방 지침서.docx','23년 근골격계 부담작업 유해요인조사 종합보고서.pdf'] },
 
   { id:'OSHA-039B', framework:'osha', group:'보건관리', code:'법 제39조 관련', title:'직무스트레스 예방 관리',
     clause:'사업주는 근로자의 직무스트레스에 의한 건강장해를 예방하기 위하여 필요한 조치를 하여야 한다.',
@@ -321,8 +321,8 @@ export const OSHA_ITEMS = [
     evidence:['직무스트레스 요인 평가 결과','고위험군 관리 대장','상담·EAP 프로그램 운영 기록','근무조건 개선 실적'], cycle:'연 1회', docRefs:['SHP-20','SHP-21'], isoRefs:['8.1.2'], severity:'high',
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:["직무스트레스 계획 및 결과 보고서"],
-    companyStatus:'2025년 12월 최초 시행. 2026년 시행예정',
-    evidenceFiles:["AAD-HSHT-G-2022-014(2) 직무스트레스 예방 지침서.docx","25년 본사 관리사원 직무스트레스 특별 진단 결과 보고.pdf"] },
+    companyStatus:'2025년 12월 최초 시행. 2026년 n월 시행예정',
+    evidenceFiles:['AAD-HSHT-G-2022-014(2) 직무스트레스 예방 지침서.docx','23년 근골격계 부담작업 유해요인조사 종합보고서.pdf','25년 본사 관리사원 직무스트레스 특별 진단 결과 보고.pdf'] },
 
   { id:'OSHA-039C', framework:'osha', group:'보건관리', code:'법 제39조 관련', title:'폭염·한랭 건강장해 예방',
     clause:'사업주는 폭염 또는 한랭으로 인한 근로자의 건강장해를 예방하기 위하여 물·그늘·휴식 등 필요한 조치를 하여야 한다.',
@@ -330,8 +330,8 @@ export const OSHA_ITEMS = [
     evidence:['폭염·한랭 대응계획','기상 경보별 작업 기준','온열·한랭 질환 발생 대응 기록','물·그늘·휴식 제공 증빙'], cycle:'연 1회', docRefs:['SHP-20','SHI-11'], isoRefs:['8.1.2'], severity:'high',
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:["혹서기·혹한기 물류허브센터 예방활동 이행상태 점검 보고서"],
-    companyStatus:'본사·매장은 폭염·한랭작업 기준 해당 없음. 물류센터 이행상태 점검 실시 중',
-    evidenceFiles:["25년 혹서기 물류허브센터 온열질환 대응현황 보고.pdf","25년 물류 허브센터 혹한기 및 화재 안전사고 예방활동 점검 보고.pdf"] },
+    companyStatus:'본사·매장은 폭염·한랭작업 기준에 해당하는 경우 없음. 물류센터 이행상태 점검 실시 중',
+    evidenceFiles:['25년 혹서기 물류허브센터 온열질환 대응현황 보고.pdf','25년 물류 허브센터 혹한기 및 화재 안전사고 예방활동 점검 보고.pdf'] },
 
   { id:'OSHA-040', framework:'osha', group:'현장 안전조치', code:'법 제40조', title:'근로자의 안전·보건조치 준수 의무',
     clause:'근로자는 이 법 또는 이 법에 따른 명령으로 정하는 산업재해 예방을 위한 기준을 지켜야 하며, 사업주 또는 근로감독관이 실시하는 산업재해 예방에 관한 조치에 따라야 한다.',
@@ -339,7 +339,7 @@ export const OSHA_ITEMS = [
     evidence:['안전수칙 게시물','보호구 착용 지도 기록','근로자 위반사항 시정 기록','안전보건교육 이수 증빙'], cycle:'반기 1회', docRefs:['SHP-07','SHI-01'], isoRefs:['7.3','8.1.2'], severity:'medium',
     penalty:'과태료 3백만원 이하 (법 제175조)',
     requiredDocs:[],
-    companyStatus:'보건 지적사항에 관한 조치여부 등록 필요(시스템 구축 필요)',
+    companyStatus:'보건 지적사항에 관한 조치여부 등록해야 됨(시스템 구축 필요)',
     evidenceFiles:[] },
 
   { id:'OSHA-041', framework:'osha', group:'현장 안전조치', code:'법 제41조', title:'고객응대근로자 건강장해 예방조치(감정노동)',
@@ -348,8 +348,8 @@ export const OSHA_ITEMS = [
     evidence:['고객응대 매뉴얼','폭언 금지 게시물 사진','사건 접수·조치 대장','피해자 상담·치료 지원 기록'], cycle:'반기 1회', docRefs:['SHP-21','SHI-09'], isoRefs:['8.1.2'], severity:'critical',
     penalty:'과태료 1천만원 이하 (법 제175조)',
     requiredDocs:["폭언 예방 문구 POP","내부고객 보호 절차서","폭언 관련 교육자료(정기교육)"],
-    companyStatus:'폭언 예방 문구 POP 매장 내 게시. 내부고객 보호 절차서 매장 휴게실 비치. 온라인 교육 有, TBM 통해 교육 실시 필요. 고객만족부 담당-절차서 안전보건팀과 연1회 소통 필요',
-    evidenceFiles:["(매장 부착)고객응대근로자 보호 조치 POP.pdf","AAD-TCSD-P-2019-001(9) 내부고객 보호 절차서.pdf"] },
+    companyStatus:'폭언 예방 문구 POP 매장 내 게시. 내부고객 보호 절차서 매장 휴게실 게시하도록 공지. 교육: 온라인 교육 有, TBM 통해 교육 실시 필요. 고객만족부 담당-절차서 안전보건팀과 소통(내부 연1회 소통해야함)',
+    evidenceFiles:['(매장 부착)고객응대근로자 보호 조치 POP.pdf','AAD-TCSD-P-2019-001(9) 내부고객 보호 절차서.pdf'] },
 
   { id:'OSHA-042', framework:'osha', group:'현장 안전조치', code:'법 제42조', title:'유해위험방지계획서 작성·제출',
     clause:'사업주는 대통령령으로 정하는 사업으로서 유해하거나 위험한 작업 또는 장소에서 이루어지는 건설물·기계·설비 등의 설치·이전·해체·변경 시 유해위험방지계획서를 작성하여 고용노동부장관에게 제출하여야 한다.',
@@ -357,7 +357,7 @@ export const OSHA_ITEMS = [
     evidence:['유해위험방지계획서','심사 결과 통보서','해당 여부 판단 근거','시정 요구사항 조치 결과'], cycle:'수시', docRefs:['SHP-05','SHP-11'], isoRefs:['8.1.3'], severity:'high',
     penalty:'1년 이하 징역 또는 1천만원 이하 벌금 (법 제170조)',
     requiredDocs:[],
-    companyStatus:'해당없음',
+    companyStatus:'',
     evidenceFiles:[] },
 
   { id:'OSHA-051', framework:'osha', group:'비상 · 사고대응', code:'법 제51~52조', title:'사업주·근로자의 작업중지권',
@@ -366,8 +366,8 @@ export const OSHA_ITEMS = [
     evidence:['작업중지 절차·지침서','작업중지 행사 기록','불이익 금지 선언문','교육 실시 기록'], cycle:'반기 1회', docRefs:['SHI-12','SHP-13'], isoRefs:['8.2'], severity:'high',
     penalty:'5년 이하 징역 또는 5천만원 이하 벌금 (법 제168조)',
     requiredDocs:["작업중지 요청 지침서"],
-    companyStatus:'포탈 사이트 자료 등록 필요',
-    evidenceFiles:["AAD-HSHT-G-2022-018(2) 작업중지요청 지침서.docx"] },
+    companyStatus:'포탈 사이트에 있는 자료 넣어주시면 됩니다.',
+    evidenceFiles:['AAD-HSHT-P-2022-018(2) 작업중지요청 지침서.docx'] },
 
   { id:'OSHA-054', framework:'osha', group:'비상 · 사고대응', code:'법 제54~57조', title:'중대재해 발생 시 조치·보고 및 은폐 금지',
     clause:'사업주는 중대재해가 발생하였을 때에는 즉시 해당 작업을 중지시키고 근로자를 대피시키는 등 필요한 안전보건상의 조치를 한 후 지체 없이 관할 지방고용노동관서의 장에게 보고하여야 하며, 산업재해 발생 사실을 은폐해서는 아니 된다.',
@@ -375,8 +375,8 @@ export const OSHA_ITEMS = [
     evidence:['중대재해 보고 기록','산업재해조사표 사본','사고조사 보고서 및 재발방지대책','대책 이행 완료 증빙'], cycle:'수시', docRefs:['SHP-13','SHP-18'], isoRefs:['10.2'], severity:'critical',
     penalty:'5년 이하 징역 또는 5천만원 이하 벌금 (법 제168조); 은폐 시 1년 이하 징역 또는 1천만원 이하 벌금',
     requiredDocs:["산업재해조사표","사고조사 보고서"],
-    companyStatus:'HR시스템 내 사고경위서 및 산업재해조사표 상신 기능 개발 중(3~4월)',
-    evidenceFiles:["AAD-HSHT-G-2022-018(2) 작업중지요청 지침서.docx"] },
+    companyStatus:'포탈 사이트에 있는 자료 넣어주시면 됩니다.',
+    evidenceFiles:['AAD-HSHT-P-2022-018(2) 작업중지요청 지침서.docx'] },
 
   { id:'OSHA-058', framework:'osha', group:'도급 · 협력사', code:'법 제58조', title:'유해작업 도급 금지',
     clause:'사업주는 근로자의 안전 및 보건에 유해하거나 위험한 작업으로서 도금작업, 수은·납·카드뮴을 제련하는 작업 등 대통령령으로 정하는 작업을 도급하여서는 아니 된다.',
@@ -384,8 +384,8 @@ export const OSHA_ITEMS = [
     evidence:['도급 금지 대상 작업 목록','외주 계약 검토 기록','도급 금지 해당 여부 판단서'], cycle:'연 1회', docRefs:['SHP-12'], isoRefs:['8.1.4'], severity:'critical',
     penalty:'10년 이하 징역 또는 1억원 이하 벌금 (법 제167조)',
     requiredDocs:[],
-    companyStatus:'포탈 사이트 자료 등록 필요',
-    evidenceFiles:["AAD-HSHT-G-2022-015(2) 도급인의 안전보건 조치 활동 지침.docx"] },
+    companyStatus:'포탈 사이트에 있는 자료 넣어주시면 됩니다.',
+    evidenceFiles:['AAD-HSHT-P-2022-015(2) 도급인의 안전보건 조치 활동 지침.docx'] },
 
   { id:'OSHA-062', framework:'osha', group:'도급 · 협력사', code:'법 제62~66조', title:'도급인의 안전보건조치 및 합동점검',
     clause:'도급인은 관계수급인 근로자가 도급인의 사업장에서 작업을 하는 경우 자신의 근로자와 관계수급인 근로자의 산업재해를 예방하기 위하여 안전 및 보건 시설의 설치 등 필요한 안전조치 및 보건조치를 하여야 한다.',
@@ -394,7 +394,7 @@ export const OSHA_ITEMS = [
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:["합동점검 결과서"],
     companyStatus:'도급 업체 확인 필요(식당, 건설 등)',
-    evidenceFiles:["AAD-HSHT-G-2022-015(2) 도급인의 안전보건 조치 활동 지침.docx"] },
+    evidenceFiles:['AAD-HSHT-G-2022-015(2) 도급인의 안전보건 조치 활동 지침.docx'] },
 
   { id:'OSHA-065', framework:'osha', group:'도급 · 협력사', code:'법 제65조', title:'도급인의 안전·보건 정보 제공',
     clause:'도급인은 관계수급인 근로자가 도급인의 사업장에서 작업을 하는 경우 안전·보건에 관한 정보를 해당 작업 시작 전에 제공하여야 한다.',
@@ -402,8 +402,8 @@ export const OSHA_ITEMS = [
     evidence:['안전보건 정보 제공서','수급인 교육 기록','작업장 유해위험요인 안내서'], cycle:'수시', docRefs:['SHP-12'], isoRefs:['8.1.4'], severity:'high',
     penalty:'과태료 3천만원 이하 (법 제175조)',
     requiredDocs:["도급계약 체결 전 정보제공 문서"],
-    companyStatus:'포탈 사이트 자료 등록 필요',
-    evidenceFiles:["AAD-HSHT-G-2022-015(2) 도급인의 안전보건 조치 활동 지침.docx"] },
+    companyStatus:'포탈 사이트에있는자료 넣어주시면 됩니다.(없습니다. 새로만들어야합니다.)',
+    evidenceFiles:[] },
 
   { id:'OSHA-080', framework:'osha', group:'기계·설비 안전', code:'법 제80조', title:'유해위험기계 등의 방호조치',
     clause:'누구든지 동력으로 작동되는 기계·기구로서 작동 부분에 의한 위험을 방지하기 위한 기계·기구에 대하여 방호조치를 하지 아니하고는 양도, 대여, 설치 또는 사용하여서는 아니 된다.',
@@ -411,7 +411,7 @@ export const OSHA_ITEMS = [
     evidence:['유해위험기계 목록','방호장치 설치 현황','방호장치 점검 기록','방호조치 미비 개선 증빙'], cycle:'분기 1회', docRefs:['SHP-10','SHI-10'], isoRefs:['8.1.2'], severity:'critical',
     penalty:'5년 이하 징역 또는 5천만원 이하 벌금 (법 제168조)',
     requiredDocs:["유해위험기계기구 등록대장"],
-    companyStatus:'유해위험기계기구 등록대장 업로드 필요(신규 작성 필요)',
+    companyStatus:'유해위험기계기구 등록대장 업로드 필요',
     evidenceFiles:[] },
 
   { id:'OSHA-084', framework:'osha', group:'기계·설비 안전', code:'법 제84조', title:'안전인증 대상 기계·기구 등',
@@ -420,7 +420,7 @@ export const OSHA_ITEMS = [
     evidence:['안전인증 대상 기계 목록','안전인증서 사본','인증 표시 확인 기록'], cycle:'연 1회', docRefs:['SHP-10'], isoRefs:['8.1.2'], severity:'high',
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:[],
-    companyStatus:'해당없음',
+    companyStatus:'',
     evidenceFiles:[] },
 
   { id:'OSHA-093', framework:'osha', group:'기계·설비 안전', code:'법 제93조', title:'안전검사 대상 기계 등의 안전검사',
@@ -429,7 +429,7 @@ export const OSHA_ITEMS = [
     evidence:['안전검사 대상 기계 목록','안전검사 합격증명서','검사 일정 관리대장'], cycle:'연 1회', docRefs:['SHP-10'], isoRefs:['8.1.2','9.1.1'], severity:'high',
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:["안전검사 대상 기계 관리대장"],
-    companyStatus:'시설관리팀과 협의 후 관리대장 갱신 관리 필요',
+    companyStatus:'시설관리팀과 협의 후 관리대장 갱신할 수 있도록 관리 필요',
     evidenceFiles:[] },
 
   { id:'OSHA-110', framework:'osha', group:'화학물질 관리', code:'법 제110조', title:'물질안전보건자료(MSDS) 작성·비치',
@@ -438,8 +438,8 @@ export const OSHA_ITEMS = [
     evidence:['MSDS 비치 목록','MSDS 파일(화학물질별)','비치 장소 사진','공급업체 MSDS 제공 확인'], cycle:'연 1회', docRefs:['SHI-07'], isoRefs:['8.1.2'], severity:'high',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["염화칼슘 MSDS","MSDS 대상 물질 목록"],
-    companyStatus:'염화칼슘 MSDS 및 관리요령 배포·비치 공지 완료. 이외 MSDS 대상 물질 유무 확인 필요. 식당 확인 필요',
-    evidenceFiles:["AAD-HSHT-G-2022-003(2) 물질안전보건자료(MSDS)운영 지침서.docx","아성다이소 MSDS 관리 명단.xlsx","다녹스 염화칼슘 관리요령 및 MSDS_2026.pdf"] },
+    companyStatus:'염화칼슘 MSDS 및 관리요령 배포 및 비치 공지 완료. 이외 MSDS 대상 물질 유무 확인 필요. 식당 확인 필요(-)',
+    evidenceFiles:['AAD-HSHT-G-2022-003(2) 물질안전보건자료(MSDS)운영 지침서.docx','아성다이소 MSDS 관리 명단.xlsx','다녹스 염화칼슘 관리요령 및 MSDS_2026.pdf'] },
 
   { id:'OSHA-114', framework:'osha', group:'화학물질 관리', code:'법 제114조', title:'물질안전보건자료 교육',
     clause:'사업주는 물질안전보건자료 대상물질을 취급하는 근로자에게 해당 물질의 유해성·위험성, 취급 시 주의사항, 응급조치 요령 등을 교육하여야 한다.',
@@ -448,7 +448,7 @@ export const OSHA_ITEMS = [
     penalty:'과태료 3백만원 이하 (법 제175조)',
     requiredDocs:["신규입사자 교육 자료(MSDS 포함)"],
     companyStatus:'신규입사자 교육 내 포함',
-    evidenceFiles:["신규입사자 현장OJT 교육 자료(안전보건팀)_250623.pdf"] },
+    evidenceFiles:['신규입사자 현장OJT 교육 자료(안전보건팀)_250623.pdf'] },
 
   { id:'OSHA-115', framework:'osha', group:'화학물질 관리', code:'법 제115조', title:'화학물질 경고표시',
     clause:'화학물질을 양도하거나 제공하는 자는 해당 화학물질의 용기·포장에 경고표시를 하여야 한다. 사업주는 작업장에서 사용하는 화학물질의 용기에 경고표시를 하여야 한다.',
@@ -456,7 +456,7 @@ export const OSHA_ITEMS = [
     evidence:['화학물질 경고표시 부착 현황','소분 용기 경고표시 사진','경고표시 점검 기록'], cycle:'반기 1회', docRefs:['SHI-07'], isoRefs:['8.1.2'], severity:'medium',
     penalty:'과태료 3백만원 이하 (법 제175조)',
     requiredDocs:["화학물질 경고표시 부착 현황"],
-    companyStatus:'매장별 MSDS 비치 및 확인. 인테리어부 확인 필요',
+    companyStatus:'염화칼슘 제품에 경고표시 有. 매장별 MDSD 비치 및 확인. 인테리어부 확인 필요',
     evidenceFiles:[] },
 
   { id:'OSHA-119', framework:'osha', group:'건축물·석면', code:'법 제119조', title:'석면조사',
@@ -465,7 +465,7 @@ export const OSHA_ITEMS = [
     evidence:['석면조사 결과보고서','석면 함유 건축물 관리대장','석면 관리계획','비산 방지 조치 기록'], cycle:'수시', docRefs:['SHP-10'], isoRefs:['8.1.2','6.1.2'], severity:'critical',
     penalty:'5년 이하 징역 또는 5천만원 이하 벌금 (법 제169조)',
     requiredDocs:[],
-    companyStatus:'해당없음',
+    companyStatus:'',
     evidenceFiles:[] },
 
   { id:'OSHA-125', framework:'osha', group:'보건관리', code:'법 제125조', title:'작업환경측정 실시 및 결과 보고·공지',
@@ -474,7 +474,7 @@ export const OSHA_ITEMS = [
     evidence:['작업환경측정 결과보고서','근로자 공지 증빙','측정 대상 해당 여부 판단서'], cycle:'반기 1회', docRefs:['SHP-20'], isoRefs:['9.1.1'], severity:'medium',
     penalty:'과태료 1천만원 이하 (법 제175조)',
     requiredDocs:[],
-    companyStatus:'해당없음',
+    companyStatus:'',
     evidenceFiles:[] },
 
   { id:'OSHA-128', framework:'osha', group:'보건관리', code:'법 제128조의2', title:'휴게시설 설치·운영',
@@ -484,7 +484,7 @@ export const OSHA_ITEMS = [
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["휴게시설 설치 현황"],
     companyStatus:'',
-    evidenceFiles:["휴게시설 설치(개선조치)를 위한 매장 내 공간 유형별 가이드_23_0719.pdf","휴게실 표지 부착 가이드_23_0810 (1).pptx"] },
+    evidenceFiles:['휴게시설 설치(개선조치)를 위한 매장 내 공간 유형별 가이드_23_0719.pdf','휴게실 표지 부착 가이드_23_0810(1).pptx'] },
 
   { id:'OSHA-129', framework:'osha', group:'보건관리', code:'법 제129~130조', title:'일반건강진단 및 특수건강진단 실시',
     clause:'사업주는 상시 사용하는 근로자의 건강관리를 위하여 건강진단을 실시하여야 하며, 특수건강진단 대상 업무 종사 근로자에 대해서는 특수건강진단을 실시하여야 한다.',
@@ -492,8 +492,8 @@ export const OSHA_ITEMS = [
     evidence:['건강진단 실시 계획 및 결과','수검률 집계','사후관리 조치 기록','미수검자 조치 내역'], cycle:'연 1회', docRefs:['SHP-20'], isoRefs:['8.1.2','9.1.1'], severity:'high',
     penalty:'과태료 1천만원 이하 (법 제175조)',
     requiredDocs:["일반건강진단 관리 결과 보고서","EDI 건강검진 대상자 명단","근로자 건강검진 결과지","특수건강진단 관리 명단","근로자 특수건강검진 결과지"],
-    companyStatus:'일반건강진단: 수검 관리 명단 21·22년도 필요, 결과지 HR시스템에서 관리. 특수건강진단: 야간작업자 2023년부터 실시 중',
-    evidenceFiles:["AAD-HSHT-G-2022-002(2) 건강진단 지침서.docx","25년도 일반건강검진 및 유소견자 사후관리 결과 보고 件.pdf","야간작업 특수건강검진 명단.xlsx"] },
+    companyStatus:'수검 관리 명단: 21,22년도 필요. 결과지: HR시스템에서 관리',
+    evidenceFiles:['AAD-HSHT-G-2022-002(2) 건강진단 지침서.docx','25년도 일반건강검진 및 유소견자 사후관리 결과 보고 件.pdf'] },
 
   { id:'OSHA-164', framework:'osha', group:'기록 · 보존', code:'법 제164조', title:'서류의 보존(2년/3년/5년/30년)',
     clause:'사업주는 이 법에 따른 안전보건관리책임자 선임에 관한 서류, 산업안전보건위원회 회의록, 위험성평가 결과, 안전보건교육 실시 기록, 건강진단 결과 등을 법정 기간 보존하여야 한다.',
@@ -510,7 +510,7 @@ export const OSHA_ITEMS = [
     evidence:['밀폐공간 목록','산소·유해가스 측정 기록','환기 설비 점검 기록','밀폐공간 출입금지 표지 사진','구조 장비 비치 현황'], cycle:'수시', docRefs:['SHP-10','SHI-01'], isoRefs:['8.1.2','8.2'], severity:'critical',
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:[],
-    companyStatus:'본사 저수조 외부 관리업체 관할. 해당없음',
+    companyStatus:'본사 저수조 한웰 관할',
     evidenceFiles:[] }
 ];
 
