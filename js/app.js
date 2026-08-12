@@ -5,12 +5,12 @@
 import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signOut, canEdit, currentHalf, recentHalves, halfLabel,
-  getRecord, toast
-} from './core.js?v=20260812_ed';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260812_ed';
+  getRecord, toast, showSpinner, hideSpinner
+} from './core.js?v=20260812_sp';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260812_sp';
 import {
   renderDashboard, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260812_ed';
+} from './views-core.js?v=20260812_sp';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260812_ed';
+} from './views-ext.js?v=20260812_sp';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -298,8 +298,9 @@ window.addEventListener('hashchange', () => {
 async function boot() {
   if (!state.user) { renderLogin(); return; }
   renderShell();
-  $('#view').innerHTML = `<div class="empty"><div class="e">⏳</div><div class="t">자료를 불러오는 중입니다…</div></div>`;
+  showSpinner('자료를 불러오는 중…');
   await loadAll();
+  hideSpinner();
   lastKey = currentView();
   route();
 }

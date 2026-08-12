@@ -5,11 +5,11 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260812_ed';
+} from './data/frameworks.js?v=20260812_sp';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
-  canEdit, halfLabel, fmtDate, toast
-} from './core.js?v=20260812_ed';
+  canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner
+} from './core.js?v=20260812_sp';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -544,7 +544,9 @@ export function openItemDrawer(itemId, onSaved) {
       attachments
     };
     saveBtn.disabled = true;
+    showSpinner('저장 중…');
     const res = await saveRecord(itemId, patch, half);
+    hideSpinner();
     saveBtn.disabled = false;
     toast(res.ok ? (res.local ? '저장했습니다 (로컬 저장)' : '저장했습니다 (Supabase 동기화 완료)') : `로컬 저장됨 · 동기화 실패: ${res.error}`,
           res.ok ? 'ok' : 'bad');

@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260812_ed';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260812_sp';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -80,6 +80,22 @@ export function toast(msg, kind = '') {
   t.textContent = msg;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+export function showSpinner(msg = '처리 중…') {
+  let ov = $('#spinnerOverlay');
+  if (!ov) {
+    ov = el('div', { id: 'spinnerOverlay', class: 'spinner-overlay' });
+    ov.innerHTML = `<div class="spinner-box"><div class="spinner-ring"></div><div class="spinner-msg"></div></div>`;
+    document.body.append(ov);
+  }
+  ov.querySelector('.spinner-msg').textContent = msg;
+  ov.classList.add('show');
+}
+
+export function hideSpinner() {
+  const ov = $('#spinnerOverlay');
+  if (ov) ov.classList.remove('show');
 }
 
 /* ---------------- Supabase 설정 ----------------

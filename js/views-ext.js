@@ -6,14 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260812_ed';
+} from './data/frameworks.js?v=20260812_sp';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
-  getBackups, restoreBackup, deleteBackup
-} from './core.js?v=20260812_ed';
-import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260812_ed';
+  getBackups, restoreBackup, deleteBackup,
+  showSpinner, hideSpinner
+} from './core.js?v=20260812_sp';
+import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260812_sp';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -238,7 +239,9 @@ function openDocDrawer(docId, rerender) {
         body: $('#gBody', root).value,
         revisions: d.revisions || []
       };
+      showSpinner('문서 저장 중…');
       const res = await saveDocument(next);
+      hideSpinner();
       toast(res.ok ? (res.local ? '문서를 저장했습니다 (로컬)' : '문서를 저장했습니다 (Supabase 동기화)') : `로컬 저장됨 · 동기화 실패: ${res.error}`,
             res.ok ? 'ok' : 'bad');
       closeDrawer();
@@ -396,7 +399,9 @@ function openInspDrawer(rec, rerender) {
         method: $('#iMethod', root).value.trim(), result: $('#iResult', root).value.trim(),
         finding: $('#iFind', root).value.trim(), action: $('#iAction', root).value.trim(),
         action_needed: $('#iNeed', root).value };
+      showSpinner('저장 중…');
       const res = await saveRow('inspections', next);
+      hideSpinner();
       toast(res.ok ? '점검 기록을 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }
@@ -514,7 +519,9 @@ function openCapaDrawer(rec, rerender) {
         due_date: $('#cDue', root).value, verify: $('#cVerify', root).value.trim(),
         status: $('#cStat', root).value };
       if (!next.title) { toast('제목을 입력하세요.', 'bad'); return; }
+      showSpinner('저장 중…');
       const res = await saveRow('capa', next);
+      hideSpinner();
       toast(res.ok ? '개선조치를 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }
@@ -605,7 +612,9 @@ function openEviDrawer(rec, rerender) {
         title: $('#vTitle', root).value.trim(), location: $('#vLoc', root).value.trim(),
         url: $('#vUrl', root).value.trim(), note: $('#vNote', root).value.trim() };
       if (!next.title) { toast('자료명을 입력하세요.', 'bad'); return; }
+      showSpinner('저장 중…');
       const res = await saveRow('evidence', next);
+      hideSpinner();
       toast(res.ok ? '증빙을 등록했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }
@@ -714,7 +723,9 @@ function openOrgDrawer(rec, rerender) {
         eval_date: $('#oEv', root).value, eval_result: $('#oEvR', root).value.trim(),
         note: $('#oNote', root).value.trim() };
       if (!next.name) { toast('성명을 입력하세요.', 'bad'); return; }
+      showSpinner('저장 중…');
       const res = await saveRow('org', next);
+      hideSpinner();
       toast(res.ok ? '선임 현황을 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }
