@@ -5,11 +5,11 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260812_sp';
+} from './data/frameworks.js?v=20260812_ui';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner
-} from './core.js?v=20260812_sp';
+} from './core.js?v=20260812_ui';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -296,24 +296,80 @@ function itemCard(i, half) {
   const r = getRecord(i.id, half);
   const s = STATUS[r.status] || STATUS.none;
   const linkedDocs = (i.docRefs || []).map(no => DOC_MASTER.find(d => d.docNo === no)).filter(Boolean);
+  const pct = s.score ?? 0;
+
+  // 자료 보유 현황 — 사용자 편집값이 있으면 그것을, 없으면 기준 데이터를 센다
+  const nDocs = (r.userDocs ? r.userDocs.split('\n') : (i.requiredDocs || [])).filter(x => x.trim()).length;
+  const nEvid = (r.userEvidence ? r.userEvidence.split('\n') : (i.evidenceFiles || [])).filter(x => x.trim()).length;
+  const nFile = (r.attachments || []).length;
+  const hasStatus = !!(r.userStatus || i.companyStatus);
+
+  const overdue = r.due_date && r.due_date < new Date().toISOString().slice(0, 10) && r.status !== 'done';
+
   return `
   <div class="item ${s.itemCls} f-${i.framework}" data-item="${esc(i.id)}">
-    <div class="item-top">
+    <div class="item-rail"></div>
+
+    <div class="item-head">
       <span class="item-code">${esc(i.code)}</span>
-      <span class="item-title">${esc(i.title)}</span>
-      ${i.severity === 'critical' ? '<span class="tag law">핵심</span>' : ''}
-      ${statusBadge(r.status)}
+      <div class="item-headmain">
+        <div class="item-title">${esc(i.title)}</div>
+        <div class="item-group">${esc(i.group)}</div>
+      </div>
+      <div class="item-badges">
+        ${i.severity === 'critical' ? '<span class="pill-crit">핵심의무</span>' : ''}
+        ${statusBadge(r.status)}
+      </div>
     </div>
-    <div class="item-req">${esc(i.requirement)}</div>
-    <div class="item-note ${r.implementation ? '' : 'empty'}">${
-      r.implementation ? esc(r.implementation) : '이행 현황이 아직 작성되지 않았습니다. 카드를 클릭해 작성하세요.'}</div>
-    <div class="item-meta">
-      <span><b>점검주기</b> ${esc(i.cycle)}</span>
-      <span><b>담당</b> ${r.owner ? esc(r.owner) : '미지정'}</span>
-      <span><b>최근점검</b> ${r.last_checked ? fmtDate(r.last_checked) : '미기록'}</span>
-      <span><b>기한</b> ${r.due_date ? fmtDate(r.due_date) : '미설정'}</span>
-      ${linkedDocs.length ? `<span><b>관련문서</b> ${linkedDocs.map(d => `<span class="tag doc">${esc(d.docNo)}</span>`).join(' ')}</span>` : ''}
-      ${(i.isoRefs || []).length ? `<span><b>ISO</b> ${i.isoRefs.map(c => `<span class="tag iso">${esc(c)}</span>`).join(' ')}</span>` : ''}
+
+    <div class="item-gauge"><i class="${pct >= 80 ? 'ok' : pct >= 50 ? 'warn' : 'bad'}" style="width:${Math.max(3, pct)}%"></i></div>
+
+    <div class="item-body">
+      <div class="item-block">
+        <div class="item-block-t"><span class="ic">⚖️</span>법령 요구사항</div>
+        <div class="item-req">${esc(i.requirement)}</div>
+      </div>
+
+      <div class="item-block">
+        <div class="item-block-t"><span class="ic">✍️</span>이행 현황
+          ${r.implementation ? '<span class="mini-ok">작성됨</span>' : '<span class="mini-no">미작성</span>'}</div>
+        <div class="item-note ${r.implementation ? '' : 'empty'}">${
+          r.implementation ? esc(r.implementation) : '이행 현황이 아직 작성되지 않았습니다. 카드를 클릭해 작성하세요.'}</div>
+      </div>
+    </div>
+
+    <div class="item-facts">
+      <div class="fact"><span class="k">점검주기</span><span class="v">${esc(i.cycle)}</span></div>
+      <div class="fact"><span class="k">담당</span><span class="v ${r.owner ? '' : 'dim'}">${r.owner ? esc(r.owner) : '미지정'}</span></div>
+      <div class="fact"><span class="k">최근점검</span><span class="v ${r.last_checked ? '' : 'dim'}">${r.last_checked ? fmtDate(r.last_checked) : '미기록'}</span></div>
+      <div class="fact"><span class="k">기한</span><span class="v ${overdue ? 'over' : r.due_date ? '' : 'dim'}">${r.due_date ? fmtDate(r.due_date) + (overdue ? ' ⚠' : '') : '미설정'}</span></div>
+    </div>
+
+    <div class="item-links">
+      ${linkedDocs.length ? `
+      <div class="lrow">
+        <span class="lk lk-doc">📁 관련문서</span>
+        <span class="lv">${linkedDocs.map(d => `<span class="chip chip-doc" title="${esc(d.title || '')}">${esc(d.docNo)}<em>${esc((d.title || '').slice(0, 22))}</em></span>`).join('')}</span>
+      </div>` : ''}
+      ${(i.isoRefs || []).length ? `
+      <div class="lrow">
+        <span class="lk lk-iso">🌐 ISO 45001</span>
+        <span class="lv">${i.isoRefs.map(c => `<span class="chip chip-iso">${esc(c)}</span>`).join('')}</span>
+      </div>` : ''}
+      ${i.penalty ? `
+      <div class="lrow">
+        <span class="lk lk-pen">⚠️ 위반 시 벌칙</span>
+        <span class="lv"><span class="chip chip-pen">${esc(i.penalty)}</span></span>
+      </div>` : ''}
+      <div class="lrow lrow-data">
+        <span class="lk lk-data">🗂️ 자료 보유</span>
+        <span class="lv">
+          <span class="chip chip-cnt ${nDocs ? 'on' : ''}">작성·보관자료 <b>${nDocs}</b></span>
+          <span class="chip chip-cnt ${nEvid ? 'on' : ''}">증빙자료 <b>${nEvid}</b></span>
+          <span class="chip chip-cnt ${nFile ? 'on' : ''}">첨부파일 <b>${nFile}</b></span>
+          <span class="chip chip-cnt ${hasStatus ? 'on' : ''}">준비현황 ${hasStatus ? '기재' : '미기재'}</span>
+        </span>
+      </div>
     </div>
   </div>`;
 }
