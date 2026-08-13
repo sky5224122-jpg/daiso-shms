@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_premiumdrawer1';
+} from './data/frameworks.js?v=20260813_drawer88_1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_premiumdrawer1';
+} from './core.js?v=20260813_drawer88_1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -126,7 +126,7 @@ export function renderDashboard() {
   </div>
 
   <div class="sec-t"><h2>ISO 45001 조항별 이행 수준</h2><div class="l"></div>
-    <span class="n">심사 대응 레이더 · 조항 4~10장</span></div>
+    <span class="n">이행 현황 레이더 · 조항 4~10장</span></div>
   <div class="card"><div class="card-body">
     <div class="radar-wrap">
       <div>${radarSVG(axes)}</div>
@@ -259,7 +259,7 @@ export function renderCompliance(fw) {
   <div class="banner">
     <div class="i">${F.icon}</div>
     <div><b>${esc(F.label)}</b> 이행 관리 — 조항 카드를 클릭하면 오른쪽에 작성 패널이 열립니다.
-    <b>이행 현황·담당자·증빙자료·미흡사항</b>을 직접 입력해 주세요. 입력한 내용은 그대로 심사 증빙으로 출력됩니다.</div>
+    <b>이행 현황·담당자·증빙자료·미흡사항</b>을 직접 입력해 주세요. 입력한 내용은 그대로 이행 증빙으로 출력됩니다.</div>
   </div>
 
   <div class="grid g4" style="margin-bottom:18px">
@@ -504,7 +504,7 @@ export function openItemDrawer(itemId, onSaved) {
           ${item.linkedApp ? `<div class="linked-app"><a class="btn sm" href="${esc(item.linkedApp.url)}" target="_blank" rel="noopener">관련 앱에서 확인 ↗</a></div>` : ''}
         </div>
         <div class="ref-box ref-evidence">
-          <div class="t"><span class="ref-icon">03</span>심사 권장 증빙</div>
+          <div class="t"><span class="ref-icon">03</span>권장 증빙</div>
           <ol>${(item.evidence || []).map(e => `<li>${esc(e)}</li>`).join('')}</ol>
         </div>
       </div>
@@ -512,12 +512,12 @@ export function openItemDrawer(itemId, onSaved) {
 
     <section class="drawer-section">
       <div class="drawer-section-head">
-        <div><span class="section-kicker">READINESS</span><h4>심사 준비자료</h4></div>
-        <span class="section-caption">목록과 준비현황을 최신 상태로 유지하세요</span>
+        <div><span class="section-kicker">EXECUTION</span><h4>실행 내역</h4></div>
+        <span class="section-caption">실행자료와 현황을 최신 상태로 유지하세요</span>
       </div>
       <div class="fld">
         <label><span class="field-no">01</span>작성 및 보관자료 목록</label>
-        <textarea class="inp" id="fDocs" style="min-height:96px" placeholder="심사에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
+        <textarea class="inp" id="fDocs" style="min-height:96px" placeholder="업무에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
         ${(item.requiredDocs && item.requiredDocs.length && !r.userDocs) ? `<div class="help info-help">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
       </div>
       <div class="fld">
@@ -566,7 +566,7 @@ export function openItemDrawer(itemId, onSaved) {
     <section class="drawer-section">
       <div class="drawer-section-head">
         <div><span class="section-kicker">IMPLEMENTATION</span><h4>이행 기록</h4></div>
-        <span class="section-caption">심사원이 바로 이해할 수 있도록 구체적으로 작성하세요</span>
+        <span class="section-caption">누구나 바로 이해할 수 있도록 구체적으로 작성하세요</span>
       </div>
       <div class="fld-row drawer-meta-fields">
         <div class="fld">
@@ -591,7 +591,7 @@ export function openItemDrawer(itemId, onSaved) {
       <div class="fld">
         <label><span class="field-no">01</span>이행 현황 <em>무엇을 · 언제 · 누가 · 어떻게 했는지</em></label>
         <textarea class="inp" id="fImpl" style="min-height:156px" placeholder="예) 2026.07.15 경영책임자 명의 안전보건 경영방침을 제정하고 전 매장 376개소 게시 완료. 연간 목표는 재해율 0.15% 이하, 위험성평가 실시율 100%로 설정하여 이사회 승인(2026.02.20)을 받음." ${editable ? '' : 'disabled'}>${esc(r.implementation)}</textarea>
-        <div class="help">날짜·주체·수량을 포함하면 심사 대응력이 높아집니다.</div>
+        <div class="help">날짜·주체·수량을 포함하면 기록의 완성도가 높아집니다.</div>
       </div>
       <div class="fld">
         <label><span class="field-no">02</span>보유 증빙자료 <em>문서명 · 보관 위치</em></label>

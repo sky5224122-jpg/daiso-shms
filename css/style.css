@@ -448,7 +448,7 @@ table.tbl td.num{font-family:var(--font-num);font-weight:800;text-align:right}
 /* 법령·의무 항목 상세 드로어 — 범용 드로어와 분리된 PC 전용 고품질 화면 */
 .drawer-mask:has(+ .drawer.drawer-item.open){background:rgba(8,15,31,.56);backdrop-filter:blur(5px) saturate(.8)}
 .drawer.drawer-item{
-  width:min(900px,calc(100vw - 290px));background:#f3f6fb;
+  width:88vw;background:#f3f6fb;
   border-left:1px solid rgba(148,163,184,.36);box-shadow:-28px 0 70px rgba(15,23,42,.25);
 }
 .drawer-item .drawer-head{
@@ -542,11 +542,11 @@ table.tbl td.num{font-family:var(--font-num);font-weight:800;text-align:right}
 .drawer-updated{padding:2px 3px 0;font-size:10.5px;color:#8490a1;text-align:right}
 
 @media(max-width:1180px){
-  .drawer.drawer-item{width:min(850px,calc(100vw - 220px))}
+  .drawer.drawer-item{width:88vw}
   .drawer-meta-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:880px){
-  .drawer.drawer-item{width:100%}
+  .drawer.drawer-item{width:90vw}
   .reference-grid,.attach-upload-grid{grid-template-columns:1fr}
   .drawer-item .ref-evidence ol{grid-template-columns:1fr}
 }

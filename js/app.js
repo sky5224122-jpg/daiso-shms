@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner
-} from './core.js?v=20260813_premiumdrawer1';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260813_premiumdrawer1';
+} from './core.js?v=20260813_drawer88_1';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260813_drawer88_1';
 import {
   renderDashboard, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260813_premiumdrawer1';
+} from './views-core.js?v=20260813_drawer88_1';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260813_premiumdrawer1';
+} from './views-ext.js?v=20260813_drawer88_1';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -32,7 +32,7 @@ const NAV = [
   ]},
   { group: '국제표준 (ISO 45001)', items: [
     { key:'iso',   icon:'🌐', label:'요구사항 관리', crumb:'ISO 45001', title:'ISO 45001:2018 요구사항 이행관리' },
-    { key:'audit', icon:'🎯', label:'심사 대응 매트릭스', crumb:'ISO 45001', title:'ISO 45001 심사 대응 매트릭스' }
+    { key:'audit', icon:'🎯', label:'ISO 45001 대응 매트릭스', crumb:'ISO 45001', title:'ISO 45001 대응 매트릭스' }
   ]},
   { group: '문서체계', items: [
     { key:'documents', icon:'📁', label:'절차서 · 지침서', crumb:'문서체계', title:'안전보건 문서체계 (매뉴얼·절차서·지침서·양식)' }
