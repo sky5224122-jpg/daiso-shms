@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_photo50k1';
+} from './data/frameworks.js?v=20260813_premiumdrawer1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_photo50k1';
+} from './core.js?v=20260813_premiumdrawer1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -390,6 +390,7 @@ function ensureDrawer() {
     </div>
     <div class="drawer-body" id="dBody"></div>
     <div class="drawer-foot">
+      <div class="drawer-foot-note" id="dFootNote"></div>
       <button class="btn ghost" id="dCancel">닫기</button>
       <button class="btn primary" id="dSave">저장</button>
     </div>`;
@@ -414,8 +415,10 @@ export function closeDrawer() {
  */
 export function openDrawer(opt) {
   const { mask, drawer } = ensureDrawer();
+  drawer.classList.remove('drawer-item');
   drawer.querySelector('#dCode').textContent = opt.code || '';
   drawer.querySelector('#dTitle').textContent = opt.title || '';
+  drawer.querySelector('#dFootNote').textContent = '';
   const body = drawer.querySelector('#dBody');
   body.innerHTML = opt.body || '';
   const saveBtn = drawer.querySelector('#dSave');
@@ -459,127 +462,155 @@ export function openItemDrawer(itemId, onSaved) {
   const half = state.half;
   const r = getRecord(itemId, half);
   const editable = canEdit();
+  const currentStatus = STATUS[r.status] || STATUS.none;
+  const attachmentCount = (r.attachments || []).length;
 
+  drawer.classList.add('drawer-item');
   drawer.querySelector('#dCode').textContent = `${item.code} · ${halfLabel(half)}`;
   drawer.querySelector('#dTitle').textContent = item.title;
+  drawer.querySelector('#dFootNote').innerHTML = editable
+    ? '<span class="foot-dot"></span>입력 내용과 첨부자료를 함께 저장합니다'
+    : '<span class="foot-dot readonly"></span>읽기 전용으로 열었습니다';
 
   const linkedDocs = (item.docRefs || []).map(no => DOC_MASTER.find(d => d.docNo === no)).filter(Boolean);
 
   drawer.querySelector('#dBody').innerHTML = `
-    <div class="ref-box">
-      <div class="t">📜 조문 (요지)</div>
-      <div class="c">${esc(item.clause)}</div>
+    <div class="drawer-summary">
+      <div class="drawer-summary-item"><span>이행 상태</span><strong class="tone-${esc(r.status || 'none')}">${esc(currentStatus.label)}</strong></div>
+      <div class="drawer-summary-item"><span>점검 주기</span><strong>${esc(item.cycle)}</strong></div>
+      <div class="drawer-summary-item"><span>담당</span><strong>${esc(r.owner || '미지정')}</strong></div>
+      <div class="drawer-summary-item"><span>첨부자료</span><strong>${attachmentCount}건</strong></div>
     </div>
-    <div class="ref-box">
-      <div class="t">✅ 이행해야 할 내용</div>
-      <div class="c">${esc(item.requirement)}</div>
-      <div class="chip-row">
-        <span class="tag">점검주기 ${esc(item.cycle)}</span>
-        ${(item.isoRefs || []).map(c => `<span class="tag iso">ISO ${esc(c)}</span>`).join('')}
-        ${(item.lawRefs || []).map(c => `<span class="tag law">${esc(c)}</span>`).join('')}
-        ${linkedDocs.map(d => `<span class="tag doc">${esc(d.docNo)} ${esc(d.title)}</span>`).join('')}
+
+    <section class="drawer-section drawer-reference">
+      <div class="drawer-section-head">
+        <div><span class="section-kicker">REFERENCE</span><h4>기준과 요구사항</h4></div>
+        <span class="section-caption">판단 근거를 먼저 확인하세요</span>
       </div>
-      ${item.linkedApp ? `<div style="margin-top:10px"><a class="btn sm" href="${esc(item.linkedApp.url)}" target="_blank" rel="noopener">🔗 ${esc(item.linkedApp.label)} 열기</a></div>` : ''}
-    </div>
-    <div class="ref-box">
-      <div class="t">📎 권장 증빙자료 (심사 시 제시 항목)</div>
-      <div class="c">${(item.evidence || []).map((e, n) => `${n + 1}. ${esc(e)}`).join('\n')}</div>
-    </div>
+      <div class="reference-grid">
+        <div class="ref-box ref-clause">
+          <div class="t"><span class="ref-icon">01</span>조문 요지</div>
+          <div class="c">${esc(item.clause)}</div>
+        </div>
+        <div class="ref-box ref-action">
+          <div class="t"><span class="ref-icon">02</span>이행해야 할 내용</div>
+          <div class="c">${esc(item.requirement)}</div>
+          <div class="chip-row">
+            <span class="tag">점검주기 ${esc(item.cycle)}</span>
+            ${(item.isoRefs || []).map(c => `<span class="tag iso">ISO ${esc(c)}</span>`).join('')}
+            ${(item.lawRefs || []).map(c => `<span class="tag law">${esc(c)}</span>`).join('')}
+            ${linkedDocs.map(d => `<span class="tag doc">${esc(d.docNo)} ${esc(d.title)}</span>`).join('')}
+          </div>
+          ${item.linkedApp ? `<div class="linked-app"><a class="btn sm" href="${esc(item.linkedApp.url)}" target="_blank" rel="noopener">관련 앱에서 확인 ↗</a></div>` : ''}
+        </div>
+        <div class="ref-box ref-evidence">
+          <div class="t"><span class="ref-icon">03</span>심사 권장 증빙</div>
+          <ol>${(item.evidence || []).map(e => `<li>${esc(e)}</li>`).join('')}</ol>
+        </div>
+      </div>
+    </section>
 
-    <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">📋 작성 및 보관자료 · 준비현황 · 증빙</h2><div class="l"></div></div>
+    <section class="drawer-section">
+      <div class="drawer-section-head">
+        <div><span class="section-kicker">READINESS</span><h4>심사 준비자료</h4></div>
+        <span class="section-caption">목록과 준비현황을 최신 상태로 유지하세요</span>
+      </div>
+      <div class="fld">
+        <label><span class="field-no">01</span>작성 및 보관자료 목록</label>
+        <textarea class="inp" id="fDocs" style="min-height:96px" placeholder="심사에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
+        ${(item.requiredDocs && item.requiredDocs.length && !r.userDocs) ? `<div class="help info-help">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
+      </div>
+      <div class="fld">
+        <label><span class="field-no">02</span>당사 준비현황</label>
+        <textarea class="inp" id="fCompany" style="min-height:82px" placeholder="현재 준비·이행 상황을 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userStatus || item.companyStatus || ''))}</textarea>
+      </div>
+      <div class="fld">
+        <label><span class="field-no">03</span>증빙자료 목록</label>
+        <textarea class="inp" id="fEvFiles" style="min-height:96px" placeholder="보유 중인 증빙자료 파일명·문서번호를 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userEvidence || (item.evidenceFiles || []).join('\n')))}</textarea>
+      </div>
+    </section>
 
-    <div class="fld">
-      <label>작성 및 보관자료 목록</label>
-      <textarea class="inp" id="fDocs" style="min-height:90px" placeholder="심사에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
-      ${(item.requiredDocs && item.requiredDocs.length && !r.userDocs) ? `<div class="help" style="color:var(--info)">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
-    </div>
-
-    <div class="fld">
-      <label>당사 준비현황</label>
-      <textarea class="inp" id="fCompany" style="min-height:70px" placeholder="현재 준비·이행 상황을 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userStatus || item.companyStatus || ''))}</textarea>
-    </div>
-
-    <div class="fld">
-      <label>증빙자료 목록</label>
-      <textarea class="inp" id="fEvFiles" style="min-height:90px" placeholder="보유 중인 증빙자료 파일명·문서번호를 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userEvidence || (item.evidenceFiles || []).join('\n')))}</textarea>
-    </div>
-
-    <div class="fld">
-      <label>첨부자료 · 링크</label>
+    <section class="drawer-section attachment-section">
+      <div class="drawer-section-head">
+        <div><span class="section-kicker">EVIDENCE FILES</span><h4>첨부자료 · 외부 링크</h4></div>
+        <span class="attach-count">${attachmentCount}건 등록</span>
+      </div>
       <div class="attach-list" id="fAttachList">
         ${(r.attachments || []).map((a, i) => attachmentRowHtml(a, i, editable)).join('')}
-        ${!(r.attachments || []).length ? '<div class="attach-empty">등록된 첨부파일이 없습니다</div>' : ''}
+        ${!(r.attachments || []).length ? '<div class="attach-empty"><span>＋</span><strong>등록된 첨부자료가 없습니다</strong><small>아래에서 파일 또는 외부 링크를 추가하세요</small></div>' : ''}
       </div>
-      ${editable ? `<div class="attach-add-group">
-        <div class="attach-add-title">📎 파일 첨부</div>
-        <div class="attach-add">
-          <input class="inp attach-file" type="file" id="fAttachFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.webp,.txt,.csv,.zip">
-          <input class="inp" id="fAttachFileNote" placeholder="파일 비고 (선택)">
-          <button type="button" class="btn sm" id="fAttachFileBtn">파일 첨부</button>
+      ${editable ? `<div class="attach-upload-grid">
+        <div class="attach-add-group">
+          <div class="attach-add-title"><span class="upload-icon">↑</span><span>파일 첨부<small>사진은 자동으로 50KB 미만 최적화</small></span></div>
+          <div class="attach-add">
+            <input class="inp attach-file" type="file" id="fAttachFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.webp,.txt,.csv,.zip">
+            <input class="inp" id="fAttachFileNote" placeholder="파일 비고 (선택)">
+            <button type="button" class="btn sm attach-action" id="fAttachFileBtn">선택 파일 추가</button>
+          </div>
         </div>
-      </div>
-      <div class="attach-add-group">
-        <div class="attach-add-title">🔗 링크 등록</div>
-        <div class="attach-add">
-          <input class="inp" type="url" id="fAttachUrl" placeholder="https://..." style="flex:1;min-width:220px">
-          <input class="inp" id="fAttachLinkName" placeholder="표시 이름 (선택)">
-          <input class="inp" id="fAttachLinkNote" placeholder="링크 비고 (선택)">
-          <button type="button" class="btn sm" id="fAttachLinkBtn">링크 추가</button>
+        <div class="attach-add-group">
+          <div class="attach-add-title"><span class="upload-icon link">↗</span><span>외부 링크<small>전자결재·문서함 주소를 연결</small></span></div>
+          <div class="attach-add">
+            <input class="inp" type="url" id="fAttachUrl" placeholder="https://...">
+            <div class="attach-inline-fields">
+              <input class="inp" id="fAttachLinkName" placeholder="표시 이름 (선택)">
+              <input class="inp" id="fAttachLinkNote" placeholder="링크 비고 (선택)">
+            </div>
+            <button type="button" class="btn sm attach-action" id="fAttachLinkBtn">링크 등록</button>
+          </div>
         </div>
       </div>` : ''}
-      <div class="help">사진(JPG·PNG·WebP)은 WebP로 단계적으로 축소·압축하여 1장당 50KB 미만으로 저장합니다. PDF·Office·한글·ZIP은 10MB 이하만 등록할 수 있습니다. 동일 파일은 한 항목에 중복 등록할 수 없습니다. Cloudflare R2 연결 전에는 이 브라우저에 저장됩니다.</div>
-    </div>
+      <div class="storage-note"><span>i</span><p>사진(JPG·PNG·WebP)은 WebP로 단계적으로 축소·압축하여 <b>1장당 50KB 미만</b>으로 저장합니다. PDF·Office·한글·ZIP은 10MB 이하만 등록할 수 있습니다. 동일 파일은 중복 등록할 수 없으며, Cloudflare R2 연결 전에는 이 브라우저에 저장됩니다.</p></div>
+    </section>
 
-    <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">이행 내용 작성</h2><div class="l"></div></div>
-
-    <div class="fld-row">
-      <div class="fld">
-        <label>이행 상태</label>
-        <select class="inp" id="fStatus" ${editable ? '' : 'disabled'}>
-          ${STATUS_ORDER.map(s => `<option value="${s}" ${r.status === s ? 'selected' : ''}>${STATUS[s].label}</option>`).join('')}
-        </select>
+    <section class="drawer-section">
+      <div class="drawer-section-head">
+        <div><span class="section-kicker">IMPLEMENTATION</span><h4>이행 기록</h4></div>
+        <span class="section-caption">심사원이 바로 이해할 수 있도록 구체적으로 작성하세요</span>
+      </div>
+      <div class="fld-row drawer-meta-fields">
+        <div class="fld">
+          <label>이행 상태</label>
+          <select class="inp" id="fStatus" ${editable ? '' : 'disabled'}>
+            ${STATUS_ORDER.map(s => `<option value="${s}" ${r.status === s ? 'selected' : ''}>${STATUS[s].label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fld">
+          <label>담당자 / 담당부서</label>
+          <input class="inp" id="fOwner" value="${esc(r.owner)}" placeholder="이름 또는 담당부서를 직접 입력하세요" ${editable ? '' : 'disabled'}>
+        </div>
+        <div class="fld">
+          <label>최근 점검·실시일</label>
+          <input class="inp" type="date" id="fChecked" value="${esc(r.last_checked)}" ${editable ? '' : 'disabled'}>
+        </div>
+        <div class="fld">
+          <label>다음 이행 기한</label>
+          <input class="inp" type="date" id="fDue" value="${esc(r.due_date)}" ${editable ? '' : 'disabled'}>
+        </div>
       </div>
       <div class="fld">
-        <label>담당자 / 담당부서</label>
-        <input class="inp" id="fOwner" value="${esc(r.owner)}" placeholder="담당자명 또는 담당부서를 직접 입력하세요" ${editable ? '' : 'disabled'}>
-      </div>
-    </div>
-    <div class="fld-row">
-      <div class="fld">
-        <label>최근 점검·실시일</label>
-        <input class="inp" type="date" id="fChecked" value="${esc(r.last_checked)}" ${editable ? '' : 'disabled'}>
+        <label><span class="field-no">01</span>이행 현황 <em>무엇을 · 언제 · 누가 · 어떻게 했는지</em></label>
+        <textarea class="inp" id="fImpl" style="min-height:156px" placeholder="예) 2026.07.15 경영책임자 명의 안전보건 경영방침을 제정하고 전 매장 376개소 게시 완료. 연간 목표는 재해율 0.15% 이하, 위험성평가 실시율 100%로 설정하여 이사회 승인(2026.02.20)을 받음." ${editable ? '' : 'disabled'}>${esc(r.implementation)}</textarea>
+        <div class="help">날짜·주체·수량을 포함하면 심사 대응력이 높아집니다.</div>
       </div>
       <div class="fld">
-        <label>다음 이행 기한</label>
-        <input class="inp" type="date" id="fDue" value="${esc(r.due_date)}" ${editable ? '' : 'disabled'}>
+        <label><span class="field-no">02</span>보유 증빙자료 <em>문서명 · 보관 위치</em></label>
+        <textarea class="inp" id="fEvi" placeholder="예)&#10;1. 안전보건 경영방침 선언문(대표이사 서명본) — 안전보건팀 문서고 / SHP-02 첨부&#10;2. 매장 게시 사진 376건 — 이행증빙 자료함&#10;3. 이사회 의사록(2026.02.20) — 경영지원팀" ${editable ? '' : 'disabled'}>${esc(r.evidence)}</textarea>
       </div>
-    </div>
+      <div class="fld">
+        <label><span class="field-no">03</span>미흡사항 / 개선 필요사항</label>
+        <textarea class="inp" id="fFind" style="min-height:88px" placeholder="점검 결과 확인된 부족한 부분과 보완 계획을 기재합니다. (없으면 '해당없음')" ${editable ? '' : 'disabled'}>${esc(r.findings)}</textarea>
+        <div class="help">미흡사항은 개선조치(CAPA) 화면에서 별도 등록해 종결까지 관리하는 것을 권장합니다.</div>
+      </div>
+    </section>
 
-    <div class="fld">
-      <label>① 이행 현황 (무엇을 · 언제 · 누가 · 어떻게 했는지)</label>
-      <textarea class="inp" id="fImpl" style="min-height:150px" placeholder="예) 2026.07.15 경영책임자 명의 안전보건 경영방침을 제정하고 전 매장 376개소 게시 완료. 연간 목표는 재해율 0.15% 이하, 위험성평가 실시율 100%로 설정하여 이사회 승인(2026.02.20)을 받음." ${editable ? '' : 'disabled'}>${esc(r.implementation)}</textarea>
-      <div class="help">심사원이 읽고 바로 이해할 수 있도록 <b>날짜·주체·수량</b>을 포함해 구체적으로 작성하세요.</div>
-    </div>
-
-    <div class="fld">
-      <label>② 보유 증빙자료 (문서명 · 보관 위치)</label>
-      <textarea class="inp" id="fEvi" placeholder="예)&#10;1. 안전보건 경영방침 선언문(대표이사 서명본) — 안전보건팀 문서고 / SHP-02 첨부&#10;2. 매장 게시 사진 376건 — 이행증빙 자료함&#10;3. 이사회 의사록(2026.02.20) — 경영지원팀" ${editable ? '' : 'disabled'}>${esc(r.evidence)}</textarea>
-    </div>
-
-    <div class="fld">
-      <label>③ 미흡사항 / 개선 필요사항</label>
-      <textarea class="inp" id="fFind" style="min-height:80px" placeholder="점검 결과 확인된 부족한 부분과 보완 계획을 기재합니다. (없으면 '해당없음')" ${editable ? '' : 'disabled'}>${esc(r.findings)}</textarea>
-      <div class="help">여기에 기재한 미흡사항은 <b>개선조치(CAPA)</b> 화면에서 별도 등록해 종결까지 관리하는 것을 권장합니다.</div>
-    </div>
-
-    ${r.updated_at ? `<div style="font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line-strong);padding-top:12px">
-      최종 수정 ${esc(String(r.updated_at).slice(0, 16).replace('T', ' '))} · ${esc(r.updated_by || '')}</div>` : ''}
+    ${r.updated_at ? `<div class="drawer-updated">최종 수정 ${esc(String(r.updated_at).slice(0, 16).replace('T', ' '))} · ${esc(r.updated_by || '')}</div>` : ''}
   `;
 
   const saveBtn = drawer.querySelector('#dSave');
   saveBtn.style.display = '';
   saveBtn.disabled = !editable;
-  saveBtn.textContent = editable ? '저장' : '읽기 전용';
+  saveBtn.textContent = editable ? '변경사항 저장' : '읽기 전용';
   let attachments = [...(r.attachments || [])];
   const removedAttachments = [];
 
@@ -588,7 +619,11 @@ export function openItemDrawer(itemId, onSaved) {
     if (!list) return;
     list.innerHTML = attachments.length
       ? attachments.map((a, i) => attachmentRowHtml(a, i, editable)).join('')
-      : '<div class="attach-empty">등록된 첨부파일이 없습니다</div>';
+      : '<div class="attach-empty"><span>＋</span><strong>등록된 첨부자료가 없습니다</strong><small>아래에서 파일 또는 외부 링크를 추가하세요</small></div>';
+    const count = drawer.querySelector('.attach-count');
+    if (count) count.textContent = `${attachments.length}건 등록`;
+    const summaryCount = drawer.querySelector('.drawer-summary-item:last-child strong');
+    if (summaryCount) summaryCount.textContent = `${attachments.length}건`;
   }
 
   if (editable) {

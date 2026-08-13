@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260813_photo50k1';
+} from './data/frameworks.js?v=20260813_premiumdrawer1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode
-} from './core.js?v=20260813_photo50k1';
-import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260813_photo50k1';
+} from './core.js?v=20260813_premiumdrawer1';
+import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260813_premiumdrawer1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -831,6 +831,10 @@ function downloadCsv(rows, filename) {
 
 export function renderSettings() {
   const cfg = getSupabaseConfig();
+  const fileMode = attachmentStorageMode();
+  const liveUrl = 'https://sky5224122-jpg.github.io/daiso-shms/';
+  const recordStore = conn.mode === 'supabase' ? 'Supabase PostgreSQL + 브라우저 캐시' : '현재 PC 브라우저 localStorage';
+  const fileStore = fileMode === 'r2' ? 'Cloudflare R2 (Worker 경유)' : '현재 PC 브라우저 IndexedDB';
   return `
   <div class="banner ${conn.mode === 'supabase' ? '' : 'warn'}">
     <div class="i">${conn.mode === 'supabase' ? '🟢' : '🟡'}</div>
@@ -840,6 +844,77 @@ export function renderSettings() {
          아래 연결정보와 함께 Supabase Auth·RLS 구성을 완료해야 전사 공유 모드로 전환됩니다.`}
       ${conn.error ? `<div style="margin-top:6px;color:var(--bad);font-weight:700">최근 오류: ${esc(conn.error)}</div>` : ''}</div>
   </div>
+
+  <section class="ops-map-card">
+    <div class="ops-map-head">
+      <div>
+        <span class="ops-eyebrow">OPERATING ARCHITECTURE</span>
+        <h3>운영 흐름 · 접속과 저장 위치</h3>
+        <p>사용자가 어디로 접속하고, 입력자료와 첨부파일이 각각 어디에 저장되는지 한 화면에서 확인합니다.</p>
+      </div>
+      <span class="ops-mode ${conn.mode === 'supabase' && fileMode === 'r2' ? 'ready' : 'setup'}">${conn.mode === 'supabase' && fileMode === 'r2' ? '원격 저장 운영 중' : '운영 전환 준비 중'}</span>
+    </div>
+
+    <div class="ops-current-strip">
+      <div><span>공식 접속 주소</span><a href="${liveUrl}" target="_blank" rel="noopener">${liveUrl} ↗</a></div>
+      <div><span>현재 업무데이터</span><strong>${esc(recordStore)}</strong></div>
+      <div><span>현재 첨부파일</span><strong>${esc(fileStore)}</strong></div>
+    </div>
+
+    <div class="ops-flow" aria-label="운영 흐름">
+      <div class="ops-step">
+        <span class="ops-step-no">01</span><div class="ops-step-icon">PC</div>
+        <strong>사용자 접속</strong><p>사내 PC의 Chrome·Edge에서 공식 주소로 접속</p>
+      </div>
+      <span class="ops-arrow">→</span>
+      <div class="ops-step">
+        <span class="ops-step-no">02</span><div class="ops-step-icon">WEB</div>
+        <strong>화면 제공</strong><p>GitHub Pages가 앱 화면·코드를 제공</p>
+      </div>
+      <span class="ops-arrow">→</span>
+      <div class="ops-step">
+        <span class="ops-step-no">03</span><div class="ops-step-icon">AUTH</div>
+        <strong>사용자 인증</strong><p>현재 공용 비밀번호 · 운영 전 Supabase Auth 전환 필요</p>
+      </div>
+      <span class="ops-arrow split">→</span>
+      <div class="ops-destinations">
+        <div class="ops-destination database"><span>업무데이터</span><strong>Supabase</strong><p>이행기록·문서·점검·개선조치·첨부 메타데이터</p></div>
+        <div class="ops-destination storage"><span>사진·파일</span><strong>Cloudflare Worker → R2</strong><p>사진은 50KB 미만 압축 · 문서 본문은 R2 분리 저장</p></div>
+      </div>
+    </div>
+
+    <div class="ops-policy-grid">
+      <div class="ops-policy current">
+        <div class="ops-policy-title"><span>현재 실제 동작</span><b>${conn.mode === 'supabase' ? 'Supabase 연결' : '로컬 저장'}</b></div>
+        <ul>
+          <li>인증: 공용 비밀번호로 화면 진입</li>
+          <li>업무데이터: ${esc(recordStore)}</li>
+          <li>첨부파일: ${esc(fileStore)}</li>
+          <li>자동 백업: 브라우저에 최근 5개 보관</li>
+        </ul>
+      </div>
+      <div class="ops-policy target">
+        <div class="ops-policy-title"><span>권장 운영 구조</span><b>부하·용량 분리</b></div>
+        <ul>
+          <li>정적 화면은 GitHub Pages가 제공해 Supabase 트래픽과 분리</li>
+          <li>Supabase는 업무데이터와 첨부 메타데이터만 저장</li>
+          <li>사진·문서 본문은 Cloudflare Worker 인증 후 R2 저장</li>
+          <li>Supabase Auth + RLS 적용 후 사용자별 접근 통제</li>
+        </ul>
+      </div>
+      <div class="ops-policy backup">
+        <div class="ops-policy-title"><span>백업 · 장애 대응</span><b>이중 보관</b></div>
+        <ul>
+          <li>수시: 저장 시 브라우저 자동 백업(1분 간격·최대 5개)</li>
+          <li>정기: ‘전체 백업 내려받기’로 JSON 파일 생성</li>
+          <li>보관: 내려받은 파일은 사내 D드라이브 지정 폴더에 별도 보관</li>
+          <li>복구: Supabase 장애 시 JSON 복원으로 핵심 업무데이터 재구성</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ops-caution"><span>운영 전 확인</span><p>현재 공용 비밀번호만으로는 Supabase 사용자를 식별할 수 없습니다. 원격 저장을 정식 운영하기 전 <b>Supabase Auth·RLS</b>와 <b>Cloudflare Worker 인증·R2 바인딩</b>을 모두 완료해야 합니다.</p></div>
+  </section>
 
   <div class="grid g2">
     <div class="card">
@@ -907,7 +982,7 @@ export function renderSettings() {
           <tr><th>권한</th><td>${esc(ROLES[state.user?.role]?.label || state.user?.role || '-')} — ${canEdit() ? '작성·수정 가능' : '읽기 전용'}</td></tr>
           <tr><th>인증 방식</th><td>공용 접속 비밀번호 (아이디 없음)</td></tr>
           <tr><th>저장 모드</th><td>${conn.mode === 'supabase' ? 'Supabase + 로컬 캐시' : '로컬(localStorage) 전용'}</td></tr>
-          <tr><th>첨부파일 저장</th><td>${attachmentStorageMode() === 'r2' ? 'Cloudflare R2 (Worker API)' : '현재 브라우저 IndexedDB 전용'}</td></tr>
+          <tr><th>첨부파일 저장</th><td>${fileMode === 'r2' ? 'Cloudflare R2 (Worker API)' : '현재 브라우저 IndexedDB 전용'}</td></tr>
           <tr><th>버전</th><td>${esc(APP.version)}</td></tr>
         </tbody></table></div>
       <div class="help" style="margin-top:12px">
