@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_attach1';
+} from './data/frameworks.js?v=20260813_compress1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
-  attachmentUrl, formatBytes, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_attach1';
+  attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
+} from './core.js?v=20260813_compress1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -438,7 +438,10 @@ function attachmentRowHtml(a, i, editable) {
   const icon = kind === 'file' ? '📎' : kind === 'link' ? '🔗' : '📝';
   const canViewFile = kind === 'file' && ['pending', 'local-idb', 'r2'].includes(a.storage);
   const canView = canViewFile || (kind === 'link' && !!a.url);
-  const meta = [a.size ? formatBytes(a.size) : '', a.date || ''].filter(Boolean).join(' · ');
+  const sizeMeta = a.originalSize && a.size && a.originalSize > a.size
+    ? `압축 ${formatBytes(a.originalSize)} → ${formatBytes(a.size)}`
+    : (a.size ? formatBytes(a.size) : '');
+  const meta = [sizeMeta, a.date || ''].filter(Boolean).join(' · ');
   return `<div class="attach-row" data-idx="${i}">
     <span class="attach-kind ${esc(kind)}">${icon} ${label}</span>
     <span class="attach-name">${esc(a.name || a.url || '첨부자료')}</span>
@@ -524,7 +527,7 @@ export function openItemDrawer(itemId, onSaved) {
           <button type="button" class="btn sm" id="fAttachLinkBtn">링크 추가</button>
         </div>
       </div>` : ''}
-      <div class="help">파일은 20MB 이하로 등록할 수 있습니다. Cloudflare R2 연결 전에는 이 브라우저에 저장되며, 다른 PC에서는 열 수 없습니다. 링크와 첨부 메타데이터는 이행기록에 함께 저장됩니다.</div>
+      <div class="help">사진(JPG·PNG·WebP)은 긴 변 1,920px·WebP 품질 78%로 자동 축소·압축하며, 원본보다 작을 때만 저장합니다. 사진은 압축 후 5MB, PDF·Office·한글·ZIP은 10MB 이하만 등록할 수 있습니다. 동일 파일은 한 항목에 중복 등록할 수 없습니다. Cloudflare R2 연결 전에는 이 브라우저에 저장됩니다.</div>
     </div>
 
     <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">이행 내용 작성</h2><div class="l"></div></div>
@@ -589,19 +592,35 @@ export function openItemDrawer(itemId, onSaved) {
   }
 
   if (editable) {
-    drawer.querySelector('#fAttachFileBtn')?.addEventListener('click', () => {
+    drawer.querySelector('#fAttachFileBtn')?.addEventListener('click', async () => {
       const fileEl = drawer.querySelector('#fAttachFile');
       const file = fileEl.files?.[0];
       if (!file) { toast('첨부할 파일을 선택해 주세요.', 'bad'); fileEl.focus(); return; }
-      if (file.size > 20 * 1024 * 1024) { toast('첨부파일은 20MB 이하만 등록할 수 있습니다.', 'bad'); return; }
-      attachments.push({
-        id: uid('att'), kind: 'file', storage: 'pending', _file: file,
-        name: file.name, note: drawer.querySelector('#fAttachFileNote').value.trim(),
-        date: new Date().toISOString().slice(0, 10), mime: file.type, size: file.size
-      });
-      fileEl.value = '';
-      drawer.querySelector('#fAttachFileNote').value = '';
-      renderAttachList();
+      const addBtn = drawer.querySelector('#fAttachFileBtn');
+      addBtn.disabled = true;
+      showSpinner('사진 용량 최적화 중…');
+      try {
+        const prepared = await prepareAttachmentFile(file);
+        if (attachments.some(a => a.kind === 'file' && a.contentHash === prepared.contentHash)) {
+          toast('같은 파일이 이미 등록되어 있습니다.', 'bad');
+          return;
+        }
+        attachments.push({
+          id: uid('att'), kind: 'file', storage: 'pending', _file: prepared.file,
+          name: prepared.file.name, note: drawer.querySelector('#fAttachFileNote').value.trim(),
+          date: new Date().toISOString().slice(0, 10), mime: prepared.file.type, size: prepared.file.size,
+          originalSize: prepared.originalSize, compressed: prepared.compressed, contentHash: prepared.contentHash
+        });
+        fileEl.value = '';
+        drawer.querySelector('#fAttachFileNote').value = '';
+        renderAttachList();
+        toast(prepared.compressed ? `사진을 ${formatBytes(prepared.originalSize)}에서 ${formatBytes(prepared.file.size)}로 압축했습니다.` : '파일을 첨부 목록에 추가했습니다.', 'ok');
+      } catch (err) {
+        toast(err?.message || String(err), 'bad');
+      } finally {
+        hideSpinner();
+        addBtn.disabled = false;
+      }
     });
 
     drawer.querySelector('#fAttachLinkBtn')?.addEventListener('click', () => {
@@ -646,6 +665,9 @@ export function openItemDrawer(itemId, onSaved) {
       for (const att of attachments) {
         if (att.storage === 'pending' && att._file) {
           const stored = await saveAttachmentFile(att._file, { itemId, half, note: att.note || '' });
+          stored.originalSize = att.originalSize || att.size;
+          stored.compressed = !!att.compressed;
+          stored.contentHash = att.contentHash || stored.contentHash;
           storedAttachments.push(stored);
           newlyStored.push(stored);
         } else {

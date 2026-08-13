@@ -9,4 +9,4 @@ bucket_name = "daiso-shms-files"
 [vars]
 SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
 APP_ORIGIN = "https://sky5224122-jpg.github.io"
-MAX_FILE_BYTES = "20971520"
+MAX_FILE_BYTES = "10485760"

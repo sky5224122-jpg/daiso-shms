@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_attach1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_compress1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -151,7 +151,16 @@ export async function initSupabase() {
 ------------------------------------------------- */
 const FILE_DB = 'shms.attachments';
 const FILE_STORE = 'files';
-export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_SOURCE_IMAGE_BYTES = 30 * 1024 * 1024;
+const IMAGE_MAX_DIMENSION = 1920;
+const IMAGE_WEBP_QUALITY = 0.78;
+const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx',
+  'jpg', 'jpeg', 'png', 'webp', 'txt', 'csv', 'zip'
+]);
+const COMPRESSIBLE_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
 
 function attachmentApiUrl() {
   const raw = window.SHMS_ATTACHMENT_API?.url;
@@ -161,6 +170,84 @@ function attachmentApiUrl() {
 
 export function attachmentStorageMode() {
   return attachmentApiUrl() ? 'r2' : 'local-idb';
+}
+
+function fileExtension(name = '') {
+  return String(name).split('.').pop().toLowerCase();
+}
+
+function attachmentFileName(name = '') {
+  const safe = String(name).replace(/[\\/:*?"<>|]/g, '_').trim();
+  return safe || 'attachment';
+}
+
+function baseFileName(name = '') {
+  return attachmentFileName(name).replace(/\.[^.]+$/, '') || 'photo';
+}
+
+function allowedAttachmentFile(file) {
+  const ext = fileExtension(file?.name);
+  if (!ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) {
+    throw new Error('PDF, Office, 한글, 사진, TXT, CSV, ZIP 형식만 첨부할 수 있습니다.');
+  }
+  return ext;
+}
+
+function canvasBlob(canvas, type, quality) {
+  return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+}
+
+async function imageBitmapFromFile(file) {
+  if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: 'from-image' });
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('사진을 읽을 수 없습니다.')); };
+    img.src = url;
+  });
+}
+
+async function compressImageFile(file) {
+  const source = await imageBitmapFromFile(file);
+  const scale = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(source.width, source.height));
+  const width = Math.max(1, Math.round(source.width * scale));
+  const height = Math.max(1, Math.round(source.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const context = canvas.getContext('2d', { alpha: true });
+  if (!context) {
+    if (typeof source.close === 'function') source.close();
+    throw new Error('이 브라우저에서는 사진 압축을 처리할 수 없습니다.');
+  }
+  context.drawImage(source, 0, 0, width, height);
+  if (typeof source.close === 'function') source.close();
+  const blob = await canvasBlob(canvas, 'image/webp', IMAGE_WEBP_QUALITY);
+  if (!blob) throw new Error('사진 압축 처리에 실패했습니다.');
+  if (blob.size >= file.size * 0.98) return { file, originalSize: file.size, compressed: false };
+  return {
+    file: new File([blob], `${baseFileName(file.name)}.webp`, { type: 'image/webp', lastModified: file.lastModified }),
+    originalSize: file.size,
+    compressed: true
+  };
+}
+
+export async function attachmentHash(file) {
+  const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return [...new Uint8Array(hash)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+export async function prepareAttachmentFile(file) {
+  if (!(file instanceof Blob)) throw new Error('첨부할 파일을 선택해 주세요.');
+  const ext = allowedAttachmentFile(file);
+  if (!COMPRESSIBLE_IMAGE_EXTENSIONS.has(ext)) {
+    if (file.size > MAX_ATTACHMENT_BYTES) throw new Error('문서·압축파일은 10MB 이하만 등록할 수 있습니다.');
+    return { file, originalSize: file.size, compressed: false, contentHash: await attachmentHash(file) };
+  }
+  if (file.size > MAX_SOURCE_IMAGE_BYTES) throw new Error('사진 원본은 30MB 이하만 선택해 주세요.');
+  const prepared = await compressImageFile(file);
+  if (prepared.file.size > MAX_IMAGE_BYTES) throw new Error('압축 후 사진도 5MB 이하만 등록할 수 있습니다.');
+  return { ...prepared, contentHash: await attachmentHash(prepared.file) };
 }
 
 function openFileDb() {
@@ -213,7 +300,12 @@ export function formatBytes(bytes = 0) {
 
 export async function saveAttachmentFile(file, { itemId = '', half = '', note = '' } = {}) {
   if (!(file instanceof Blob)) throw new Error('첨부할 파일을 선택해 주세요.');
-  if (file.size > MAX_ATTACHMENT_BYTES) throw new Error('첨부파일은 20MB 이하만 등록할 수 있습니다.');
+  const ext = allowedAttachmentFile(file);
+  const isImage = COMPRESSIBLE_IMAGE_EXTENSIONS.has(ext);
+  if (file.size > (isImage ? MAX_IMAGE_BYTES : MAX_ATTACHMENT_BYTES)) {
+    throw new Error(isImage ? '사진은 압축 후 5MB 이하만 등록할 수 있습니다.' : '문서·압축파일은 10MB 이하만 등록할 수 있습니다.');
+  }
+  const contentHash = await attachmentHash(file);
   const api = attachmentApiUrl();
   const date = today();
   if (api) {
@@ -222,25 +314,27 @@ export async function saveAttachmentFile(file, { itemId = '', half = '', note = 
     body.append('file', file, file.name || 'attachment');
     body.append('itemId', itemId);
     body.append('half', half);
+    body.append('contentHash', contentHash);
     const res = await fetch(`${api}/files`, { method: 'POST', headers, body });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `파일 업로드 실패 (${res.status})`);
     return {
       id: data.id || uid('att'), kind: 'file', storage: 'r2', key: data.key,
       name: data.name || file.name || 'attachment', note, date,
-      mime: data.mime || file.type || 'application/octet-stream', size: data.size ?? file.size
+      mime: data.mime || file.type || 'application/octet-stream', size: data.size ?? file.size,
+      contentHash
     };
   }
 
-  const id = uid('file');
+  const id = `file_${contentHash}`;
   await fileDbRequest('readwrite', store => store.put({
     id, blob: file, name: file.name || 'attachment', mime: file.type || 'application/octet-stream',
-    size: file.size, created_at: new Date().toISOString()
+    size: file.size, contentHash, created_at: new Date().toISOString()
   }));
   return {
     id: uid('att'), kind: 'file', storage: 'local-idb', fileId: id,
     name: file.name || 'attachment', note, date,
-    mime: file.type || 'application/octet-stream', size: file.size
+    mime: file.type || 'application/octet-stream', size: file.size, contentHash
   };
 }
 

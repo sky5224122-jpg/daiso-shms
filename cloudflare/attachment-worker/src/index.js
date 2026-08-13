@@ -1,6 +1,11 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const jwksByUrl = new Map();
+const ALLOWED_EXTENSIONS = new Set([
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx',
+  'jpg', 'jpeg', 'png', 'webp', 'txt', 'csv', 'zip'
+]);
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
 
 function allowedOrigin(request, env) {
   const origin = request.headers.get('Origin') || '';
@@ -44,25 +49,38 @@ function safePart(value, fallback) {
   return clean.slice(0, 80) || fallback;
 }
 
-function fileKey(userId, half, itemId, name) {
+function fileExtension(name = '') {
+  return String(name).split('.').pop().toLowerCase();
+}
+
+function fileKey(userId, half, itemId, contentHash, name) {
   const ext = String(name || '').match(/\.[a-zA-Z0-9]{1,10}$/)?.[0] || '';
-  return `${safePart(userId, 'user')}/${safePart(half, 'no-half')}/${safePart(itemId, 'no-item')}/${crypto.randomUUID()}${ext}`;
+  return `${safePart(userId, 'user')}/${safePart(half, 'no-half')}/${safePart(itemId, 'no-item')}/${contentHash}${ext}`;
+}
+
+async function sha256(file) {
+  const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return [...new Uint8Array(hash)].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
 async function upload(request, env, user) {
   const form = await request.formData();
   const file = form.get('file');
   if (!(file instanceof File)) return json(request, env, { error: '첨부파일이 없습니다.' }, 400);
-  const max = Number(env.MAX_FILE_BYTES || 20 * 1024 * 1024);
-  if (!file.size || file.size > max) return json(request, env, { error: `파일은 ${Math.floor(max / 1024 / 1024)}MB 이하만 등록할 수 있습니다.` }, 413);
-  const key = fileKey(user.sub, form.get('half'), form.get('itemId'), file.name);
+  const ext = fileExtension(file.name);
+  if (!ALLOWED_EXTENSIONS.has(ext)) return json(request, env, { error: '허용되지 않은 파일 형식입니다.' }, 415);
+  const max = Number(env.MAX_FILE_BYTES || 10 * 1024 * 1024);
+  const limit = IMAGE_EXTENSIONS.has(ext) ? Math.min(max, 5 * 1024 * 1024) : max;
+  if (!file.size || file.size > limit) return json(request, env, { error: `파일은 ${Math.floor(limit / 1024 / 1024)}MB 이하만 등록할 수 있습니다.` }, 413);
+  const contentHash = await sha256(file);
+  const key = fileKey(user.sub, form.get('half'), form.get('itemId'), contentHash, file.name);
   await env.SHMS_FILES.put(key, file.stream(), {
     httpMetadata: { contentType: file.type || 'application/octet-stream' },
-    customMetadata: { name: file.name, uploadedBy: String(user.sub), uploadedAt: new Date().toISOString() }
+    customMetadata: { name: file.name, uploadedBy: String(user.sub), uploadedAt: new Date().toISOString(), contentHash }
   });
   return json(request, env, {
     id: crypto.randomUUID(), key, name: file.name,
-    mime: file.type || 'application/octet-stream', size: file.size
+    mime: file.type || 'application/octet-stream', size: file.size, contentHash
   }, 201);
 }
 
@@ -75,6 +93,7 @@ async function readFile(request, env, key) {
   const name = object.customMetadata?.name || key.split('/').pop() || 'attachment';
   headers.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(name)}`);
   headers.set('Cache-Control', 'private, max-age=300');
+  headers.set('X-Content-Type-Options', 'nosniff');
   return new Response(object.body, { headers });
 }
 
