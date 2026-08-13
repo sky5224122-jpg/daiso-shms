@@ -4,7 +4,7 @@ Supabase Auth가 발급한 JWT를 검증한 뒤 Cloudflare R2에 첨부파일을
 
 ## 역할
 
-- `POST /files`: 사진은 앱에서 자동 축소·압축된 뒤 최대 5MB, 문서는 최대 10MB로 R2에 저장
+- `POST /files`: 사진은 앱에서 50KB 미만으로 자동 축소·압축된 뒤 최대 50KB, 문서는 최대 10MB로 R2에 저장
 - `GET /files/{key}`: 인증된 사용자가 파일 열람
 - `DELETE /files/{key}`: 업로드한 본인의 파일 삭제
 - R2 비밀키나 Supabase `service_role` 키를 브라우저에 노출하지 않음

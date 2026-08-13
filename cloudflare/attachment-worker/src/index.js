@@ -70,8 +70,12 @@ async function upload(request, env, user) {
   const ext = fileExtension(file.name);
   if (!ALLOWED_EXTENSIONS.has(ext)) return json(request, env, { error: '허용되지 않은 파일 형식입니다.' }, 415);
   const max = Number(env.MAX_FILE_BYTES || 10 * 1024 * 1024);
-  const limit = IMAGE_EXTENSIONS.has(ext) ? Math.min(max, 5 * 1024 * 1024) : max;
-  if (!file.size || file.size > limit) return json(request, env, { error: `파일은 ${Math.floor(limit / 1024 / 1024)}MB 이하만 등록할 수 있습니다.` }, 413);
+  const isImage = IMAGE_EXTENSIONS.has(ext);
+  const limit = isImage ? Math.min(max, 50 * 1024) : max;
+  if (!file.size || file.size > limit) {
+    const message = isImage ? '사진은 압축 후 50KB 이하만 등록할 수 있습니다.' : `파일은 ${Math.floor(limit / 1024 / 1024)}MB 이하만 등록할 수 있습니다.`;
+    return json(request, env, { error: message }, 413);
+  }
   const contentHash = await sha256(file);
   const key = fileKey(user.sub, form.get('half'), form.get('itemId'), contentHash, file.name);
   await env.SHMS_FILES.put(key, file.stream(), {

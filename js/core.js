@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_compress1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_photo50k1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -152,10 +152,12 @@ export async function initSupabase() {
 const FILE_DB = 'shms.attachments';
 const FILE_STORE = 'files';
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 50 * 1024;
+const IMAGE_TARGET_BYTES = 49 * 1024;
 const MAX_SOURCE_IMAGE_BYTES = 30 * 1024 * 1024;
-const IMAGE_MAX_DIMENSION = 1920;
-const IMAGE_WEBP_QUALITY = 0.78;
+// 위험성평가 앱의 식별성 보호 기준(최소 560px, 품질 0.42)을 동일하게 유지한다.
+const IMAGE_DIMENSIONS = [1280, 1080, 900, 765, 650, 560];
+const IMAGE_QUALITIES = [0.72, 0.60, 0.52, 0.46, 0.42];
 const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx',
   'jpg', 'jpeg', 'png', 'webp', 'txt', 'csv', 'zip'
@@ -209,27 +211,38 @@ async function imageBitmapFromFile(file) {
 }
 
 async function compressImageFile(file) {
+  if (file.size <= IMAGE_TARGET_BYTES) {
+    return { file, originalSize: file.size, compressed: false };
+  }
   const source = await imageBitmapFromFile(file);
-  const scale = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(source.width, source.height));
-  const width = Math.max(1, Math.round(source.width * scale));
-  const height = Math.max(1, Math.round(source.height * scale));
   const canvas = document.createElement('canvas');
-  canvas.width = width; canvas.height = height;
   const context = canvas.getContext('2d', { alpha: true });
   if (!context) {
     if (typeof source.close === 'function') source.close();
     throw new Error('이 브라우저에서는 사진 압축을 처리할 수 없습니다.');
   }
-  context.drawImage(source, 0, 0, width, height);
-  if (typeof source.close === 'function') source.close();
-  const blob = await canvasBlob(canvas, 'image/webp', IMAGE_WEBP_QUALITY);
-  if (!blob) throw new Error('사진 압축 처리에 실패했습니다.');
-  if (blob.size >= file.size * 0.98) return { file, originalSize: file.size, compressed: false };
-  return {
-    file: new File([blob], `${baseFileName(file.name)}.webp`, { type: 'image/webp', lastModified: file.lastModified }),
-    originalSize: file.size,
-    compressed: true
-  };
+  try {
+    for (const maxDimension of IMAGE_DIMENSIONS) {
+      const scale = Math.min(1, maxDimension / Math.max(source.width, source.height));
+      canvas.width = Math.max(1, Math.round(source.width * scale));
+      canvas.height = Math.max(1, Math.round(source.height * scale));
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(source, 0, 0, canvas.width, canvas.height);
+      for (const quality of IMAGE_QUALITIES) {
+        const blob = await canvasBlob(canvas, 'image/webp', quality);
+        if (blob && blob.size <= IMAGE_TARGET_BYTES) {
+          return {
+            file: new File([blob], `${baseFileName(file.name)}.webp`, { type: 'image/webp', lastModified: file.lastModified }),
+            originalSize: file.size,
+            compressed: true
+          };
+        }
+      }
+    }
+  } finally {
+    if (typeof source.close === 'function') source.close();
+  }
+  throw new Error('사진을 50KB 미만으로 압축하지 못했습니다. 다른 사진을 선택해 주세요.');
 }
 
 export async function attachmentHash(file) {
@@ -246,7 +259,7 @@ export async function prepareAttachmentFile(file) {
   }
   if (file.size > MAX_SOURCE_IMAGE_BYTES) throw new Error('사진 원본은 30MB 이하만 선택해 주세요.');
   const prepared = await compressImageFile(file);
-  if (prepared.file.size > MAX_IMAGE_BYTES) throw new Error('압축 후 사진도 5MB 이하만 등록할 수 있습니다.');
+  if (prepared.file.size > MAX_IMAGE_BYTES) throw new Error('사진은 압축 후 50KB 이하만 등록할 수 있습니다.');
   return { ...prepared, contentHash: await attachmentHash(prepared.file) };
 }
 
@@ -303,7 +316,7 @@ export async function saveAttachmentFile(file, { itemId = '', half = '', note = 
   const ext = allowedAttachmentFile(file);
   const isImage = COMPRESSIBLE_IMAGE_EXTENSIONS.has(ext);
   if (file.size > (isImage ? MAX_IMAGE_BYTES : MAX_ATTACHMENT_BYTES)) {
-    throw new Error(isImage ? '사진은 압축 후 5MB 이하만 등록할 수 있습니다.' : '문서·압축파일은 10MB 이하만 등록할 수 있습니다.');
+    throw new Error(isImage ? '사진은 압축 후 50KB 이하만 등록할 수 있습니다.' : '문서·압축파일은 10MB 이하만 등록할 수 있습니다.');
   }
   const contentHash = await attachmentHash(file);
   const api = attachmentApiUrl();

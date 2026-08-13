@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_compress1';
+} from './data/frameworks.js?v=20260813_photo50k1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_compress1';
+} from './core.js?v=20260813_photo50k1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -527,7 +527,7 @@ export function openItemDrawer(itemId, onSaved) {
           <button type="button" class="btn sm" id="fAttachLinkBtn">링크 추가</button>
         </div>
       </div>` : ''}
-      <div class="help">사진(JPG·PNG·WebP)은 긴 변 1,920px·WebP 품질 78%로 자동 축소·압축하며, 원본보다 작을 때만 저장합니다. 사진은 압축 후 5MB, PDF·Office·한글·ZIP은 10MB 이하만 등록할 수 있습니다. 동일 파일은 한 항목에 중복 등록할 수 없습니다. Cloudflare R2 연결 전에는 이 브라우저에 저장됩니다.</div>
+      <div class="help">사진(JPG·PNG·WebP)은 WebP로 단계적으로 축소·압축하여 1장당 50KB 미만으로 저장합니다. PDF·Office·한글·ZIP은 10MB 이하만 등록할 수 있습니다. 동일 파일은 한 항목에 중복 등록할 수 없습니다. Cloudflare R2 연결 전에는 이 브라우저에 저장됩니다.</div>
     </div>
 
     <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">이행 내용 작성</h2><div class="l"></div></div>
