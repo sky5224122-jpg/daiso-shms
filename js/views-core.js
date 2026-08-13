@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_masterdelete1';
+} from './data/frameworks.js?v=20260813_execreport1';
 import {
-  $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats,
+  $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_masterdelete1';
+} from './core.js?v=20260813_execreport1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -62,6 +62,88 @@ function radarSVG(axes) {
   </svg>`;
 }
 
+/* ---------------- 경영진 보고서 ---------------- */
+
+function executiveRiskLabel(all, critical, due, overdueCapa) {
+  if (critical.length || overdueCapa) return { cls: 'urgent', label: '즉시 경영진 관여 필요', note: '중대 의무 미이행 또는 기한 초과 개선조치가 확인되었습니다.' };
+  if (due.length || all.pct < 80) return { cls: 'watch', label: '중점 관리 필요', note: '기한 임박 항목과 이행 수준을 경영진 차원에서 점검할 필요가 있습니다.' };
+  return { cls: 'stable', label: '관리 체계 안정', note: '등록된 이행 현황 기준으로 중대 우선조치 신호가 확인되지 않았습니다.' };
+}
+
+function executiveReportHtml({ half, all, mssa, osha, iso, docs, critical, due, openCapa, overdueCapa, halfDone, halfCycleItems }) {
+  const risk = executiveRiskLabel(all, critical, due, overdueCapa);
+  const reportDate = new Intl.DateTimeFormat('ko-KR', { year:'numeric', month:'long', day:'numeric' }).format(new Date());
+  const priority = [
+    ...critical.map(({ i, r }) => ({ code:i.code, title:i.title, status:r.status, note:'중대 의무 항목', due:r.due_date })),
+    ...due.filter(({ it }) => !critical.some(({ i }) => i.id === it.id)).map(({ it, r }) => ({ code:it.code, title:it.title, status:r.status, note:'기한 임박', due:r.due_date }))
+  ].slice(0, 5);
+  const actionLine = critical.length
+    ? '중대 의무 미이행·보완 항목에 대한 책임자·기한을 확정하고, 다음 경영진 보고 시 조치 완료 증빙을 확인해 주십시오.'
+    : overdueCapa
+      ? '기한이 지난 개선조치의 원인과 완료계획을 확인하고, 책임자별 회수계획을 승인해 주십시오.'
+      : due.length
+        ? '기한 임박 의무의 이행계획과 증빙 확보 여부를 정례적으로 점검해 주십시오.'
+        : '정기 점검과 증빙 갱신을 지속하고, 다음 반기 이행상태 평가 시 결과를 확인해 주십시오.';
+
+  return `
+    <article class="exec-report" id="execReport" aria-label="대표이사 보고용 안전보건관리체계 이행 보고서">
+      <div class="exec-report-head">
+        <div class="exec-report-brand"><span>ASUNG DAISO</span><b>SAFETY · HEALTH GOVERNANCE</b></div>
+        <div class="exec-report-period">${esc(halfLabel(half))} · 대표이사 보고용</div>
+        <div class="exec-report-title">
+          <div><span class="exec-report-kicker">EXECUTIVE BRIEFING</span><h2>안전보건관리체계 이행 종합 보고</h2><p>중대재해처벌법 · 산업안전보건법 · ISO 45001 통합 관리 현황</p></div>
+          <div class="exec-report-date">보고일<br><b>${esc(reportDate)}</b></div>
+        </div>
+      </div>
+
+      <div class="exec-risk ${risk.cls}">
+        <div class="exec-risk-label">경영진 판단 신호</div><strong>${esc(risk.label)}</strong><p>${esc(risk.note)}</p>
+        <div class="exec-risk-score"><span>통합 이행지수</span><b>${all.pct}<small>점</small></b></div>
+      </div>
+
+      <section class="exec-section">
+        <div class="exec-section-head"><span>01</span><div><h3>경영진 요약</h3><p>이번 반기 시스템에 등록된 이행 기록을 기준으로 자동 집계한 현황입니다.</p></div></div>
+        <div class="exec-summary-grid">
+          <div class="exec-summary-main"><span>전체 평가대상</span><strong>${all.total}<small>개 의무·요구사항</small></strong><div class="exec-progress"><i style="width:${Math.max(2, all.pct)}%"></i></div><p>이행완료 ${all.counts.done}건 · 이행중 ${all.counts.progress}건 · 보완필요 ${all.counts.hold}건 · 미이행 ${all.counts.none}건</p></div>
+          <div class="exec-mini"><span>중대 우선관리</span><strong>${critical.length}<small>건</small></strong><p>중대 의무 미이행·보완</p></div>
+          <div class="exec-mini"><span>기한 임박</span><strong>${due.length}<small>건</small></strong><p>30일 이내 관리 필요</p></div>
+          <div class="exec-mini"><span>진행중 CAPA</span><strong>${openCapa.length}<small>건</small></strong><p>${overdueCapa ? `기한 초과 ${overdueCapa}건` : '기한 초과 없음'}</p></div>
+        </div>
+      </section>
+
+      <section class="exec-section">
+        <div class="exec-section-head"><span>02</span><div><h3>법령·표준별 이행 수준</h3><p>법적 의무와 국제표준 요구사항을 동일 기준으로 모니터링합니다.</p></div></div>
+        <div class="exec-frameworks">
+          ${[
+            ['중대재해처벌법', '시행령 제4조·제5조 핵심 의무', mssa, 'red'],
+            ['산업안전보건법', '주요 법정 의무 조항', osha, 'blue'],
+            ['ISO 45001', '국제표준 4~10장 요구사항', iso, 'green']
+          ].map(([name, desc, stat, cls]) => `<div class="exec-framework ${cls}"><div><span>${esc(name)}</span><p>${esc(desc)}</p></div><strong>${stat.pct}<small>%</small></strong><div class="exec-progress"><i style="width:${Math.max(2, stat.pct)}%"></i></div><em>완료 ${stat.counts.done} · 보완/미이행 ${stat.counts.hold + stat.counts.none}</em></div>`).join('')}
+        </div>
+      </section>
+
+      <section class="exec-section exec-two-col">
+        <div>
+          <div class="exec-section-head"><span>03</span><div><h3>우선 조치 및 의사결정 요청</h3><p>위험 신호에 따라 즉시 확인이 필요한 과제입니다.</p></div></div>
+          <div class="exec-action-callout"><b>대표이사 요청사항</b><p>${esc(actionLine)}</p></div>
+          ${priority.length ? `<ol class="exec-priority">${priority.map((x, n) => `<li><span>${String(n + 1).padStart(2, '0')}</span><div><b>${esc(x.code)} · ${esc(x.title)}</b><p>${esc(x.note)}${x.due ? ` · 기한 ${esc(fmtDate(x.due))}` : ''}</p></div>${statusBadge(x.status)}</li>`).join('')}</ol>` : `<div class="exec-clear"><b>✓</b><div><strong>즉시 상정할 우선 조치가 없습니다</strong><p>등록된 현황상 중대 의무 미이행·기한 임박 항목이 없습니다. 정기 점검과 증빙 최신화는 계속 필요합니다.</p></div></div>`}
+        </div>
+        <div>
+          <div class="exec-section-head"><span>04</span><div><h3>운영 기반 및 관리지표</h3><p>문서·점검·개선조치의 실행력을 함께 관리합니다.</p></div></div>
+          <div class="exec-ops-grid">
+            <div><span>문서체계 구축률</span><strong>${docs.pct}%</strong><p>승인 ${docs.approved} / 전체 ${docs.total}</p></div>
+            <div><span>반기 점검 완료</span><strong>${halfDone}/${halfCycleItems.length}</strong><p>반기 1회 이상 점검 의무</p></div>
+            <div><span>개선조치 종결</span><strong>${state.capa.length - openCapa.length}/${state.capa.length}</strong><p>효과성 검증 포함 관리</p></div>
+            <div><span>증빙 등록</span><strong>${state.evidence.length}<small>건</small></strong><p>실행 증빙 자료함 기준</p></div>
+          </div>
+          <div class="exec-governance"><b>관리 원칙</b><p>본 보고서는 시스템에 등록된 이행·점검·개선조치·증빙 자료를 반기 기준으로 집계합니다. 법률 적합성의 최종 판단은 원본 증빙과 현장 확인을 거쳐 별도로 수행합니다.</p></div>
+        </div>
+      </section>
+
+      <footer class="exec-report-foot"><span>자료 기준: ${esc(halfLabel(half))} · ${esc(APP.name)}</span><span>본 문서는 경영진 보고 목적의 현황 요약본입니다.</span></footer>
+    </article>`;
+}
+
 /* ---------------- 대시보드 ---------------- */
 
 export function renderDashboard() {
@@ -94,6 +176,7 @@ export function renderDashboard() {
 
   const halfCycleItems = ALL_ITEMS.filter(i => i.cycle === '반기 1회');
   const halfDone = halfCycleItems.filter(i => getRecord(i.id, half).status === 'done').length;
+  const overdueCapa = openCapa.filter(c => c.due_date && c.due_date < new Date().toISOString().slice(0, 10)).length;
 
   return `
   <div class="banner">
@@ -101,6 +184,14 @@ export function renderDashboard() {
     <div><b>${esc(halfLabel(half))} 이행 현황</b> — 중대재해처벌법 시행령 제4조·제5조, 산업안전보건법, ISO 45001:2018 요구사항을
     한 화면에서 관리합니다. 각 조항 카드를 클릭하면 <b>이행 현황·담당자·증빙을 직접 작성</b>할 수 있고, 작성 즉시 이행률에 반영됩니다.</div>
   </div>
+
+  <section class="exec-launch" aria-label="경영진 보고서">
+    <div class="exec-launch-mark">CEO</div>
+    <div class="exec-launch-copy"><span>EXECUTIVE REPORTING</span><strong>대표이사 보고용 안전보건관리체계 종합 보고서</strong><p>${esc(halfLabel(half))} 기준 핵심 리스크·이행 수준·의사결정 요청사항을 자동으로 정리합니다.</p></div>
+    <div class="exec-launch-actions"><button class="btn primary" id="execReportToggle">보고서 보기</button><button class="btn" id="execReportPrint">PDF 인쇄 · 저장</button></div>
+  </section>
+
+  ${executiveReportHtml({ half, all, mssa, osha, iso, docs, critical, due, openCapa, overdueCapa, halfDone, halfCycleItems })}
 
   <div class="grid g4">
     ${kpi({ title:'⚖️ 종합 이행률', value:all.pct, unit:'%', tone:'', pct:all.pct,
@@ -227,6 +318,32 @@ export function renderDashboard() {
       </div>
     </div>
   </div>`;
+}
+
+export function bindDashboardEvents(root, openItem) {
+  root.addEventListener('click', e => {
+    const toggle = e.target.closest('#execReportToggle');
+    if (toggle) {
+      const report = $('#execReport', root);
+      report?.classList.toggle('is-open');
+      const opened = report?.classList.contains('is-open');
+      toggle.textContent = opened ? '보고서 닫기' : '보고서 보기';
+      if (opened) report.scrollIntoView({ behavior:'smooth', block:'start' });
+      return;
+    }
+    if (e.target.closest('#execReportPrint')) {
+      const report = $('#execReport', root);
+      report?.classList.add('is-open');
+      document.body.classList.add('print-executive');
+      window.print();
+      return;
+    }
+    const g = e.target.closest('[data-goto]');
+    if (g) { location.hash = '#/' + g.dataset.goto; return; }
+    const it = e.target.closest('[data-item]');
+    if (it) openItem(it.dataset.item);
+  });
+  window.addEventListener('afterprint', () => document.body.classList.remove('print-executive'), { once:true });
 }
 
 /* ---------------- 법령/ISO 이행관리 목록 ---------------- */
