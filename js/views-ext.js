@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260813_drawer88_1';
+} from './data/frameworks.js?v=20260813_allattachments1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode
-} from './core.js?v=20260813_drawer88_1';
-import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260813_drawer88_1';
+} from './core.js?v=20260813_allattachments1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260813_allattachments1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -123,6 +123,7 @@ function openDocDrawer(docId, rerender) {
     const it = ALL_ITEMS.find(i => i.id === id);
     return it ? `${it.code} ${it.title}` : id;
   });
+  let attachmentManager;
 
   openDrawer({
     code: `${d.doc_no} · ${DOC_TYPES[d.type]?.label || d.type}`,
@@ -199,10 +200,13 @@ function openDocDrawer(docId, rerender) {
         </div>` : ''}
       </div>
 
+      ${attachmentPanelHtml(d.attachments, editable, { hint: '문서 원본·승인본·개정 근거를 첨부할 수 있습니다' })}
+
       ${d.updated_at ? `<div style="font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line-strong);padding-top:12px">
         최종 수정 ${esc(String(d.updated_at).slice(0, 16).replace('T', ' '))} · ${esc(d.updated_by || '')}</div>` : ''}
     `,
     onOpen(root) {
+      attachmentManager = createAttachmentManager(root, { attachments: d.attachments, editable, itemId: `document:${d.id}`, half: state.half });
       const tpl = $('#gTpl', root);
       if (tpl) tpl.onclick = () => {
         const ta = $('#gBody', root);
@@ -221,6 +225,14 @@ function openDocDrawer(docId, rerender) {
       };
     },
     async onSave(root) {
+      let storedAttachments;
+      try {
+        storedAttachments = await attachmentManager.storePending();
+      } catch (err) {
+        await attachmentManager.rollbackNewlyStored();
+        toast(`첨부자료 저장 실패: ${err?.message || String(err)}`, 'bad');
+        return;
+      }
       const next = {
         ...d,
         doc_no: $('#gNo', root).value.trim() || d.doc_no,
@@ -237,11 +249,13 @@ function openDocDrawer(docId, rerender) {
         purpose: $('#gPurpose', root).value.trim(),
         scope: $('#gScope', root).value.trim(),
         body: $('#gBody', root).value,
-        revisions: d.revisions || []
+        revisions: d.revisions || [],
+        attachments: storedAttachments
       };
       showSpinner('문서 저장 중…');
       const res = await saveDocument(next);
       hideSpinner();
+      if (res.ok) await attachmentManager.commitRemoved();
       toast(res.ok ? (res.local ? '문서를 저장했습니다 (로컬)' : '문서를 저장했습니다 (Supabase 동기화)') : `로컬 저장됨 · 동기화 실패: ${res.error}`,
             res.ok ? 'ok' : 'bad');
       closeDrawer();
@@ -361,7 +375,8 @@ export function renderInspection() {
 function openInspDrawer(rec, rerender) {
   const isNew = !rec;
   const r = rec || { id: uid('insp'), half: state.half, date: today(), kind: '중처법 시행령 제4조 반기점검',
-                     scope: '', method: '', result: '', finding: '', action: '', action_needed: 'N', inspector: state.user?.name || '' };
+                     scope: '', method: '', result: '', finding: '', action: '', action_needed: 'N', inspector: state.user?.name || '', attachments: [] };
+  let attachmentManager;
   openDrawer({
     code: `이행점검 · ${halfLabel(state.half)}`,
     title: isNew ? '점검 실시 기록 등록' : `${fmtDate(r.date)} 점검 기록`,
@@ -391,17 +406,25 @@ function openInspDrawer(rec, rerender) {
         <select class="inp" id="iNeed">
           <option value="N" ${r.action_needed === 'N' ? 'selected' : ''}>조치 완료 / 불필요</option>
           <option value="Y" ${r.action_needed === 'Y' ? 'selected' : ''}>조치 필요 (진행중)</option>
-        </select></div>`,
+        </select></div>
+      ${attachmentPanelHtml(r.attachments, canEdit(), { hint: '점검표·현장 사진·결과보고서 등을 첨부할 수 있습니다' })}`,
+    onOpen(root) {
+      attachmentManager = createAttachmentManager(root, { attachments: r.attachments, editable: canEdit(), itemId: `inspection:${r.id}`, half: state.half });
+    },
     async onSave(root) {
+      let storedAttachments;
+      try { storedAttachments = await attachmentManager.storePending(); }
+      catch (err) { await attachmentManager.rollbackNewlyStored(); toast(`첨부자료 저장 실패: ${err?.message || String(err)}`, 'bad'); return; }
       const next = { ...r, half: state.half,
         date: $('#iDate', root).value, inspector: $('#iBy', root).value.trim(),
         kind: $('#iKind', root).value, scope: $('#iScope', root).value.trim(),
         method: $('#iMethod', root).value.trim(), result: $('#iResult', root).value.trim(),
         finding: $('#iFind', root).value.trim(), action: $('#iAction', root).value.trim(),
-        action_needed: $('#iNeed', root).value };
+        action_needed: $('#iNeed', root).value, attachments: storedAttachments };
       showSpinner('저장 중…');
       const res = await saveRow('inspections', next);
       hideSpinner();
+      if (res.ok) await attachmentManager.commitRemoved();
       toast(res.ok ? '점검 기록을 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }
@@ -478,7 +501,8 @@ export function renderCapa() {
 function openCapaDrawer(rec, rerender) {
   const isNew = !rec;
   const c = rec || { id: uid('capa'), raised_date: today(), source: '반기 점검', title: '', description: '',
-                     item_id: '', root_cause: '', action: '', owner: '', due_date: '', verify: '', status: 'open' };
+                     item_id: '', root_cause: '', action: '', owner: '', due_date: '', verify: '', status: 'open', attachments: [] };
+  let attachmentManager;
   openDrawer({
     code: isNew ? '개선조치 신규 등록' : `CAPA · ${fmtDate(c.raised_date)}`,
     title: isNew ? '개선조치(CAPA) 등록' : (c.title || '개선조치'),
@@ -509,19 +533,27 @@ function openCapaDrawer(rec, rerender) {
       <div class="fld"><label>효과성 검증 결과</label>
         <textarea class="inp" id="cVerify" style="min-height:80px" placeholder="조치가 실제로 효과가 있었는지 확인한 방법과 결과를 기재합니다.">${esc(c.verify)}</textarea></div>
       <div class="fld"><label>진행 상태</label>
-        <select class="inp" id="cStat">${Object.entries(CAPA_STATUS).map(([k, v]) => `<option value="${k}" ${c.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>`,
+        <select class="inp" id="cStat">${Object.entries(CAPA_STATUS).map(([k, v]) => `<option value="${k}" ${c.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      ${attachmentPanelHtml(c.attachments, canEdit(), { hint: '개선 전후 사진·조치 완료 보고·확인 근거를 첨부할 수 있습니다' })}`,
+    onOpen(root) {
+      attachmentManager = createAttachmentManager(root, { attachments: c.attachments, editable: canEdit(), itemId: `capa:${c.id}`, half: state.half });
+    },
     async onSave(root) {
+      let storedAttachments;
+      try { storedAttachments = await attachmentManager.storePending(); }
+      catch (err) { await attachmentManager.rollbackNewlyStored(); toast(`첨부자료 저장 실패: ${err?.message || String(err)}`, 'bad'); return; }
       const next = { ...c,
         raised_date: $('#cDate', root).value, source: $('#cSrc', root).value,
         title: $('#cTitle', root).value.trim(), item_id: $('#cItem', root).value,
         description: $('#cDesc', root).value.trim(), root_cause: $('#cRoot', root).value.trim(),
         action: $('#cAct', root).value.trim(), owner: $('#cOwner', root).value.trim(),
         due_date: $('#cDue', root).value, verify: $('#cVerify', root).value.trim(),
-        status: $('#cStat', root).value };
+        status: $('#cStat', root).value, attachments: storedAttachments };
       if (!next.title) { toast('제목을 입력하세요.', 'bad'); return; }
       showSpinner('저장 중…');
       const res = await saveRow('capa', next);
       hideSpinner();
+      if (res.ok) await attachmentManager.commitRemoved();
       toast(res.ok ? '개선조치를 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }
@@ -590,7 +622,8 @@ export function renderEvidence() {
 }
 
 function openEviDrawer(rec, rerender) {
-  const e = rec || { id: uid('evi'), date: today(), title: '', item_id: '', location: '', url: '', note: '' };
+  const e = rec || { id: uid('evi'), date: today(), title: '', item_id: '', location: '', url: '', note: '', attachments: [] };
+  let attachmentManager;
   openDrawer({
     code: '이행 증빙 자료',
     title: rec ? (e.title || '증빙 자료') : '증빙 자료 등록',
@@ -606,15 +639,23 @@ function openEviDrawer(rec, rerender) {
       <div class="fld"><label>자료명</label><input class="inp" id="vTitle" value="${esc(e.title)}" placeholder="예) 2026년 상반기 위험성평가 결과보고서"></div>
       <div class="fld"><label>보관 위치</label><input class="inp" id="vLoc" value="${esc(e.location)}" placeholder="예) 안전보건팀 문서고 3번 캐비닛 / D드라이브 최종백업 폴더"></div>
       <div class="fld"><label>링크 (선택)</label><input class="inp" id="vUrl" value="${esc(e.url)}" placeholder="https://"></div>
-      <div class="fld"><label>비고</label><textarea class="inp" id="vNote" style="min-height:80px">${esc(e.note)}</textarea></div>`,
+      <div class="fld"><label>비고</label><textarea class="inp" id="vNote" style="min-height:80px">${esc(e.note)}</textarea></div>
+      ${attachmentPanelHtml(e.attachments, canEdit(), { hint: '증빙 원본·보조 사진·관련 전자결재 링크를 함께 보관할 수 있습니다' })}`,
+    onOpen(root) {
+      attachmentManager = createAttachmentManager(root, { attachments: e.attachments, editable: canEdit(), itemId: `evidence:${e.id}`, half: state.half });
+    },
     async onSave(root) {
+      let storedAttachments;
+      try { storedAttachments = await attachmentManager.storePending(); }
+      catch (err) { await attachmentManager.rollbackNewlyStored(); toast(`첨부자료 저장 실패: ${err?.message || String(err)}`, 'bad'); return; }
       const next = { ...e, date: $('#vDate', root).value, item_id: $('#vItem', root).value,
         title: $('#vTitle', root).value.trim(), location: $('#vLoc', root).value.trim(),
-        url: $('#vUrl', root).value.trim(), note: $('#vNote', root).value.trim() };
+        url: $('#vUrl', root).value.trim(), note: $('#vNote', root).value.trim(), attachments: storedAttachments };
       if (!next.title) { toast('자료명을 입력하세요.', 'bad'); return; }
       showSpinner('저장 중…');
       const res = await saveRow('evidence', next);
       hideSpinner();
+      if (res.ok) await attachmentManager.commitRemoved();
       toast(res.ok ? '증빙을 등록했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }
@@ -691,7 +732,8 @@ export function renderOrg() {
 
 function openOrgDrawer(rec, rerender) {
   const o = rec || { id: uid('org'), position: POSITIONS[0], name: '', site: '', appointed_date: '',
-                     qualification: '', training_date: '', eval_date: '', eval_result: '', note: '' };
+                     qualification: '', training_date: '', eval_date: '', eval_result: '', note: '', attachments: [] };
+  let attachmentManager;
   openDrawer({
     code: '법정 선임 현황',
     title: rec ? `${o.position} ${o.name}` : '선임자 등록',
@@ -715,17 +757,25 @@ function openOrgDrawer(rec, rerender) {
       <div class="fld"><label>업무수행 평가 결과</label>
         <textarea class="inp" id="oEvR" style="min-height:90px" placeholder="평가기준별 점수와 총평, 개선 요구사항을 기재합니다.">${esc(o.eval_result)}</textarea></div>
       <div class="fld"><label>비고 (부여된 권한·예산 등)</label>
-        <textarea class="inp" id="oNote" style="min-height:80px">${esc(o.note)}</textarea></div>`,
+        <textarea class="inp" id="oNote" style="min-height:80px">${esc(o.note)}</textarea></div>
+      ${attachmentPanelHtml(o.attachments, canEdit(), { hint: '선임신고서·자격증·교육수료증·인사발령서 등을 첨부할 수 있습니다' })}`,
+    onOpen(root) {
+      attachmentManager = createAttachmentManager(root, { attachments: o.attachments, editable: canEdit(), itemId: `org:${o.id}`, half: state.half });
+    },
     async onSave(root) {
+      let storedAttachments;
+      try { storedAttachments = await attachmentManager.storePending(); }
+      catch (err) { await attachmentManager.rollbackNewlyStored(); toast(`첨부자료 저장 실패: ${err?.message || String(err)}`, 'bad'); return; }
       const next = { ...o, position: $('#oPos', root).value, name: $('#oName', root).value.trim(),
         site: $('#oSite', root).value.trim(), appointed_date: $('#oAppt', root).value,
         qualification: $('#oQual', root).value.trim(), training_date: $('#oTr', root).value,
         eval_date: $('#oEv', root).value, eval_result: $('#oEvR', root).value.trim(),
-        note: $('#oNote', root).value.trim() };
+        note: $('#oNote', root).value.trim(), attachments: storedAttachments };
       if (!next.name) { toast('성명을 입력하세요.', 'bad'); return; }
       showSpinner('저장 중…');
       const res = await saveRow('org', next);
       hideSpinner();
+      if (res.ok) await attachmentManager.commitRemoved();
       toast(res.ok ? '선임 현황을 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
       closeDrawer(); rerender();
     }

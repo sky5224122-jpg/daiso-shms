@@ -107,10 +107,12 @@ create table if not exists public.shms_documents (
   iso_refs     jsonb default '[]'::jsonb,
   law_refs     jsonb default '[]'::jsonb,
   revisions    jsonb default '[]'::jsonb,          -- 제·개정 이력
+  attachments  jsonb not null default '[]'::jsonb, -- 원본·승인본·링크 메타데이터
   updated_at   timestamptz not null default now(),
   updated_by   text default ''
 );
 create unique index if not exists shms_documents_docno_idx on public.shms_documents (doc_no);
+alter table public.shms_documents add column if not exists attachments jsonb not null default '[]'::jsonb;
 
 -- ── 4. 이행 점검 기록 ──────────────────────────────────────
 create table if not exists public.shms_inspections (
@@ -125,10 +127,12 @@ create table if not exists public.shms_inspections (
   action        text default '',
   action_needed text default 'N',
   inspector     text default '',
+  attachments   jsonb not null default '[]'::jsonb, -- 점검표·사진·결과보고서 메타데이터
   updated_at    timestamptz not null default now(),
   updated_by    text default ''
 );
 create index if not exists shms_inspections_half_idx on public.shms_inspections (half);
+alter table public.shms_inspections add column if not exists attachments jsonb not null default '[]'::jsonb;
 
 -- ── 5. 개선조치 (CAPA) ─────────────────────────────────────
 create table if not exists public.shms_capa (
@@ -144,10 +148,12 @@ create table if not exists public.shms_capa (
   due_date    date,
   verify      text default '',
   status      text default 'open',   -- open|analyzing|acting|verifying|closed
+  attachments jsonb not null default '[]'::jsonb, -- 조치 전후·완료 근거 메타데이터
   updated_at  timestamptz not null default now(),
   updated_by  text default ''
 );
 create index if not exists shms_capa_status_idx on public.shms_capa (status);
+alter table public.shms_capa add column if not exists attachments jsonb not null default '[]'::jsonb;
 
 -- ── 6. 증빙 자료 등록부 ────────────────────────────────────
 create table if not exists public.shms_evidence (
@@ -158,9 +164,11 @@ create table if not exists public.shms_evidence (
   location   text default '',
   url        text default '',
   note       text default '',
+  attachments jsonb not null default '[]'::jsonb, -- 보조 파일·링크 메타데이터
   updated_at timestamptz not null default now(),
   updated_by text default ''
 );
+alter table public.shms_evidence add column if not exists attachments jsonb not null default '[]'::jsonb;
 
 -- ── 7. 조직 · 법정 선임 현황 ───────────────────────────────
 create table if not exists public.shms_org (
@@ -174,9 +182,11 @@ create table if not exists public.shms_org (
   eval_date       date,
   eval_result     text default '',
   note            text default '',
+  attachments     jsonb not null default '[]'::jsonb, -- 선임신고서·자격증·교육수료증 메타데이터
   updated_at      timestamptz not null default now(),
   updated_by      text default ''
 );
+alter table public.shms_org add column if not exists attachments jsonb not null default '[]'::jsonb;
 
 -- ============================================================
 -- RLS (행 수준 보안)

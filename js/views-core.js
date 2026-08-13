@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_drawer88_1';
+} from './data/frameworks.js?v=20260813_allattachments1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
   canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_drawer88_1';
+} from './core.js?v=20260813_allattachments1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -453,6 +453,144 @@ function attachmentRowHtml(a, i, editable) {
     ${canView ? `<button type="button" class="attach-view" data-idx="${i}">보기</button>` : ''}
     ${editable ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
   </div>`;
+}
+
+function attachmentEmptyHtml() {
+  return '<div class="attach-empty">등록된 첨부자료가 없습니다. 파일 또는 외부 링크를 추가하세요.</div>';
+}
+
+/** 범용 작성창용 첨부자료 영역 */
+export function attachmentPanelHtml(attachments = [], editable, { hint = '' } = {}) {
+  return `
+    <div class="fld drawer-attachments">
+      <label>첨부자료 · 링크</label>
+      <div class="attach-list" id="xAttachList">
+        ${(attachments || []).map((a, i) => attachmentRowHtml(a, i, editable)).join('') || attachmentEmptyHtml()}
+      </div>
+      ${editable ? `<div class="attach-add-group">
+        <div class="attach-add-title">📎 파일 첨부</div>
+        <div class="attach-add">
+          <input class="inp attach-file" type="file" id="xAttachFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.webp,.txt,.csv,.zip">
+          <input class="inp" id="xAttachFileNote" placeholder="파일 설명·보관 근거 (선택)">
+          <button type="button" class="btn sm" id="xAttachFileBtn">파일 추가</button>
+        </div>
+      </div>
+      <div class="attach-add-group">
+        <div class="attach-add-title">🔗 외부 링크 등록</div>
+        <div class="attach-add">
+          <input class="inp" type="url" id="xAttachUrl" placeholder="https://..." style="flex:1;min-width:220px">
+          <input class="inp" id="xAttachLinkName" placeholder="표시 이름 (선택)">
+          <input class="inp" id="xAttachLinkNote" placeholder="링크 설명 (선택)">
+          <button type="button" class="btn sm" id="xAttachLinkBtn">링크 추가</button>
+        </div>
+      </div>` : ''}
+      <div class="help">${hint ? `${esc(hint)} · ` : ''}사진은 자동으로 WebP 50KB 미만으로 최적화하고, 문서·ZIP은 10MB 이하만 등록할 수 있습니다.</div>
+    </div>`;
+}
+
+/** 범용 작성창 첨부 목록의 추가·열람·삭제 및 저장 준비를 관리한다. */
+export function createAttachmentManager(root, { attachments = [], editable = false, itemId = '', half = '' } = {}) {
+  let list = [...(attachments || [])];
+  const removedAttachments = [];
+  let newlyStored = [];
+  const render = () => {
+    const listEl = root.querySelector('#xAttachList');
+    if (listEl) listEl.innerHTML = list.length
+      ? list.map((a, i) => attachmentRowHtml(a, i, editable)).join('')
+      : attachmentEmptyHtml();
+  };
+
+  if (editable) {
+    root.querySelector('#xAttachFileBtn')?.addEventListener('click', async () => {
+      const fileEl = root.querySelector('#xAttachFile');
+      const file = fileEl?.files?.[0];
+      if (!file) { toast('첨부할 파일을 선택해 주세요.', 'bad'); fileEl?.focus(); return; }
+      const button = root.querySelector('#xAttachFileBtn');
+      button.disabled = true;
+      showSpinner('사진 용량 최적화 중…');
+      try {
+        const prepared = await prepareAttachmentFile(file);
+        if (list.some(a => a.kind === 'file' && a.contentHash === prepared.contentHash)) {
+          toast('같은 파일이 이미 등록되어 있습니다.', 'bad'); return;
+        }
+        list.push({
+          id: uid('att'), kind: 'file', storage: 'pending', _file: prepared.file,
+          name: prepared.file.name, note: root.querySelector('#xAttachFileNote').value.trim(),
+          date: new Date().toISOString().slice(0, 10), mime: prepared.file.type, size: prepared.file.size,
+          originalSize: prepared.originalSize, compressed: prepared.compressed, contentHash: prepared.contentHash
+        });
+        fileEl.value = '';
+        root.querySelector('#xAttachFileNote').value = '';
+        render();
+        toast(prepared.compressed ? `사진을 ${formatBytes(prepared.originalSize)}에서 ${formatBytes(prepared.file.size)}로 압축했습니다.` : '파일을 첨부 목록에 추가했습니다.', 'ok');
+      } catch (err) {
+        toast(err?.message || String(err), 'bad');
+      } finally {
+        hideSpinner();
+        button.disabled = false;
+      }
+    });
+
+    root.querySelector('#xAttachLinkBtn')?.addEventListener('click', () => {
+      const urlEl = root.querySelector('#xAttachUrl');
+      const url = attachmentUrl(urlEl.value);
+      if (!url) { toast('http 또는 https 형식의 올바른 링크를 입력해 주세요.', 'bad'); urlEl.focus(); return; }
+      list.push({
+        id: uid('att'), kind: 'link', url,
+        name: root.querySelector('#xAttachLinkName').value.trim() || url,
+        note: root.querySelector('#xAttachLinkNote').value.trim(),
+        date: new Date().toISOString().slice(0, 10)
+      });
+      urlEl.value = '';
+      root.querySelector('#xAttachLinkName').value = '';
+      root.querySelector('#xAttachLinkNote').value = '';
+      render();
+    });
+  }
+
+  root.querySelector('#xAttachList')?.addEventListener('click', async e => {
+    const view = e.target.closest('.attach-view');
+    if (view) {
+      showSpinner('첨부자료 여는 중…');
+      try { await viewAttachment(list[Number(view.dataset.idx)]); }
+      catch (err) { toast(err?.message || String(err), 'bad'); }
+      finally { hideSpinner(); }
+      return;
+    }
+    const del = e.target.closest('.attach-del');
+    if (!del || !editable) return;
+    const [removed] = list.splice(Number(del.dataset.idx), 1);
+    if (removed && removed.storage !== 'pending') removedAttachments.push(removed);
+    render();
+  });
+
+  return {
+    async storePending() {
+      newlyStored = [];
+      const storedAttachments = [];
+      for (const att of list) {
+        if (att.storage === 'pending' && att._file) {
+          const stored = await saveAttachmentFile(att._file, { itemId, half, note: att.note || '' });
+          stored.originalSize = att.originalSize || att.size;
+          stored.compressed = !!att.compressed;
+          stored.contentHash = att.contentHash || stored.contentHash;
+          storedAttachments.push(stored);
+          newlyStored.push(stored);
+        } else {
+          const { _file, ...clean } = att;
+          storedAttachments.push(clean);
+        }
+      }
+      list = storedAttachments;
+      return storedAttachments;
+    },
+    async commitRemoved() {
+      await Promise.allSettled(removedAttachments.map(deleteAttachmentFile));
+    },
+    async rollbackNewlyStored() {
+      await Promise.allSettled(newlyStored.map(deleteAttachmentFile));
+    }
+  };
 }
 
 export function openItemDrawer(itemId, onSaved) {
