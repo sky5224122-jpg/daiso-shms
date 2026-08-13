@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_execreport1';
+} from './data/frameworks.js?v=20260813_autolink1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_execreport1';
+} from './core.js?v=20260813_autolink1';
 
 /* ---------------- 공용 조각 ---------------- */
 

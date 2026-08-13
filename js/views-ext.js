@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260813_execreport1';
+} from './data/frameworks.js?v=20260813_autolink1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode
-} from './core.js?v=20260813_execreport1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260813_execreport1';
+} from './core.js?v=20260813_autolink1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260813_autolink1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -328,33 +328,51 @@ export function renderInspection() {
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   const halfItems = ALL_ITEMS.filter(i => i.cycle === '반기 1회');
   const done = halfItems.filter(i => getRecord(i.id, half).status === 'done').length;
+  const linkedMssa = MSSA_ITEMS.map(i => ({ i, r: getRecord(i.id, half) }));
+  const linkedWritten = linkedMssa.filter(({ r }) => r.implementation || r.last_checked || r.evidence || r.status !== 'none').length;
+  const linkedActions = linkedMssa.filter(({ r }) => ['none', 'hold'].includes(r.status)).length;
 
   return `
   <div class="banner warn">
     <div class="i">🗓️</div>
     <div><b>반기 1회 이상 점검 의무</b> — 중대재해처벌법 시행령 제4조 제3·5·7·8·9호 및 제5조는
-    <b>반기 1회 이상 점검하고 필요한 조치를 할 것</b>을 요구합니다. 점검을 실시하지 않았거나 기록이 없으면
-    의무 미이행으로 판단될 수 있으므로, 점검 실시 결과를 반드시 등록해 주세요.</div>
+    <b>반기 1회 이상 점검하고 필요한 조치를 할 것</b>을 요구합니다. <b>중대재해처벌법 상세 화면에서 작성한 이행현황·점검일·담당·증빙은 아래 자동 연동 현황에 즉시 반영</b>됩니다.
+    이 화면의 점검 실시 기록은 전사·현장 점검 회차의 총괄 결과와 사진·보고서를 남길 때만 사용하세요.</div>
   </div>
 
   <div class="grid g4" style="margin-bottom:18px">
     ${kpi({ title:'📋 반기 점검 대상', value:halfItems.length, unit:'개 조항', desc:esc(halfLabel(half)) })}
     ${kpi({ title:'✅ 점검 완료', value:done, unit:`/${halfItems.length}`, tone:'green',
             pct: halfItems.length ? Math.round(done / halfItems.length * 100) : 0, desc:'이행완료로 기록된 조항' })}
-    ${kpi({ title:'📝 등록된 점검 실시 기록', value:list.length, unit:'건', tone:'blue', desc:'점검 회차별 결과보고' })}
-    ${kpi({ title:'⚠️ 미점검', value:halfItems.length - done, unit:'개 조항', tone:'red', desc:'점검 결과 기록이 필요합니다' })}
+    ${kpi({ title:'🔗 중처법 자동 연동', value:linkedWritten, unit:`/${linkedMssa.length}`, tone:'blue', desc:'법령 상세 작성 내역 즉시 반영' })}
+    ${kpi({ title:'⚠️ 중처법 우선 조치', value:linkedActions, unit:'건', tone:'red', desc:'미이행·보완 필요 항목' })}
   </div>
 
   <div class="toolbar">
+    <span class="tag law">자동 연동</span><span style="font-size:11.5px;color:var(--muted);font-weight:700">법령 상세에서 수정하면 이 화면도 자동 갱신됩니다</span>
     <div style="flex:1"></div>
-    ${canEdit() ? `<button class="btn primary" id="inspNew">＋ 점검 실시 기록 등록</button>` : ''}
+    ${canEdit() ? `<button class="btn primary" id="inspNew">＋ 점검 회차 총괄 기록</button>` : ''}
     <button class="btn" id="inspPrint">🖨️ 점검결과 인쇄</button>
   </div>
 
-  <div class="sec-t"><h2>점검 실시 기록</h2><div class="l"></div><span class="n">${list.length}건</span></div>
+  <div class="sec-t"><h2>중대재해처벌법 자동 연동 현황</h2><div class="l"></div><span class="n">법령 상세 작성값 · 이 화면에서는 별도 저장하지 않습니다</span></div>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th style="width:112px">근거</th><th>이행 의무 · 자동 연동 이행내역</th><th style="width:100px">최근 점검일</th>
+      <th style="width:105px">담당</th><th style="width:92px">상태</th></tr></thead>
+    <tbody>${linkedMssa.map(({ i, r }) => {
+      const summary = r.implementation || r.findings || r.evidence || '';
+      return `<tr data-item="${esc(i.id)}" style="cursor:pointer">
+        <td><span class="tag law">${esc(i.code)}</span><div style="margin-top:5px;font-size:10px;color:var(--muted);font-weight:700">${esc(i.cycle)}</div></td>
+        <td><div class="cell-title" style="font-weight:700">${esc(i.title)}</div>
+            <div class="cell-sub">${summary ? esc(summary.slice(0, 115)) + (summary.length > 115 ? '…' : '') : '<span style="color:var(--faint)">법령 상세에서 이행내역을 작성해 주세요</span>'}</div></td>
+        <td>${r.last_checked ? fmtDate(r.last_checked) : '<span style="color:var(--bad);font-weight:800">미기록</span>'}</td>
+        <td>${esc(r.owner || '-')}</td><td>${statusBadge(r.status)}</td></tr>`;
+    }).join('')}</tbody></table></div>
+
+  <div class="sec-t"><h2>점검 회차 총괄 기록</h2><div class="l"></div><span class="n">전사·현장 점검 결과보고서 및 첨부자료 · ${list.length}건</span></div>
   ${list.length === 0
     ? `<div class="card"><div class="empty"><div class="e">🗓️</div><div class="t">등록된 점검 기록이 없습니다</div>
-        <div class="s">「＋ 점검 실시 기록 등록」으로 반기 점검 결과를 남겨 주세요.</div></div></div>`
+        <div class="s">법령별 이행내역은 위 자동 연동 현황에서 관리됩니다. 전사·현장 점검의 총괄 결과나 사진·결과보고서만 별도로 등록해 주세요.</div></div></div>`
     : `<div class="tbl-wrap"><table class="tbl">
         <thead><tr><th style="width:104px">점검일</th><th style="width:150px">점검 구분</th><th>점검 대상 · 주요 결과</th>
           <th style="width:110px">점검자</th><th style="width:96px">조치</th><th style="width:60px"></th></tr></thead>
@@ -369,20 +387,7 @@ export function renderInspection() {
             <td>${canDelete() ? `<button class="btn sm" data-del-insp="${esc(r.id)}">삭제</button>` : ''}</td>
           </tr>`).join('')}</tbody></table></div>`}
 
-  <div class="sec-t"><h2>반기 점검 대상 조항 체크리스트</h2><div class="l"></div>
-    <span class="n">클릭하면 이행 내용을 작성할 수 있습니다</span></div>
-  <div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th style="width:120px">근거</th><th>점검 의무</th><th style="width:110px">최근 점검일</th>
-      <th style="width:110px">담당</th><th style="width:92px">상태</th></tr></thead>
-    <tbody>${halfItems.map(i => {
-      const r = getRecord(i.id, half);
-      return `<tr data-item="${esc(i.id)}" style="cursor:pointer">
-        <td><span class="tag ${i.framework === 'mssa' ? 'law' : i.framework === 'iso' ? 'iso' : ''}">${esc(i.code)}</span></td>
-        <td class="cell-title" style="font-weight:700">${esc(i.title)}</td>
-        <td>${r.last_checked ? fmtDate(r.last_checked) : '<span style="color:var(--bad);font-weight:800">미기록</span>'}</td>
-        <td>${esc(r.owner || '-')}</td>
-        <td>${statusBadge(r.status)}</td></tr>`;
-    }).join('')}</tbody></table></div>`;
+  `;
 }
 
 function openInspDrawer(rec, rerender) {
@@ -392,7 +397,7 @@ function openInspDrawer(rec, rerender) {
   let attachmentManager;
   openDrawer({
     code: `이행점검 · ${halfLabel(state.half)}`,
-    title: isNew ? '점검 실시 기록 등록' : `${fmtDate(r.date)} 점검 기록`,
+    title: isNew ? '점검 회차 총괄 기록 등록' : `${fmtDate(r.date)} 점검 총괄 기록`,
     editable: canEdit(),
     body: `
       <div class="fld-row">
@@ -409,8 +414,8 @@ function openInspDrawer(rec, rerender) {
         <input class="inp" id="iScope" value="${esc(r.scope)}" placeholder="예) 전국 직영매장 376개소 / 물류센터 3개소"></div>
       <div class="fld"><label>점검 방법</label>
         <input class="inp" id="iMethod" value="${esc(r.method || '')}" placeholder="예) 현장 방문점검 + 앱 제출자료 검증 + 서류 확인"></div>
-      <div class="fld"><label>점검 결과 (수기 작성)</label>
-        <textarea class="inp" id="iResult" style="min-height:130px" placeholder="점검한 항목과 확인된 사실을 구체적으로 기재합니다.">${esc(r.result)}</textarea></div>
+      <div class="fld"><label>총괄 점검 결과 (법령별 상세 입력과 중복 작성하지 않음)</label>
+        <textarea class="inp" id="iResult" style="min-height:130px" placeholder="예) 2026년 하반기 전국 매장 표본점검 결과. 법령별 이행현황·점검일·담당·증빙은 중대재해처벌법 상세 화면에서 관리합니다.">${esc(r.result)}</textarea></div>
       <div class="fld"><label>지적·미흡 사항</label>
         <textarea class="inp" id="iFind" style="min-height:90px" placeholder="확인된 미흡사항. 없으면 '해당없음'">${esc(r.finding || '')}</textarea></div>
       <div class="fld"><label>필요한 조치 및 이행 계획</label>
