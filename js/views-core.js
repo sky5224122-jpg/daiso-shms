@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260813_allattachments1';
+} from './data/frameworks.js?v=20260813_masterdelete1';
 import {
-  $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
-  canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
+  $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats,
+  canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260813_allattachments1';
+} from './core.js?v=20260813_masterdelete1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -391,6 +391,7 @@ function ensureDrawer() {
     <div class="drawer-body" id="dBody"></div>
     <div class="drawer-foot">
       <div class="drawer-foot-note" id="dFootNote"></div>
+      <button class="btn" id="dDelete" style="display:none;color:var(--bad);border-color:rgba(180,35,24,.25)">기록 삭제</button>
       <button class="btn ghost" id="dCancel">닫기</button>
       <button class="btn primary" id="dSave">저장</button>
     </div>`;
@@ -422,6 +423,9 @@ export function openDrawer(opt) {
   const body = drawer.querySelector('#dBody');
   body.innerHTML = opt.body || '';
   const saveBtn = drawer.querySelector('#dSave');
+  const deleteBtn = drawer.querySelector('#dDelete');
+  deleteBtn.style.display = 'none';
+  deleteBtn.onclick = null;
   const editable = opt.editable !== false;
   saveBtn.style.display = opt.onSave ? '' : 'none';
   saveBtn.disabled = !editable;
@@ -445,13 +449,14 @@ function attachmentRowHtml(a, i, editable) {
     ? `압축 ${formatBytes(a.originalSize)} → ${formatBytes(a.size)}`
     : (a.size ? formatBytes(a.size) : '');
   const meta = [sizeMeta, a.date || ''].filter(Boolean).join(' · ');
+  const canRemove = editable && (a.storage === 'pending' || canDelete());
   return `<div class="attach-row" data-idx="${i}">
     <span class="attach-kind ${esc(kind)}">${icon} ${label}</span>
     <span class="attach-name">${esc(a.name || a.url || '첨부자료')}</span>
     ${a.note ? `<span class="attach-note" title="${esc(a.note)}">${esc(a.note)}</span>` : ''}
     ${meta ? `<span class="attach-date">${esc(meta)}</span>` : ''}
     ${canView ? `<button type="button" class="attach-view" data-idx="${i}">보기</button>` : ''}
-    ${editable ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
+    ${canRemove ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
   </div>`;
 }
 
@@ -559,7 +564,9 @@ export function createAttachmentManager(root, { attachments = [], editable = fal
     }
     const del = e.target.closest('.attach-del');
     if (!del || !editable) return;
-    const [removed] = list.splice(Number(del.dataset.idx), 1);
+    const idx = Number(del.dataset.idx);
+    if (list[idx]?.storage !== 'pending' && !canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+    const [removed] = list.splice(idx, 1);
     if (removed && removed.storage !== 'pending') removedAttachments.push(removed);
     render();
   });
@@ -746,9 +753,26 @@ export function openItemDrawer(itemId, onSaved) {
   `;
 
   const saveBtn = drawer.querySelector('#dSave');
+  const deleteBtn = drawer.querySelector('#dDelete');
   saveBtn.style.display = '';
   saveBtn.disabled = !editable;
   saveBtn.textContent = editable ? '변경사항 저장' : '읽기 전용';
+  deleteBtn.style.display = canDelete() ? '' : 'none';
+  deleteBtn.onclick = async () => {
+    if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+    if (!window.confirm('이 항목의 작성 기록과 첨부자료를 삭제할까요? 법령·ISO 기준 항목 자체는 유지됩니다.')) return;
+    deleteBtn.disabled = true;
+    showSpinner('작성 기록 삭제 중…');
+    try {
+      const res = await deleteRecord(itemId, half);
+      toast(res.ok ? '작성 기록을 삭제했습니다.' : `로컬 삭제됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
+      closeDrawer();
+      onSaved && onSaved();
+    } finally {
+      hideSpinner();
+      deleteBtn.disabled = false;
+    }
+  };
   let attachments = [...(r.attachments || [])];
   const removedAttachments = [];
 
@@ -824,7 +848,9 @@ export function openItemDrawer(itemId, onSaved) {
     }
     const del = e.target.closest('.attach-del');
     if (!del || !editable) return;
-    const [removed] = attachments.splice(Number(del.dataset.idx), 1);
+    const idx = Number(del.dataset.idx);
+    if (attachments[idx]?.storage !== 'pending' && !canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+    const [removed] = attachments.splice(idx, 1);
     if (removed && removed.storage !== 'pending') removedAttachments.push(removed);
     renderAttachList();
   });

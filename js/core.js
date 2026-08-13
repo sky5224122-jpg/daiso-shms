@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_allattachments1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_masterdelete1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -584,6 +584,29 @@ export async function saveRecord(itemId, patch, half = state.half) {
   return remoteUpsert(TABLES.records, recordToRemote(row), 'item_id,half');
 }
 
+/** 법령·ISO 항목의 작성 기록만 삭제한다. 마스터 데이터 항목 자체는 유지된다. */
+export async function deleteRecord(itemId, half = state.half) {
+  if (!canDelete()) return { ok: false, error: '삭제는 마스터 관리자만 할 수 있습니다.' };
+  const key = recordKey(itemId, half);
+  const row = state.records[key];
+  delete state.records[key];
+  lsSet('records', state.records);
+  emit(); autoBackup();
+  if (conn.mode !== 'supabase') {
+    await Promise.allSettled((row?.attachments || []).map(deleteAttachmentFile));
+    return { ok: true, local: true };
+  }
+  try {
+    const { error } = await conn.client.from(TABLES.records).delete().eq('item_id', itemId).eq('half', half);
+    if (error) throw error;
+    await Promise.allSettled((row?.attachments || []).map(deleteAttachmentFile));
+    return { ok: true };
+  } catch (e) {
+    conn.error = e?.message || String(e);
+    return { ok: false, error: conn.error };
+  }
+}
+
 export async function saveDocument(doc) {
   const row = { ...doc, ...stamp() };
   const i = state.documents.findIndex(d => d.id === row.id);
@@ -605,10 +628,14 @@ export async function saveRow(kind, row) {
 }
 
 export async function deleteRow(kind, id) {
+  if (!canDelete()) return { ok: false, error: '삭제는 마스터 관리자만 할 수 있습니다.' };
+  const deleted = state[kind].find(x => x.id === id);
   state[kind] = state[kind].filter(x => x.id !== id);
   lsSet(kind, state[kind]);
   emit(); autoBackup();
-  return remoteDelete(TABLES[kind], id);
+  const res = await remoteDelete(TABLES[kind], id);
+  if (res.ok) await Promise.allSettled((deleted?.attachments || []).map(deleteAttachmentFile));
+  return res;
 }
 
 /* ---------------- 자동 백업 ---------------- */
@@ -666,7 +693,9 @@ export function restoreBackup(key) {
 }
 
 export function deleteBackup(key) {
+  if (!canDelete()) return false;
   localStorage.removeItem(key);
+  return true;
 }
 
 /* ---------------- 통계 ---------------- */
@@ -706,21 +735,30 @@ export function docStats() {
   return { by, total, approved, pct: total ? Math.round(approved / total * 100) : 0 };
 }
 
-/* ---------------- 인증 (공용 비밀번호 방식) ----------------
-   아이디 없이 공용 비밀번호 하나로 진입한다.
+/* ---------------- 인증 (공용 작성 / 관리자 삭제 비밀번호 방식) ----------------
+   아이디 없이 두 개의 비밀번호로 진입한다.
+   · 공용 비밀번호: 작성·수정 가능, 삭제 불가
+   · 관리자 비밀번호: 작성·수정·삭제 가능
    ⚠ 이 해시는 소스에 포함되므로 외부 유출을 막는 보안장치가 아니라
      "아무나 실수로 들어오지 않게 하는 문턱"이다.
      실제 데이터 접근 통제는 Supabase 연결 시 RLS 정책이 수행해야 한다.
-   비밀번호를 바꾸려면 새 해시를 만들어 GATE_HASH 를 교체한다.
+   비밀번호를 바꾸려면 새 해시를 만들어 해당 해시를 교체한다.
      node -e "console.log(require('crypto').createHash('sha256').update('새비밀번호','utf8').digest('hex'))"
 ------------------------------------------------------------- */
 const SESSION_KEY = 'shms.session';
 const GATE_HASH = 'f2e5aafc64a04ac704c644ce38c34d1d7f7493561687c66e43eeda8186744134';
+const MASTER_GATE_HASH = '56b8155cf60358d399f7fb33ace4ef24bd3c573d9065e7fbb17d91acc528d0fc';
 
 /** 진입 성공 시 부여되는 사용자 (작성·수정 권한) */
 const GATE_USER = {
   id: 'shms_gate', email: '', name: '안전보건팀',
   role: 'safety', dept: '안전보건팀', source: 'gate'
+};
+
+/** 관리자 비밀번호로 진입한 경우에만 부여되는 삭제 권한 사용자 */
+const MASTER_GATE_USER = {
+  id: 'shms_master_gate', email: '', name: '마스터 관리자',
+  role: 'master', dept: '안전보건팀', source: 'master-gate'
 };
 
 async function sha256Hex(text) {
@@ -742,9 +780,10 @@ export async function signIn({ password, remember }) {
   if (!window.crypto?.subtle) {
     throw new Error('보안 연결(https) 또는 localhost 에서만 로그인할 수 있습니다.');
   }
-  if (await sha256Hex(pw) !== GATE_HASH) throw new Error('비밀번호가 올바르지 않습니다.');
-
-  state.user = { ...GATE_USER };
+  const hash = await sha256Hex(pw);
+  if (hash === MASTER_GATE_HASH) state.user = { ...MASTER_GATE_USER };
+  else if (hash === GATE_HASH) state.user = { ...GATE_USER };
+  else throw new Error('비밀번호가 올바르지 않습니다.');
   const raw = JSON.stringify(state.user);
   sessionStorage.setItem(SESSION_KEY, raw);
   if (remember) localStorage.setItem(SESSION_KEY, raw); else localStorage.removeItem(SESSION_KEY);
@@ -761,4 +800,9 @@ export async function signOut() {
 /** 쓰기 권한 여부 */
 export function canEdit() {
   return ['master', 'safety', 'head'].includes(state.user?.role);
+}
+
+/** 삭제는 관리자 비밀번호로 로그인한 사용자에게만 허용한다. */
+export function canDelete() {
+  return state.user?.source === 'master-gate' && state.user?.role === 'master';
 }

@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260813_allattachments1';
+} from './data/frameworks.js?v=20260813_masterdelete1';
 import {
-  $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit,
+  $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode
-} from './core.js?v=20260813_allattachments1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260813_allattachments1';
+} from './core.js?v=20260813_masterdelete1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260813_masterdelete1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -98,6 +98,7 @@ function docCard(d) {
       <span class="tag">${esc(t?.label || d.type)}</span>
       <div style="flex:1"></div>
       <span class="st ${st.cls}">${st.label}</span>
+      ${canDelete() ? `<button class="btn sm" data-del-doc="${esc(d.id)}">삭제</button>` : ''}
     </div>
     <h4>${esc(d.title)}</h4>
     <div style="font-size:11.8px;color:var(--text-2);line-height:1.65;
@@ -293,13 +294,25 @@ export function bindDocumentEvents(root, rerender) {
     await saveDocument({
       id: uid('doc'), doc_no: no.trim(), type, title: title.trim(), category: '기타',
       version: '', status: 'draft', owner: '', approver: '', issued_date: '', revised_date: '',
-      next_review: '', purpose: '', scope: '', body: '', iso_refs: [], law_refs: [], revisions: []
+      next_review: '', purpose: '', scope: '', body: '', iso_refs: [], law_refs: [], revisions: [], attachments: []
     });
     toast('문서를 추가했습니다.', 'ok');
     rerender();
   });
 
   root.addEventListener('click', e => {
+    const del = e.target.closest('[data-del-doc]');
+    if (del) {
+      e.stopPropagation();
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+      if (confirmDel('이 문서와 첨부자료를 삭제할까요?')) {
+        deleteRow('documents', del.dataset.delDoc).then(res => {
+          toast(res.ok ? '문서를 삭제했습니다.' : res.error, res.ok ? 'ok' : 'bad');
+          rerender();
+        });
+      }
+      return;
+    }
     const c = e.target.closest('[data-doc]');
     if (c) openDocDrawer(c.dataset.doc, rerender);
   });
@@ -353,7 +366,7 @@ export function renderInspection() {
                 <div class="cell-sub">${esc((r.result || '').slice(0, 90))}${(r.result || '').length > 90 ? '…' : ''}</div></td>
             <td>${esc(r.inspector || '-')}</td>
             <td>${r.action_needed === 'Y' ? '<span class="st st-hold">조치필요</span>' : '<span class="st st-done">조치완료</span>'}</td>
-            <td>${canEdit() ? `<button class="btn sm" data-del-insp="${esc(r.id)}">삭제</button>` : ''}</td>
+            <td>${canDelete() ? `<button class="btn sm" data-del-insp="${esc(r.id)}">삭제</button>` : ''}</td>
           </tr>`).join('')}</tbody></table></div>`}
 
   <div class="sec-t"><h2>반기 점검 대상 조항 체크리스트</h2><div class="l"></div>
@@ -437,7 +450,8 @@ export function bindInspectionEvents(root, rerender, openItem) {
   root.addEventListener('click', async e => {
     const del = e.target.closest('[data-del-insp]');
     if (del) { e.stopPropagation();
-      if (confirmDel('이 점검 기록을 삭제할까요?')) { await deleteRow('inspections', del.dataset.delInsp); toast('삭제했습니다.'); rerender(); }
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+      if (confirmDel('이 점검 기록을 삭제할까요?')) { const res = await deleteRow('inspections', del.dataset.delInsp); toast(res.ok ? '삭제했습니다.' : res.error, res.ok ? 'ok' : 'bad'); rerender(); }
       return; }
     const row = e.target.closest('[data-insp]');
     if (row) { openInspDrawer(state.inspections.find(x => x.id === row.dataset.insp), rerender); return; }
@@ -494,7 +508,7 @@ export function renderCapa() {
             <td>${esc(c.owner || '-')}</td>
             <td style="${late ? 'color:var(--bad);font-weight:800' : ''}">${c.due_date ? fmtDate(c.due_date) : '-'}</td>
             <td><span class="st ${c.status === 'closed' ? 'st-done' : c.status === 'open' ? 'st-none' : 'st-progress'}">${CAPA_STATUS[c.status] || c.status}</span></td>
-            <td>${canEdit() ? `<button class="btn sm" data-del-capa="${esc(c.id)}">삭제</button>` : ''}</td></tr>`;
+            <td>${canDelete() ? `<button class="btn sm" data-del-capa="${esc(c.id)}">삭제</button>` : ''}</td></tr>`;
         }).join('')}</tbody></table></div>`}`;
 }
 
@@ -566,7 +580,8 @@ export function bindCapaEvents(root, rerender) {
   root.addEventListener('click', async e => {
     const del = e.target.closest('[data-del-capa]');
     if (del) { e.stopPropagation();
-      if (confirmDel('이 개선조치를 삭제할까요?')) { await deleteRow('capa', del.dataset.delCapa); toast('삭제했습니다.'); rerender(); }
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+      if (confirmDel('이 개선조치를 삭제할까요?')) { const res = await deleteRow('capa', del.dataset.delCapa); toast(res.ok ? '삭제했습니다.' : res.error, res.ok ? 'ok' : 'bad'); rerender(); }
       return; }
     const row = e.target.closest('[data-capa]');
     if (row) openCapaDrawer(state.capa.find(x => x.id === row.dataset.capa), rerender);
@@ -617,7 +632,7 @@ export function renderEvidence() {
               ${e.url ? `<div class="cell-sub"><a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url.slice(0, 60))}</a></div>` : ''}</td>
             <td>${it ? `<span class="tag ${it.framework === 'mssa' ? 'law' : it.framework === 'iso' ? 'iso' : ''}">${esc(it.code)}</span> ${esc(it.title.slice(0, 20))}` : '<span style="color:var(--faint)">미연결</span>'}</td>
             <td>${esc(e.location || '-')}</td>
-            <td>${canEdit() ? `<button class="btn sm" data-del-evi="${esc(e.id)}">삭제</button>` : ''}</td></tr>`;
+            <td>${canDelete() ? `<button class="btn sm" data-del-evi="${esc(e.id)}">삭제</button>` : ''}</td></tr>`;
         }).join('')}</tbody></table></div>`}`;
 }
 
@@ -668,7 +683,8 @@ export function bindEvidenceEvents(root, rerender) {
   root.addEventListener('click', async ev => {
     const del = ev.target.closest('[data-del-evi]');
     if (del) { ev.stopPropagation();
-      if (confirmDel('이 증빙 등록을 삭제할까요?')) { await deleteRow('evidence', del.dataset.delEvi); toast('삭제했습니다.'); rerender(); }
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+      if (confirmDel('이 증빙 등록을 삭제할까요?')) { const res = await deleteRow('evidence', del.dataset.delEvi); toast(res.ok ? '삭제했습니다.' : res.error, res.ok ? 'ok' : 'bad'); rerender(); }
       return; }
     const row = ev.target.closest('[data-evi]');
     if (row) openEviDrawer(state.evidence.find(x => x.id === row.dataset.evi), rerender);
@@ -726,7 +742,7 @@ export function renderOrg() {
             <td>${o.training_date ? fmtDate(o.training_date) : '<span style="color:var(--faint)">미이수</span>'}</td>
             <td>${o.eval_date ? fmtDate(o.eval_date) : '<span style="color:var(--faint)">미실시</span>'}</td>
             <td class="cell-sub" style="margin:0">${esc((o.note || '').slice(0, 40))}</td>
-            <td>${canEdit() ? `<button class="btn sm" data-del-org="${esc(o.id)}">삭제</button>` : ''}</td></tr>`).join('')}
+            <td>${canDelete() ? `<button class="btn sm" data-del-org="${esc(o.id)}">삭제</button>` : ''}</td></tr>`).join('')}
         </tbody></table></div>`}`;
 }
 
@@ -788,7 +804,8 @@ export function bindOrgEvents(root, rerender) {
   root.addEventListener('click', async e => {
     const del = e.target.closest('[data-del-org]');
     if (del) { e.stopPropagation();
-      if (confirmDel('이 선임 등록을 삭제할까요?')) { await deleteRow('org', del.dataset.delOrg); toast('삭제했습니다.'); rerender(); }
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+      if (confirmDel('이 선임 등록을 삭제할까요?')) { const res = await deleteRow('org', del.dataset.delOrg); toast(res.ok ? '삭제했습니다.' : res.error, res.ok ? 'ok' : 'bad'); rerender(); }
       return; }
     const row = e.target.closest('[data-org]');
     if (row) openOrgDrawer(state.org.find(x => x.id === row.dataset.org), rerender);
@@ -924,7 +941,7 @@ export function renderSettings() {
       <span class="ops-arrow">→</span>
       <div class="ops-step">
         <span class="ops-step-no">03</span><div class="ops-step-icon">AUTH</div>
-        <strong>사용자 인증</strong><p>현재 공용 비밀번호 · 운영 전 Supabase Auth 전환 필요</p>
+        <strong>사용자 인증</strong><p>공용 작성 비밀번호 · 관리자 삭제 비밀번호 · 운영 전 Supabase Auth 전환 필요</p>
       </div>
       <span class="ops-arrow split">→</span>
       <div class="ops-destinations">
@@ -937,7 +954,7 @@ export function renderSettings() {
       <div class="ops-policy current">
         <div class="ops-policy-title"><span>현재 실제 동작</span><b>${conn.mode === 'supabase' ? 'Supabase 연결' : '로컬 저장'}</b></div>
         <ul>
-          <li>인증: 공용 비밀번호로 화면 진입</li>
+          <li>인증: 공용 비밀번호는 작성·수정, 관리자 비밀번호만 삭제</li>
           <li>업무데이터: ${esc(recordStore)}</li>
           <li>첨부파일: ${esc(fileStore)}</li>
           <li>자동 백업: 브라우저에 최근 5개 보관</li>
@@ -1014,7 +1031,7 @@ export function renderSettings() {
                   +' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
                 return '<tr><td>'+esc(tStr)+'</td><td>'+b.records+'</td><td>'+b.documents+'</td><td>'+b.capa+'</td><td>'+b.inspections+'</td>'
                   +'<td style="white-space:nowrap"><button class="btn primary" style="font-size:11px;padding:3px 8px" data-bk-restore="'+esc(b.key)+'">복원</button> '
-                  +'<button class="btn" style="font-size:11px;padding:3px 8px" data-bk-del="'+esc(b.key)+'">삭제</button></td></tr>';
+                  +(canDelete() ? '<button class="btn" style="font-size:11px;padding:3px 8px" data-bk-del="'+esc(b.key)+'">삭제</button>' : '')+'</td></tr>';
               }).join('')
               + '</tbody></table></div>';
           })()}
@@ -1029,16 +1046,16 @@ export function renderSettings() {
       <div class="tbl-wrap"><table class="tbl" style="min-width:0">
         <tbody>
           <tr><th style="width:150px">사용자</th><td>${esc(state.user?.name || '-')}</td></tr>
-          <tr><th>권한</th><td>${esc(ROLES[state.user?.role]?.label || state.user?.role || '-')} — ${canEdit() ? '작성·수정 가능' : '읽기 전용'}</td></tr>
-          <tr><th>인증 방식</th><td>공용 접속 비밀번호 (아이디 없음)</td></tr>
+          <tr><th>권한</th><td>${esc(ROLES[state.user?.role]?.label || state.user?.role || '-')} — ${canEdit() ? '작성·수정 가능' : '읽기 전용'}${canDelete() ? ' · 삭제 가능' : ' · 삭제 불가'}</td></tr>
+          <tr><th>인증 방식</th><td>공용 작성 비밀번호 + 마스터 관리자 삭제 비밀번호 (아이디 없음)</td></tr>
           <tr><th>저장 모드</th><td>${conn.mode === 'supabase' ? 'Supabase + 로컬 캐시' : '로컬(localStorage) 전용'}</td></tr>
           <tr><th>첨부파일 저장</th><td>${fileMode === 'r2' ? 'Cloudflare R2 (Worker API)' : '현재 브라우저 IndexedDB 전용'}</td></tr>
           <tr><th>버전</th><td>${esc(APP.version)}</td></tr>
         </tbody></table></div>
       <div class="help" style="margin-top:12px">
-        <b>접속 방식</b> — 아이디 없이 공용 비밀번호 하나로 진입합니다. 진입한 사용자는 모두 작성·수정 권한을 갖습니다.<br>
+        <b>접속 방식</b> — 공용 비밀번호로 진입한 사용자는 모두 작성·수정할 수 있지만 삭제는 할 수 없습니다. 마스터 관리자 비밀번호로 접속한 사용자만 행·첨부·자동 백업을 삭제할 수 있습니다.<br>
         <b>⚠ 주의</b> — 비밀번호 해시는 앱 소스에 포함되어 있어 외부 유출을 막는 보안장치가 아닙니다.
-        비밀번호를 바꾸려면 <code>js/core.js</code> 의 <code>GATE_HASH</code> 를 교체하십시오.
+        비밀번호를 바꾸려면 <code>js/core.js</code> 의 <code>GATE_HASH</code>(공용)와 <code>MASTER_GATE_HASH</code>(마스터)를 각각 교체하십시오.
         실제 데이터 접근 통제가 필요하면 Supabase 연결 후 RLS 정책으로 제한해야 합니다.</div>
     </div>
   </div>`;
@@ -1110,9 +1127,10 @@ export function bindSettingsEvents(root, rerender) {
   });
   root.querySelectorAll('[data-bk-del]').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
       const key = btn.dataset.bkDel;
       if (!confirmDel('이 백업을 삭제할까요?')) return;
-      deleteBackup(key);
+      if (!deleteBackup(key)) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
       toast('백업을 삭제했습니다.', 'ok');
       rerender();
     });
