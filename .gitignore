@@ -5,6 +5,8 @@ Thumbs.db
 _local_*/
 _backup_*/
 node_modules/
+.wrangler/
+cloudflare/attachment-worker/wrangler.toml
 
 # 개인 백업 JSON (전사 저장소에 올리지 않음)
 안전보건관리체계_이행관리_백업_*.json

@@ -71,11 +71,21 @@ create table if not exists public.shms_records (
   implementation text default '',        -- ① 이행 현황 (수기)
   evidence       text default '',        -- ② 보유 증빙자료 (수기)
   findings       text default '',        -- ③ 미흡사항 (수기)
+  user_docs      text default '',        -- 작성·보관자료 수기 보완
+  user_status    text default '',        -- 당사 준비현황 수기 보완
+  user_evidence  text default '',        -- 증빙자료 목록 수기 보완
+  attachments    jsonb not null default '[]'::jsonb, -- 링크/R2·로컬 첨부 메타데이터
   updated_at     timestamptz not null default now(),
   updated_by     text default '',
   primary key (item_id, half)
 );
 create index if not exists shms_records_half_idx on public.shms_records (half);
+
+-- 기존 구축 DB에도 신규 수기·첨부 필드를 안전하게 추가
+alter table public.shms_records add column if not exists user_docs text default '';
+alter table public.shms_records add column if not exists user_status text default '';
+alter table public.shms_records add column if not exists user_evidence text default '';
+alter table public.shms_records add column if not exists attachments jsonb not null default '[]'::jsonb;
 
 -- ── 3. 안전보건 문서체계 ───────────────────────────────────
 create table if not exists public.shms_documents (

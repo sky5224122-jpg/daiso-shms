@@ -5,11 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260812_ui';
+} from './data/frameworks.js?v=20260813_attach1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, progressOf, dueSoon, docStats,
-  canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner
-} from './core.js?v=20260812_ui';
+  canEdit, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
+  attachmentUrl, formatBytes, saveAttachmentFile, viewAttachment, deleteAttachmentFile
+} from './core.js?v=20260813_attach1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -431,6 +432,23 @@ export function openDrawer(opt) {
   drawer.classList.add('open');
 }
 
+function attachmentRowHtml(a, i, editable) {
+  const kind = a.kind || (a.url ? 'link' : 'record');
+  const label = kind === 'file' ? '파일' : kind === 'link' ? '링크' : '기록';
+  const icon = kind === 'file' ? '📎' : kind === 'link' ? '🔗' : '📝';
+  const canViewFile = kind === 'file' && ['pending', 'local-idb', 'r2'].includes(a.storage);
+  const canView = canViewFile || (kind === 'link' && !!a.url);
+  const meta = [a.size ? formatBytes(a.size) : '', a.date || ''].filter(Boolean).join(' · ');
+  return `<div class="attach-row" data-idx="${i}">
+    <span class="attach-kind ${esc(kind)}">${icon} ${label}</span>
+    <span class="attach-name">${esc(a.name || a.url || '첨부자료')}</span>
+    ${a.note ? `<span class="attach-note" title="${esc(a.note)}">${esc(a.note)}</span>` : ''}
+    ${meta ? `<span class="attach-date">${esc(meta)}</span>` : ''}
+    ${canView ? `<button type="button" class="attach-view" data-idx="${i}">보기</button>` : ''}
+    ${editable ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
+  </div>`;
+}
+
 export function openItemDrawer(itemId, onSaved) {
   const item = ALL_ITEMS.find(i => i.id === itemId);
   if (!item) return;
@@ -484,21 +502,29 @@ export function openItemDrawer(itemId, onSaved) {
     </div>
 
     <div class="fld">
-      <label>첨부파일 등록</label>
+      <label>첨부자료 · 링크</label>
       <div class="attach-list" id="fAttachList">
-        ${(r.attachments || []).map((a, i) => `<div class="attach-row" data-idx="${i}">
-          <span class="attach-name">${esc(a.name)}</span>
-          ${a.note ? `<span class="attach-note">${esc(a.note)}</span>` : ''}
-          <span class="attach-date">${esc(a.date || '')}</span>
-          ${editable ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
-        </div>`).join('')}
+        ${(r.attachments || []).map((a, i) => attachmentRowHtml(a, i, editable)).join('')}
         ${!(r.attachments || []).length ? '<div class="attach-empty">등록된 첨부파일이 없습니다</div>' : ''}
       </div>
-      ${editable ? `<div class="attach-add" id="fAttachAdd">
-        <input class="inp" id="fAttachName" placeholder="파일명 또는 문서번호 (예: AAD-HSHT-G-2022-014.docx)" style="flex:1">
-        <input class="inp" id="fAttachNote" placeholder="비고 (선택)" style="width:140px">
-        <button type="button" class="btn sm" id="fAttachBtn">추가</button>
+      ${editable ? `<div class="attach-add-group">
+        <div class="attach-add-title">📎 파일 첨부</div>
+        <div class="attach-add">
+          <input class="inp attach-file" type="file" id="fAttachFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.webp,.txt,.csv,.zip">
+          <input class="inp" id="fAttachFileNote" placeholder="파일 비고 (선택)">
+          <button type="button" class="btn sm" id="fAttachFileBtn">파일 첨부</button>
+        </div>
+      </div>
+      <div class="attach-add-group">
+        <div class="attach-add-title">🔗 링크 등록</div>
+        <div class="attach-add">
+          <input class="inp" type="url" id="fAttachUrl" placeholder="https://..." style="flex:1;min-width:220px">
+          <input class="inp" id="fAttachLinkName" placeholder="표시 이름 (선택)">
+          <input class="inp" id="fAttachLinkNote" placeholder="링크 비고 (선택)">
+          <button type="button" class="btn sm" id="fAttachLinkBtn">링크 추가</button>
+        </div>
       </div>` : ''}
+      <div class="help">파일은 20MB 이하로 등록할 수 있습니다. Cloudflare R2 연결 전에는 이 브라우저에 저장되며, 다른 PC에서는 열 수 없습니다. 링크와 첨부 메타데이터는 이행기록에 함께 저장됩니다.</div>
     </div>
 
     <div class="sec-t" style="margin-top:22px"><h2 style="font-size:14px">이행 내용 작성</h2><div class="l"></div></div>
@@ -512,7 +538,7 @@ export function openItemDrawer(itemId, onSaved) {
       </div>
       <div class="fld">
         <label>담당자 / 담당부서</label>
-        <input class="inp" id="fOwner" value="${esc(r.owner)}" placeholder="예) 안전보건팀 강동현" ${editable ? '' : 'disabled'}>
+        <input class="inp" id="fOwner" value="${esc(r.owner)}" placeholder="담당자명 또는 담당부서를 직접 입력하세요" ${editable ? '' : 'disabled'}>
       </div>
     </div>
     <div class="fld-row">
@@ -552,41 +578,82 @@ export function openItemDrawer(itemId, onSaved) {
   saveBtn.disabled = !editable;
   saveBtn.textContent = editable ? '저장' : '읽기 전용';
   let attachments = [...(r.attachments || [])];
+  const removedAttachments = [];
 
   function renderAttachList() {
     const list = drawer.querySelector('#fAttachList');
     if (!list) return;
     list.innerHTML = attachments.length
-      ? attachments.map((a, i) => `<div class="attach-row" data-idx="${i}">
-          <span class="attach-name">${esc(a.name)}</span>
-          ${a.note ? `<span class="attach-note">${esc(a.note)}</span>` : ''}
-          <span class="attach-date">${esc(a.date || '')}</span>
-          ${editable ? `<button type="button" class="attach-del" data-idx="${i}" title="삭제">✕</button>` : ''}
-        </div>`).join('')
+      ? attachments.map((a, i) => attachmentRowHtml(a, i, editable)).join('')
       : '<div class="attach-empty">등록된 첨부파일이 없습니다</div>';
   }
 
   if (editable) {
-    const addBtn = drawer.querySelector('#fAttachBtn');
-    if (addBtn) addBtn.addEventListener('click', () => {
-      const nameEl = drawer.querySelector('#fAttachName');
-      const noteEl = drawer.querySelector('#fAttachNote');
-      const name = nameEl.value.trim();
-      if (!name) { nameEl.focus(); return; }
-      attachments.push({ name, note: noteEl.value.trim(), date: new Date().toISOString().slice(0, 10) });
-      nameEl.value = ''; noteEl.value = '';
+    drawer.querySelector('#fAttachFileBtn')?.addEventListener('click', () => {
+      const fileEl = drawer.querySelector('#fAttachFile');
+      const file = fileEl.files?.[0];
+      if (!file) { toast('첨부할 파일을 선택해 주세요.', 'bad'); fileEl.focus(); return; }
+      if (file.size > 20 * 1024 * 1024) { toast('첨부파일은 20MB 이하만 등록할 수 있습니다.', 'bad'); return; }
+      attachments.push({
+        id: uid('att'), kind: 'file', storage: 'pending', _file: file,
+        name: file.name, note: drawer.querySelector('#fAttachFileNote').value.trim(),
+        date: new Date().toISOString().slice(0, 10), mime: file.type, size: file.size
+      });
+      fileEl.value = '';
+      drawer.querySelector('#fAttachFileNote').value = '';
       renderAttachList();
     });
-    drawer.querySelector('#fAttachList')?.addEventListener('click', e => {
-      const del = e.target.closest('.attach-del');
-      if (!del) return;
-      attachments.splice(Number(del.dataset.idx), 1);
+
+    drawer.querySelector('#fAttachLinkBtn')?.addEventListener('click', () => {
+      const urlEl = drawer.querySelector('#fAttachUrl');
+      const url = attachmentUrl(urlEl.value);
+      if (!url) { toast('http 또는 https 형식의 올바른 링크를 입력해 주세요.', 'bad'); urlEl.focus(); return; }
+      attachments.push({
+        id: uid('att'), kind: 'link', url,
+        name: drawer.querySelector('#fAttachLinkName').value.trim() || url,
+        note: drawer.querySelector('#fAttachLinkNote').value.trim(),
+        date: new Date().toISOString().slice(0, 10)
+      });
+      urlEl.value = '';
+      drawer.querySelector('#fAttachLinkName').value = '';
+      drawer.querySelector('#fAttachLinkNote').value = '';
       renderAttachList();
     });
   }
 
+  drawer.querySelector('#fAttachList')?.addEventListener('click', async e => {
+    const view = e.target.closest('.attach-view');
+    if (view) {
+      showSpinner('첨부자료 여는 중…');
+      try { await viewAttachment(attachments[Number(view.dataset.idx)]); }
+      catch (err) { toast(err?.message || String(err), 'bad'); }
+      finally { hideSpinner(); }
+      return;
+    }
+    const del = e.target.closest('.attach-del');
+    if (!del || !editable) return;
+    const [removed] = attachments.splice(Number(del.dataset.idx), 1);
+    if (removed && removed.storage !== 'pending') removedAttachments.push(removed);
+    renderAttachList();
+  });
+
   saveBtn.onclick = async () => {
-    const patch = {
+    saveBtn.disabled = true;
+    showSpinner('첨부자료와 이행기록 저장 중…');
+    const newlyStored = [];
+    try {
+      const storedAttachments = [];
+      for (const att of attachments) {
+        if (att.storage === 'pending' && att._file) {
+          const stored = await saveAttachmentFile(att._file, { itemId, half, note: att.note || '' });
+          storedAttachments.push(stored);
+          newlyStored.push(stored);
+        } else {
+          const { _file, ...clean } = att;
+          storedAttachments.push(clean);
+        }
+      }
+      const patch = {
       status:        drawer.querySelector('#fStatus').value,
       owner:         drawer.querySelector('#fOwner').value.trim(),
       last_checked:  drawer.querySelector('#fChecked').value,
@@ -597,17 +664,22 @@ export function openItemDrawer(itemId, onSaved) {
       userDocs:      drawer.querySelector('#fDocs').value.trim(),
       userStatus:    drawer.querySelector('#fCompany').value.trim(),
       userEvidence:  drawer.querySelector('#fEvFiles').value.trim(),
-      attachments
-    };
-    saveBtn.disabled = true;
-    showSpinner('저장 중…');
-    const res = await saveRecord(itemId, patch, half);
-    hideSpinner();
-    saveBtn.disabled = false;
-    toast(res.ok ? (res.local ? '저장했습니다 (로컬 저장)' : '저장했습니다 (Supabase 동기화 완료)') : `로컬 저장됨 · 동기화 실패: ${res.error}`,
-          res.ok ? 'ok' : 'bad');
-    closeDrawer();
-    onSaved && onSaved();
+        attachments: storedAttachments
+      };
+      const res = await saveRecord(itemId, patch, half);
+      attachments = storedAttachments;
+      if (res.ok) await Promise.allSettled(removedAttachments.map(deleteAttachmentFile));
+      toast(res.ok ? (res.local ? '저장했습니다 (로컬 저장)' : '저장했습니다 (Supabase 동기화 완료)') : `로컬 저장됨 · 동기화 실패: ${res.error}`,
+            res.ok ? 'ok' : 'bad');
+      closeDrawer();
+      onSaved && onSaved();
+    } catch (err) {
+      await Promise.allSettled(newlyStored.map(deleteAttachmentFile));
+      toast(`첨부자료 저장 실패: ${err?.message || String(err)}`, 'bad');
+    } finally {
+      hideSpinner();
+      saveBtn.disabled = false;
+    }
   };
 
   mask.classList.add('open');

@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260812_ui';
+} from './data/frameworks.js?v=20260813_attach1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
-  showSpinner, hideSpinner
-} from './core.js?v=20260812_ui';
-import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260812_ui';
+  showSpinner, hideSpinner, attachmentStorageMode
+} from './core.js?v=20260813_attach1';
+import { openDrawer, closeDrawer, kpi, statusBadge } from './views-core.js?v=20260813_attach1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -837,7 +837,7 @@ export function renderSettings() {
     <div>${conn.mode === 'supabase'
       ? `현재 <b>Supabase 연결 모드</b>로 동작 중입니다. 입력한 자료는 Supabase에 저장되고 로컬에도 캐시됩니다.`
       : `현재 <b>로컬 저장 모드</b>입니다. 자료는 이 브라우저에만 저장됩니다.
-         아래에 Supabase 프로젝트 URL과 anon key를 입력하면 전사 공유 모드로 전환됩니다.`}
+         아래 연결정보와 함께 Supabase Auth·RLS 구성을 완료해야 전사 공유 모드로 전환됩니다.`}
       ${conn.error ? `<div style="margin-top:6px;color:var(--bad);font-weight:700">최근 오류: ${esc(conn.error)}</div>` : ''}</div>
   </div>
 
@@ -850,7 +850,8 @@ export function renderSettings() {
         <div class="fld"><label>anon public key</label>
           <textarea class="inp" id="sbKey" style="min-height:80px;font-size:11.5px" placeholder="eyJhbGciOi...">${esc(cfg?.anonKey || '')}</textarea>
           <div class="help">anon key는 공개되어도 되는 키입니다. 실제 접근 통제는 Supabase의 <b>RLS(행 수준 보안) 정책</b>이 수행합니다.
-            서비스 롤 키(service_role)는 <b>절대 여기에 넣지 마세요.</b></div></div>
+            서비스 롤 키(service_role)는 <b>절대 여기에 넣지 마세요.</b><br>
+            현재 공용 비밀번호는 Supabase 세션을 만들지 않으므로, Auth 전환 전에 연결정보만 입력하면 원격 저장이 거부될 수 있습니다.</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn primary" id="sbSave">연결 저장 후 새로고침</button>
           <button class="btn" id="sbClear">연결 해제(로컬 모드)</button>
@@ -906,6 +907,7 @@ export function renderSettings() {
           <tr><th>권한</th><td>${esc(ROLES[state.user?.role]?.label || state.user?.role || '-')} — ${canEdit() ? '작성·수정 가능' : '읽기 전용'}</td></tr>
           <tr><th>인증 방식</th><td>공용 접속 비밀번호 (아이디 없음)</td></tr>
           <tr><th>저장 모드</th><td>${conn.mode === 'supabase' ? 'Supabase + 로컬 캐시' : '로컬(localStorage) 전용'}</td></tr>
+          <tr><th>첨부파일 저장</th><td>${attachmentStorageMode() === 'r2' ? 'Cloudflare R2 (Worker API)' : '현재 브라우저 IndexedDB 전용'}</td></tr>
           <tr><th>버전</th><td>${esc(APP.version)}</td></tr>
         </tbody></table></div>
       <div class="help" style="margin-top:12px">

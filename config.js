@@ -13,3 +13,11 @@ window.SHMS_SUPABASE = {
   url: 'https://YOUR-PROJECT.supabase.co',
   anonKey: 'YOUR-ANON-PUBLIC-KEY'
 };
+
+/* Cloudflare Worker 첨부파일 API (선택)
+   · 미설정 시 파일은 현재 브라우저 IndexedDB에만 저장됩니다.
+   · Worker에는 R2 버킷을 바인딩하고 Supabase JWT 검증을 적용합니다.
+   · R2 API 토큰이나 비밀키를 이 파일에 넣지 마십시오. */
+window.SHMS_ATTACHMENT_API = {
+  url: 'https://YOUR-WORKER.workers.dev'
+};

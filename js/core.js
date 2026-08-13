@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260812_ui';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_attach1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -144,6 +144,157 @@ export async function initSupabase() {
   }
 }
 
+/* ---------------- 첨부파일 저장소 ----------------
+   · Cloudflare Worker가 설정되면 R2에 저장
+   · 미설정 로컬 모드에서는 IndexedDB에 Blob 저장
+   · 링크는 파일 저장소를 사용하지 않고 레코드 메타데이터로만 보관
+------------------------------------------------- */
+const FILE_DB = 'shms.attachments';
+const FILE_STORE = 'files';
+export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+
+function attachmentApiUrl() {
+  const raw = window.SHMS_ATTACHMENT_API?.url;
+  if (!raw || String(raw).includes('YOUR-WORKER')) return '';
+  return String(raw).trim().replace(/\/+$/, '');
+}
+
+export function attachmentStorageMode() {
+  return attachmentApiUrl() ? 'r2' : 'local-idb';
+}
+
+function openFileDb() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('이 브라우저는 로컬 첨부파일 저장을 지원하지 않습니다.')); return; }
+    const req = indexedDB.open(FILE_DB, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(FILE_STORE)) req.result.createObjectStore(FILE_STORE, { keyPath: 'id' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('로컬 첨부파일 저장소를 열 수 없습니다.'));
+  });
+}
+
+async function fileDbRequest(mode, action) {
+  const db = await openFileDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FILE_STORE, mode);
+    const store = tx.objectStore(FILE_STORE);
+    const req = action(store);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('로컬 첨부파일 처리에 실패했습니다.'));
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => { db.close(); reject(tx.error || new Error('로컬 첨부파일 처리가 중단되었습니다.')); };
+  });
+}
+
+async function attachmentAuthHeader() {
+  if (conn.mode !== 'supabase' || !conn.client) throw new Error('클라우드 첨부파일은 Supabase 로그인 연결 후 사용할 수 있습니다.');
+  const { data, error } = await conn.client.auth.getSession();
+  if (error) throw error;
+  const token = data?.session?.access_token;
+  if (!token) throw new Error('Supabase 로그인 세션이 없습니다. 다시 로그인해 주세요.');
+  return { Authorization: `Bearer ${token}` };
+}
+
+export function attachmentUrl(raw) {
+  try {
+    const u = new URL(String(raw || '').trim());
+    return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
+  } catch (_) { return ''; }
+}
+
+export function formatBytes(bytes = 0) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 ** 2).toFixed(1)} MB`;
+}
+
+export async function saveAttachmentFile(file, { itemId = '', half = '', note = '' } = {}) {
+  if (!(file instanceof Blob)) throw new Error('첨부할 파일을 선택해 주세요.');
+  if (file.size > MAX_ATTACHMENT_BYTES) throw new Error('첨부파일은 20MB 이하만 등록할 수 있습니다.');
+  const api = attachmentApiUrl();
+  const date = today();
+  if (api) {
+    const headers = await attachmentAuthHeader();
+    const body = new FormData();
+    body.append('file', file, file.name || 'attachment');
+    body.append('itemId', itemId);
+    body.append('half', half);
+    const res = await fetch(`${api}/files`, { method: 'POST', headers, body });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `파일 업로드 실패 (${res.status})`);
+    return {
+      id: data.id || uid('att'), kind: 'file', storage: 'r2', key: data.key,
+      name: data.name || file.name || 'attachment', note, date,
+      mime: data.mime || file.type || 'application/octet-stream', size: data.size ?? file.size
+    };
+  }
+
+  const id = uid('file');
+  await fileDbRequest('readwrite', store => store.put({
+    id, blob: file, name: file.name || 'attachment', mime: file.type || 'application/octet-stream',
+    size: file.size, created_at: new Date().toISOString()
+  }));
+  return {
+    id: uid('att'), kind: 'file', storage: 'local-idb', fileId: id,
+    name: file.name || 'attachment', note, date,
+    mime: file.type || 'application/octet-stream', size: file.size
+  };
+}
+
+function openBlob(blob, name = 'attachment') {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.title = name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+export async function viewAttachment(att) {
+  if (att?.kind === 'link' || att?.url) {
+    const url = attachmentUrl(att.url);
+    if (!url) throw new Error('http 또는 https 형식의 올바른 링크가 아닙니다.');
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  if (att?.storage === 'pending' && att._file) { openBlob(att._file, att.name); return; }
+  if (att?.storage === 'local-idb' && att.fileId) {
+    const row = await fileDbRequest('readonly', store => store.get(att.fileId));
+    if (!row?.blob) throw new Error('이 브라우저에서 첨부파일 원본을 찾을 수 없습니다.');
+    openBlob(row.blob, att.name);
+    return;
+  }
+  if (att?.storage === 'r2' && att.key) {
+    const api = attachmentApiUrl();
+    if (!api) throw new Error('Cloudflare 첨부파일 API가 설정되지 않았습니다.');
+    const headers = await attachmentAuthHeader();
+    const res = await fetch(`${api}/files/${encodeURIComponent(att.key)}`, { headers });
+    if (!res.ok) throw new Error(`첨부파일 열람 실패 (${res.status})`);
+    openBlob(await res.blob(), att.name);
+    return;
+  }
+  throw new Error('파일명만 기록된 기존 항목입니다. 열람 가능한 원본이나 링크가 없습니다.');
+}
+
+export async function deleteAttachmentFile(att) {
+  if (att?.storage === 'local-idb' && att.fileId) {
+    await fileDbRequest('readwrite', store => store.delete(att.fileId));
+  } else if (att?.storage === 'r2' && att.key) {
+    const api = attachmentApiUrl();
+    if (!api) return;
+    const headers = await attachmentAuthHeader();
+    const res = await fetch(`${api}/files/${encodeURIComponent(att.key)}`, { method: 'DELETE', headers });
+    if (!res.ok && res.status !== 404) throw new Error(`첨부파일 삭제 실패 (${res.status})`);
+  }
+}
+
 /* ---------------- 테이블 정의 ---------------- */
 export const TABLES = {
   records:     'shms_records',      // 법령/ISO 조항별 이행 기록
@@ -189,6 +340,21 @@ export function getRecord(itemId, half = state.half) {
     attachments: [],
     updated_at: '', updated_by: ''
   };
+}
+
+function recordFromRemote(row) {
+  return {
+    ...row,
+    userDocs: row.user_docs ?? row.userDocs ?? '',
+    userStatus: row.user_status ?? row.userStatus ?? '',
+    userEvidence: row.user_evidence ?? row.userEvidence ?? '',
+    attachments: Array.isArray(row.attachments) ? row.attachments : []
+  };
+}
+
+function recordToRemote(row) {
+  const { userDocs, userStatus, userEvidence, ...rest } = row;
+  return { ...rest, user_docs: userDocs || '', user_status: userStatus || '', user_evidence: userEvidence || '' };
 }
 
 /* ---------------- 초기 문서 생성(문서체계 마스터 기반) ---------------- */
@@ -241,7 +407,7 @@ export async function loadAll() {
 
       if (rec.data) {
         const map = {};
-        rec.data.forEach(r => { map[recordKey(r.item_id, r.half)] = r; });
+        rec.data.forEach(r => { map[recordKey(r.item_id, r.half)] = recordFromRemote(r); });
         state.records = map;
       }
       // 문서는 원격이 비어 있으면 마스터 시드를 그대로 사용(첫 구축 시점)
@@ -307,7 +473,7 @@ export async function saveRecord(itemId, patch, half = state.half) {
   state.records[key] = row;
   lsSet('records', state.records);
   emit(); autoBackup();
-  return remoteUpsert(TABLES.records, row, 'item_id,half');
+  return remoteUpsert(TABLES.records, recordToRemote(row), 'item_id,half');
 }
 
 export async function saveDocument(doc) {
