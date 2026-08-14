@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260814_analytics1';
+} from './data/frameworks.js?v=20260814_hotfix1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAuditLog
-} from './core.js?v=20260814_analytics1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_analytics1';
+} from './core.js?v=20260814_hotfix1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_hotfix1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -85,8 +85,7 @@ export function renderDocuments() {
             ${docs.filter(d => d.category === c).map(docCard).join('')}
           </div>`).join('')}
     </div>
-  </div>
-
+  </div>`;
 }
 
 function docCard(d) {
