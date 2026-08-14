@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260814_loginfix2';
+} from './data/frameworks.js?v=20260814_versioninfo1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAuditLog
-} from './core.js?v=20260814_loginfix2';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_loginfix2';
+} from './core.js?v=20260814_versioninfo1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_versioninfo1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -1070,7 +1070,7 @@ export function renderSettings() {
           <tr><th>인증 방식</th><td>${authMethod}</td></tr>
           <tr><th>저장 모드</th><td>${conn.mode === 'supabase' ? 'Supabase + 로컬 캐시' : '로컬(localStorage) 전용'}</td></tr>
           <tr><th>첨부파일 저장</th><td>${fileMode === 'r2' ? 'Cloudflare R2 (Worker API)' : '현재 브라우저 IndexedDB 전용'}</td></tr>
-          <tr><th>버전</th><td>${esc(APP.version)}</td></tr>
+          ${canDelete() ? `<tr><th>시스템 버전<br><span style="font-size:10px;color:var(--faint)">마스터 전용</span></th><td>${esc(APP.version)}</td></tr>` : ''}
         </tbody></table></div>
       ${usingSupabase ? `<div class="help" style="margin-top:12px">${authHelp}</div>` : ''}
       <div class="help" style="margin-top:12px;display:${usingSupabase ? 'none' : 'block'}">

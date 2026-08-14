@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260814_loginfix2';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260814_loginfix2';
+} from './core.js?v=20260814_versioninfo1';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260814_versioninfo1';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260814_loginfix2';
+} from './views-core.js?v=20260814_versioninfo1';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260814_loginfix2';
+} from './views-ext.js?v=20260814_versioninfo1';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -89,7 +89,7 @@ function renderLogin() {
              로그인 후 <b>[설정 · 백업]</b> 화면에서 Supabase를 연결하십시오.`}
       </div>
       <div style="margin-top:14px;text-align:center;font-size:11px;color:#98a2b3">
-        ${esc(APP.org)} · ${esc(APP.version)}
+        ${esc(APP.org)} · V1.0.0
       </div>
     </div>
   </div>`;
