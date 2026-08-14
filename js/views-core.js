@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260814_r2ready1';
+} from './data/frameworks.js?v=20260814_autocompress1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260814_r2ready1';
+} from './core.js?v=20260814_autocompress1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -684,7 +684,7 @@ export function attachmentPanelHtml(attachments = [], editable, { hint = '' } = 
           <button type="button" class="btn sm" id="xAttachLinkBtn">링크 추가</button>
         </div>
       </div>` : ''}
-      <div class="help">${hint ? `${esc(hint)} · ` : ''}사진은 자동으로 WebP 50KB 미만으로 최적화하고, 문서·ZIP은 10MB 이하만 등록할 수 있습니다.</div>
+      <div class="help">${hint ? `${esc(hint)} · ` : ''}사진은 자동으로 WebP 50KB 이하까지 축소하고, 10MB 초과 문서·ZIP은 자동 최고 압축 ZIP으로 변환합니다.</div>
     </div>`;
 }
 
@@ -881,7 +881,7 @@ export function openItemDrawer(itemId, onSaved) {
       </div>
       ${editable ? `<div class="attach-upload-grid">
         <div class="attach-add-group">
-          <div class="attach-add-title"><span class="upload-icon">↑</span><span>파일 첨부<small>사진은 자동으로 50KB 미만 최적화</small></span></div>
+          <div class="attach-add-title"><span class="upload-icon">↑</span><span>파일 첨부<small>사진 50KB 이하 · 대용량 문서 자동 ZIP 압축</small></span></div>
           <div class="attach-add">
             <input class="inp attach-file" type="file" id="fAttachFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.webp,.txt,.csv,.zip">
             <input class="inp" id="fAttachFileNote" placeholder="파일 비고 (선택)">
@@ -900,7 +900,7 @@ export function openItemDrawer(itemId, onSaved) {
           </div>
         </div>
       </div>` : ''}
-      <div class="storage-note"><span>i</span><p>사진(JPG·PNG·WebP)은 WebP로 단계적으로 축소·압축하여 <b>1장당 50KB 미만</b>으로 저장합니다. PDF·Office·한글·ZIP은 10MB 이하만 등록할 수 있습니다. 동일 파일은 중복 등록할 수 없으며, Cloudflare R2 연결 전에는 이 브라우저에 저장됩니다.</p></div>
+      <div class="storage-note"><span>i</span><p>사진(JPG·PNG·WebP)은 WebP로 단계적으로 축소·압축하여 <b>1장당 50KB 이하</b>로 저장합니다. 10MB를 넘는 PDF·Office·한글·ZIP은 자동으로 최고 압축 ZIP으로 변환합니다. 변환 후에도 10MB를 넘는 경우에만 저장되지 않습니다.</p></div>
     </section>
 
     <section class="drawer-section">

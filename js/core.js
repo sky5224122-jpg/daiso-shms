@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_r2ready1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_autocompress1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -168,14 +168,19 @@ const MAX_SOURCE_IMAGE_BYTES = 30 * 1024 * 1024;
 // config.js가 브라우저에서 실행되지 않는 경우에도 공식 R2 Worker를 사용한다.
 // Worker URL은 공개 주소이며 실제 파일 접근은 Supabase 로그인 JWT로 검증한다.
 const DEPLOYED_ATTACHMENT_API_URL = 'https://daiso-shms-attachments.sky5224122.workers.dev';
-// 위험성평가 앱의 식별성 보호 기준(최소 560px, 품질 0.42)을 동일하게 유지한다.
-const IMAGE_DIMENSIONS = [1280, 1080, 900, 765, 650, 560];
-const IMAGE_QUALITIES = [0.72, 0.60, 0.52, 0.46, 0.42];
+// 50KB를 넘으면 단계적으로 해상도·품질을 더 낮춰 저장한다.
+// 현장 사진은 저장 실패보다 기록 보존을 우선하므로 최저 96px·품질 0.08까지 시도한다.
+const IMAGE_DIMENSIONS = [1280, 1080, 900, 765, 650, 560, 460, 360, 280, 220, 160, 128, 96];
+const IMAGE_QUALITIES = [0.72, 0.60, 0.52, 0.46, 0.42, 0.34, 0.26, 0.18, 0.12, 0.08];
 const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx',
   'jpg', 'jpeg', 'png', 'webp', 'txt', 'csv', 'zip'
 ]);
 const COMPRESSIBLE_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
+const COMPRESSIBLE_DOCUMENT_EXTENSIONS = new Set([
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx', 'txt', 'csv', 'zip'
+]);
+let zipLibraryPromise = null;
 
 function attachmentApiUrl() {
   const raw = window.SHMS_ATTACHMENT_API?.url;
@@ -256,7 +261,41 @@ async function compressImageFile(file) {
   } finally {
     if (typeof source.close === 'function') source.close();
   }
-  throw new Error('사진을 50KB 미만으로 압축하지 못했습니다. 다른 사진을 선택해 주세요.');
+  throw new Error('사진 압축 처리에 실패했습니다. 원본 파일을 다시 선택해 주세요.');
+}
+
+async function zipLibrary() {
+  if (!zipLibraryPromise) {
+    zipLibraryPromise = import('https://esm.sh/jszip@3.10.1?bundle')
+      .then(module => module.default || module);
+  }
+  return zipLibraryPromise;
+}
+
+async function compressDocumentFile(file, ext) {
+  if (file.size <= MAX_ATTACHMENT_BYTES) {
+    return { file, originalSize: file.size, compressed: false };
+  }
+  const JSZip = await zipLibrary();
+  const zip = new JSZip();
+  if (ext === 'zip') {
+    const source = await JSZip.loadAsync(file);
+    for (const [name, entry] of Object.entries(source.files)) {
+      if (!entry.dir) zip.file(name, await entry.async('uint8array'), { binary: true, compression: 'DEFLATE' });
+    }
+  } else {
+    zip.file(attachmentFileName(file.name), file, { binary: true, compression: 'DEFLATE' });
+  }
+  const blob = await zip.generateAsync({
+    type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 9 }
+  });
+  const compressedFile = new File([blob], `${baseFileName(file.name)}.zip`, {
+    type: 'application/zip', lastModified: file.lastModified
+  });
+  if (compressedFile.size > MAX_ATTACHMENT_BYTES) {
+    throw new Error('자동 압축 후에도 문서·ZIP이 10MB를 넘습니다. PDF는 원본 이미지 해상도를 낮춘 뒤 다시 첨부해 주세요.');
+  }
+  return { file: compressedFile, originalSize: file.size, compressed: true };
 }
 
 export async function attachmentHash(file) {
@@ -268,8 +307,10 @@ export async function prepareAttachmentFile(file) {
   if (!(file instanceof Blob)) throw new Error('첨부할 파일을 선택해 주세요.');
   const ext = allowedAttachmentFile(file);
   if (!COMPRESSIBLE_IMAGE_EXTENSIONS.has(ext)) {
-    if (file.size > MAX_ATTACHMENT_BYTES) throw new Error('문서·압축파일은 10MB 이하만 등록할 수 있습니다.');
-    return { file, originalSize: file.size, compressed: false, contentHash: await attachmentHash(file) };
+    const prepared = COMPRESSIBLE_DOCUMENT_EXTENSIONS.has(ext)
+      ? await compressDocumentFile(file, ext)
+      : { file, originalSize: file.size, compressed: false };
+    return { ...prepared, contentHash: await attachmentHash(prepared.file) };
   }
   if (file.size > MAX_SOURCE_IMAGE_BYTES) throw new Error('사진 원본은 30MB 이하만 선택해 주세요.');
   const prepared = await compressImageFile(file);
