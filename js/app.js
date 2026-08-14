@@ -4,13 +4,13 @@
 
 import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
-  restoreSession, signIn, signOut, canEdit, currentHalf, recentHalves, halfLabel,
-  getRecord, toast, showSpinner, hideSpinner
-} from './core.js?v=20260813_autolink1';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260813_autolink1';
+  restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
+  getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
+} from './core.js?v=20260814_sharedauth1';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260814_sharedauth1';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260813_autolink1';
+} from './views-core.js?v=20260814_sharedauth1';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260813_autolink1';
+} from './views-ext.js?v=20260814_sharedauth1';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -64,21 +64,27 @@ function renderLogin() {
         </div>
       </div>
       <form id="loginForm" autocomplete="on">
-        <label for="lgPw">접속 비밀번호</label>
+        ${conn.mode === 'supabase' ? `
+        <label for="lgEmail">이메일</label>
+        <input id="lgEmail" type="email" autocomplete="email" placeholder="name@company.com" required autofocus>
+        <label for="lgName" id="lgNameLabel" style="display:none">이름</label>
+        <input id="lgName" type="text" autocomplete="name" placeholder="이름 (계정 만들기 시 입력)" style="display:none">
+        <label for="lgPw">비밀번호</label>` : '<label for="lgPw">접속 비밀번호</label>'}
         <div style="position:relative;display:flex;align-items:center">
           <input id="lgPw" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" required autofocus style="padding-right:44px;width:100%;box-sizing:border-box">
           <button type="button" id="lgPwToggle" title="비밀번호 표시/숨김" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;padding:4px;color:#667085;font-size:18px;line-height:1">👁</button>
         </div>
-        <label style="display:flex;align-items:center;gap:7px;font-weight:700;margin-top:14px">
+        ${conn.mode !== 'supabase' ? `<label style="display:flex;align-items:center;gap:7px;font-weight:700;margin-top:14px">
           <input type="checkbox" id="lgRemember" style="width:auto;margin:0"> 이 브라우저에서 로그인 유지
-        </label>
-        <button class="login-btn" type="submit">들어가기</button>
+        </label>` : ''}
+        <button class="login-btn" type="submit" id="lgSubmit">${conn.mode === 'supabase' ? '로그인' : '들어가기'}</button>
+        ${conn.mode === 'supabase' ? '<button class="btn" type="button" id="lgMode" style="width:100%;margin-top:9px">처음이면 계정 만들기</button>' : ''}
         <div class="login-err" id="lgErr"></div>
       </form>
       <div class="login-hint">
         <b>${conn.mode === 'supabase' ? '🟢 Supabase 연결됨' : '🟡 로컬 저장 모드'}</b><br>
         ${conn.mode === 'supabase'
-          ? '작성 자료는 Supabase에 저장되고 이 브라우저에도 캐시됩니다.'
+          ? '개인 이메일 계정으로 로그인하면 작성 자료가 모든 사용자에게 공유됩니다. 모든 가입 사용자는 작성·수정할 수 있고, 마스터 관리자만 삭제할 수 있습니다.'
           : `작성 자료는 이 브라우저에만 저장됩니다. 여러 명이 함께 쓰려면
              로그인 후 <b>[설정 · 백업]</b> 화면에서 Supabase를 연결하십시오.`}
       </div>
@@ -88,6 +94,7 @@ function renderLogin() {
     </div>
   </div>`;
 
+  let signupMode = false;
   $('#lgPwToggle').addEventListener('click', () => {
     const inp = $('#lgPw');
     const btn = $('#lgPwToggle');
@@ -102,15 +109,31 @@ function renderLogin() {
     }
   });
 
+  $('#lgMode')?.addEventListener('click', () => {
+    signupMode = !signupMode;
+    $('#lgName').style.display = signupMode ? '' : 'none';
+    $('#lgNameLabel').style.display = signupMode ? '' : 'none';
+    $('#lgName').required = signupMode;
+    $('#lgSubmit').textContent = signupMode ? '계정 만들기' : '로그인';
+    $('#lgMode').textContent = signupMode ? '기존 계정으로 로그인' : '처음이면 계정 만들기';
+    $('#lgErr').textContent = '';
+  });
+
   $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const err = $('#lgErr');
     err.textContent = '';
     try {
-      await signIn({
-        password: $('#lgPw').value,
-        remember: $('#lgRemember').checked
-      });
+      if (conn.mode === 'supabase' && signupMode) {
+        const result = await signUp({ email: $('#lgEmail').value, password: $('#lgPw').value, name: $('#lgName').value });
+        if (result.confirmRequired) { err.textContent = '가입 확인 이메일을 열어 인증한 뒤 로그인해 주세요.'; return; }
+      } else {
+        await signIn({
+          email: $('#lgEmail')?.value,
+          password: $('#lgPw').value,
+          remember: $('#lgRemember')?.checked
+        });
+      }
       await boot();
     } catch (ex) {
       err.textContent = ex.message || String(ex);
@@ -295,6 +318,7 @@ async function boot() {
   renderShell();
   showSpinner('자료를 불러오는 중…');
   await loadAll();
+  scheduleDailyAutoBackup();
   hideSpinner();
   lastKey = currentView();
   route();
@@ -303,7 +327,7 @@ async function boot() {
 (async function main() {
   document.title = `${APP.name} | ${APP.org}`;
   await initSupabase();
-  restoreSession();
+  await restoreSession();
 
   onChange(() => { if (state.user && $('#navRoot')) renderNav(); });
   await boot();

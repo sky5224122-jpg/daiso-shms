@@ -20,7 +20,7 @@ create table if not exists public.shms_profiles (
   dept       text,
   -- master | safety | head : 작성·수정 가능
   -- auditor | part | store | ref : 읽기 전용
-  role       text not null default 'ref',
+  role       text not null default 'safety',
   created_at timestamptz not null default now()
 );
 
@@ -35,10 +35,24 @@ set search_path = public
 as $$
 begin
   insert into public.shms_profiles (id, email, name, role)
-  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'name', new.email), 'ref')
+  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'name', new.email), 'safety')
   on conflict (id) do nothing;
   return new;
 end;
+$$;
+
+-- 삭제 권한은 마스터 계정만 가진다.
+create or replace function public.shms_can_delete()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.shms_profiles p
+    where p.id = auth.uid() and p.role = 'master'
+  );
 $$;
 
 drop trigger if exists shms_on_auth_user_created on auth.users;
@@ -191,7 +205,7 @@ alter table public.shms_org add column if not exists attachments jsonb not null 
 -- ============================================================
 -- RLS (행 수준 보안)
 --   · 로그인한 사용자는 전체 조회 가능
---   · 작성/수정/삭제는 shms_can_edit() = true 인 사용자만 가능
+--   · 작성/수정은 safety·head·master, 삭제는 master만 가능
 -- ============================================================
 
 alter table public.shms_profiles    enable row level security;
@@ -202,17 +216,18 @@ alter table public.shms_capa        enable row level security;
 alter table public.shms_evidence    enable row level security;
 alter table public.shms_org         enable row level security;
 
--- 프로필: 본인 것만 조회, 관리자는 전체 조회·수정
+-- 프로필: 본인 것만 조회, 마스터만 전체 조회·수정
 drop policy if exists shms_profiles_self_read on public.shms_profiles;
 create policy shms_profiles_self_read on public.shms_profiles
   for select to authenticated
-  using (id = auth.uid() or public.shms_can_edit());
+  using (id = auth.uid() or public.shms_can_delete());
 
 drop policy if exists shms_profiles_admin_write on public.shms_profiles;
-create policy shms_profiles_admin_write on public.shms_profiles
-  for all to authenticated
-  using (public.shms_can_edit())
-  with check (public.shms_can_edit());
+drop policy if exists shms_profiles_master_update on public.shms_profiles;
+create policy shms_profiles_master_update on public.shms_profiles
+  for update to authenticated
+  using (public.shms_can_delete())
+  with check (public.shms_can_delete());
 
 -- 업무 테이블 공통 정책 생성
 do $$
@@ -225,10 +240,22 @@ begin
       'create policy %I on public.%I for select to authenticated using (true)',
       t || '_read', t);
 
-    execute format('drop policy if exists %I on public.%I', t || '_write', t);
+    execute format('drop policy if exists %I on public.%I', t || '_insert', t);
     execute format(
-      'create policy %I on public.%I for all to authenticated using (public.shms_can_edit()) with check (public.shms_can_edit())',
-      t || '_write', t);
+      'create policy %I on public.%I for insert to authenticated with check (public.shms_can_edit())',
+      t || '_insert', t);
+
+    execute format('drop policy if exists %I on public.%I', t || '_update', t);
+    execute format(
+      'create policy %I on public.%I for update to authenticated using (public.shms_can_edit()) with check (public.shms_can_edit())',
+      t || '_update', t);
+
+    execute format('drop policy if exists %I on public.%I', t || '_delete', t);
+    execute format(
+      'create policy %I on public.%I for delete to authenticated using (public.shms_can_delete())',
+      t || '_delete', t);
+
+    execute format('drop policy if exists %I on public.%I', t || '_write', t);
   end loop;
 end $$;
 

@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260813_autolink1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_sharedauth1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -580,7 +580,7 @@ export async function saveRecord(itemId, patch, half = state.half) {
   const row = { ...getRecord(itemId, half), ...patch, item_id: itemId, half, ...stamp() };
   state.records[key] = row;
   lsSet('records', state.records);
-  emit(); autoBackup();
+  emit();
   return remoteUpsert(TABLES.records, recordToRemote(row), 'item_id,half');
 }
 
@@ -591,7 +591,7 @@ export async function deleteRecord(itemId, half = state.half) {
   const row = state.records[key];
   delete state.records[key];
   lsSet('records', state.records);
-  emit(); autoBackup();
+  emit();
   if (conn.mode !== 'supabase') {
     await Promise.allSettled((row?.attachments || []).map(deleteAttachmentFile));
     return { ok: true, local: true };
@@ -612,7 +612,7 @@ export async function saveDocument(doc) {
   const i = state.documents.findIndex(d => d.id === row.id);
   if (i >= 0) state.documents[i] = row; else state.documents.push(row);
   lsSet('documents', state.documents);
-  emit(); autoBackup();
+  emit();
   return remoteUpsert(TABLES.documents, row, 'id');
 }
 
@@ -623,7 +623,7 @@ export async function saveRow(kind, row) {
   const i = list.findIndex(x => x.id === r.id);
   if (i >= 0) list[i] = r; else list.push(r);
   lsSet(kind, list);
-  emit(); autoBackup();
+  emit();
   return remoteUpsert(table, r, 'id');
 }
 
@@ -632,35 +632,53 @@ export async function deleteRow(kind, id) {
   const deleted = state[kind].find(x => x.id === id);
   state[kind] = state[kind].filter(x => x.id !== id);
   lsSet(kind, state[kind]);
-  emit(); autoBackup();
+  emit();
   const res = await remoteDelete(TABLES[kind], id);
   if (res.ok) await Promise.allSettled((deleted?.attachments || []).map(deleteAttachmentFile));
   return res;
 }
 
-/* ---------------- 자동 백업 ---------------- */
+/* ---------------- 자동 백업 ----------------
+   앱이 열려 있을 때 매일 오전 9시에 1회만 생성한다.
+   저장 때마다 스냅샷을 만들지 않아 브라우저 저장공간 중복을 줄인다.
+------------------------------------------------------------- */
 const BK_PREFIX = 'shms.backup.';
 const BK_MAX = 5;
-let lastBkTime = 0;
-const BK_INTERVAL = 60_000;
+const BK_DAILY_KEY = 'shms.backup.daily.last';
+let backupTimer = null;
 
-function autoBackup() {
-  const now = Date.now();
-  if (now - lastBkTime < BK_INTERVAL) return;
-  lastBkTime = now;
+const backupDay = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+function createDailyBackup() {
+  const now = new Date();
+  if (localStorage.getItem(BK_DAILY_KEY) === backupDay(now)) return false;
   try {
     const snap = {
-      ts: new Date().toISOString(),
+      ts: now.toISOString(),
       records: state.records, documents: state.documents, capa: state.capa,
       inspections: state.inspections, org: state.org, evidence: state.evidence
     };
     const keys = Object.keys(localStorage)
       .filter(k => k.startsWith(BK_PREFIX)).sort();
-    while (keys.length >= BK_MAX) {
-      localStorage.removeItem(keys.shift());
-    }
-    localStorage.setItem(BK_PREFIX + now, JSON.stringify(snap));
-  } catch (_) {}
+    while (keys.length >= BK_MAX) localStorage.removeItem(keys.shift());
+    localStorage.setItem(BK_PREFIX + now.getTime(), JSON.stringify(snap));
+    localStorage.setItem(BK_DAILY_KEY, backupDay(now));
+    return true;
+  } catch (_) { return false; }
+}
+
+/** 앱이 열린 상태에서 다음 오전 9시에 자동 백업을 한 번 생성한다. */
+export function scheduleDailyAutoBackup() {
+  clearTimeout(backupTimer);
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(9, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  backupTimer = setTimeout(() => {
+    createDailyBackup();
+    scheduleDailyAutoBackup();
+  }, Math.max(1000, next.getTime() - now.getTime()));
 }
 
 export function getBackups() {
@@ -766,7 +784,21 @@ async function sha256Hex(text) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function restoreSession() {
+async function loadSupabaseProfile(authUser) {
+  const { data, error } = await conn.client.from('shms_profiles')
+    .select('id,email,name,dept,role').eq('id', authUser.id).single();
+  if (error) throw new Error(`사용자 권한 정보를 불러오지 못했습니다: ${error.message}`);
+  return { ...data, email: data.email || authUser.email || '', name: data.name || authUser.email || '사용자', source: 'supabase' };
+}
+
+export async function restoreSession() {
+  if (conn.mode === 'supabase') {
+    const { data, error } = await conn.client.auth.getSession();
+    if (error) { conn.error = error.message; return null; }
+    if (!data.session?.user) return null;
+    try { state.user = await loadSupabaseProfile(data.session.user); return state.user; }
+    catch (e) { conn.error = e?.message || String(e); await conn.client.auth.signOut(); return null; }
+  }
   try {
     const raw = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
     if (raw) { state.user = JSON.parse(raw); return state.user; }
@@ -774,7 +806,15 @@ export function restoreSession() {
   return null;
 }
 
-export async function signIn({ password, remember }) {
+export async function signIn({ email = '', password, remember }) {
+  if (conn.mode === 'supabase') {
+    const cleanEmail = String(email || '').trim();
+    if (!cleanEmail || !password) throw new Error('이메일과 비밀번호를 입력하세요.');
+    const { data, error } = await conn.client.auth.signInWithPassword({ email: cleanEmail, password });
+    if (error) throw new Error(error.message);
+    state.user = await loadSupabaseProfile(data.user);
+    return state.user;
+  }
   const pw = String(password || '');
   if (!pw) throw new Error('비밀번호를 입력하세요.');
   if (!window.crypto?.subtle) {
@@ -788,6 +828,20 @@ export async function signIn({ password, remember }) {
   sessionStorage.setItem(SESSION_KEY, raw);
   if (remember) localStorage.setItem(SESSION_KEY, raw); else localStorage.removeItem(SESSION_KEY);
   return state.user;
+}
+
+export async function signUp({ email, password, name }) {
+  if (conn.mode !== 'supabase') throw new Error('공동 운영 서버가 아직 연결되지 않았습니다.');
+  const cleanEmail = String(email || '').trim();
+  if (!cleanEmail || !password) throw new Error('이메일과 비밀번호를 입력하세요.');
+  const { data, error } = await conn.client.auth.signUp({
+    email: cleanEmail, password,
+    options: { data: { name: String(name || '').trim() || cleanEmail } }
+  });
+  if (error) throw new Error(error.message);
+  if (!data.session) return { confirmRequired: true };
+  state.user = await loadSupabaseProfile(data.user);
+  return { confirmRequired: false };
 }
 
 export async function signOut() {
@@ -804,5 +858,5 @@ export function canEdit() {
 
 /** 삭제는 관리자 비밀번호로 로그인한 사용자에게만 허용한다. */
 export function canDelete() {
-  return state.user?.source === 'master-gate' && state.user?.role === 'master';
+  return state.user?.role === 'master' && (conn.mode === 'supabase' || state.user?.source === 'master-gate');
 }

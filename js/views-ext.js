@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260813_autolink1';
+} from './data/frameworks.js?v=20260814_sharedauth1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode
-} from './core.js?v=20260813_autolink1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260813_autolink1';
+} from './core.js?v=20260814_sharedauth1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_sharedauth1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -904,6 +904,14 @@ function downloadCsv(rows, filename) {
 export function renderSettings() {
   const cfg = getSupabaseConfig();
   const fileMode = attachmentStorageMode();
+  const usingSupabase = conn.mode === 'supabase';
+  const authMethod = usingSupabase
+    ? '이메일 계정 로그인 (Supabase Auth)'
+    : '공용 작성 비밀번호 + 마스터 관리자 삭제 비밀번호';
+  const authHelp = usingSupabase
+    ? `<b>공동 운영</b> — 각 사용자가 자신의 이메일 계정을 만든 뒤 로그인하면 같은 업무 자료를 함께 조회·작성·수정할 수 있습니다. 삭제는 <b>master</b> 역할의 관리자 계정만 가능합니다.<br>
+        <b>첨부파일</b> — Cloudflare R2 Worker가 아직 연결되지 않은 경우 첨부 원본은 각 브라우저에만 보관됩니다. R2 연결을 마치면 파일도 공동으로 볼 수 있습니다.`
+    : `<b>접속 방식</b> — 공용 비밀번호 방식에서는 작성·수정은 가능하지만 삭제는 마스터 관리자만 가능합니다. 실제 공동 운영을 하려면 Supabase Auth와 RLS 정책을 연결해야 합니다.`;
   const liveUrl = 'https://sky5224122-jpg.github.io/daiso-shms/';
   const recordStore = conn.mode === 'supabase' ? 'Supabase PostgreSQL + 브라우저 캐시' : '현재 PC 브라우저 localStorage';
   const fileStore = fileMode === 'r2' ? 'Cloudflare R2 (Worker 경유)' : '현재 PC 브라우저 IndexedDB';
@@ -959,10 +967,10 @@ export function renderSettings() {
       <div class="ops-policy current">
         <div class="ops-policy-title"><span>현재 실제 동작</span><b>${conn.mode === 'supabase' ? 'Supabase 연결' : '로컬 저장'}</b></div>
         <ul>
-          <li>인증: 공용 비밀번호는 작성·수정, 관리자 비밀번호만 삭제</li>
+          <li>인증: ${usingSupabase ? '이메일 계정으로 로그인 · master 관리자만 삭제' : '공용 비밀번호는 작성·수정, 관리자 비밀번호만 삭제'}</li>
           <li>업무데이터: ${esc(recordStore)}</li>
           <li>첨부파일: ${esc(fileStore)}</li>
-          <li>자동 백업: 브라우저에 최근 5개 보관</li>
+          <li>자동 백업: 앱이 열려 있으면 매일 오전 9시 1회 · 최근 5개 보관</li>
         </ul>
       </div>
       <div class="ops-policy target">
@@ -977,7 +985,7 @@ export function renderSettings() {
       <div class="ops-policy backup">
         <div class="ops-policy-title"><span>백업 · 장애 대응</span><b>이중 보관</b></div>
         <ul>
-          <li>수시: 저장 시 브라우저 자동 백업(1분 간격·최대 5개)</li>
+          <li>자동: 앱이 열린 상태에서 매일 오전 9시 브라우저 백업 1회(최대 5개)</li>
           <li>정기: ‘전체 백업 내려받기’로 JSON 파일 생성</li>
           <li>보관: 내려받은 파일은 사내 D드라이브 지정 폴더에 별도 보관</li>
           <li>복구: Supabase 장애 시 JSON 복원으로 핵심 업무데이터 재구성</li>
@@ -1025,10 +1033,10 @@ export function renderSettings() {
         <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
           <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:600">🔄 자동 백업 (최근 5개)</h4>
           <p style="font-size:12px;color:var(--text-2);margin:0 0 12px;line-height:1.6">
-            데이터를 저장할 때마다 브라우저에 자동으로 백업됩니다 (1분 간격, 최대 5개 보관).</p>
+            앱이 열려 있는 경우 매일 오전 9시에 한 번만 브라우저에 자동 백업됩니다 (최대 5개 보관). 앱·PC가 꺼져 있으면 자동 실행되지 않으므로, 중요한 작업 후에는 위의 전체 백업 내려받기를 사용하세요.</p>
           ${(()=>{
             const bks = getBackups();
-            if (!bks.length) return '<div style="font-size:12.5px;color:var(--muted);padding:8px 0">자동 백업이 아직 없습니다. 데이터를 저장하면 자동으로 생성됩니다.</div>';
+            if (!bks.length) return '<div style="font-size:12.5px;color:var(--muted);padding:8px 0">자동 백업이 아직 없습니다. 앱을 오전 9시에 열어 두면 생성됩니다. 중요한 자료는 전체 백업 내려받기를 사용하세요.</div>';
             return '<div class="tbl-wrap"><table class="tbl" style="min-width:0;font-size:12.5px"><thead><tr><th>시각</th><th>이행기록</th><th>문서</th><th>개선조치</th><th>점검</th><th></th></tr></thead><tbody>'
               + bks.map(b => {
                 const dt = new Date(b.ts);
@@ -1052,12 +1060,13 @@ export function renderSettings() {
         <tbody>
           <tr><th style="width:150px">사용자</th><td>${esc(state.user?.name || '-')}</td></tr>
           <tr><th>권한</th><td>${esc(ROLES[state.user?.role]?.label || state.user?.role || '-')} — ${canEdit() ? '작성·수정 가능' : '읽기 전용'}${canDelete() ? ' · 삭제 가능' : ' · 삭제 불가'}</td></tr>
-          <tr><th>인증 방식</th><td>공용 작성 비밀번호 + 마스터 관리자 삭제 비밀번호 (아이디 없음)</td></tr>
+          <tr><th>인증 방식</th><td>${authMethod}</td></tr>
           <tr><th>저장 모드</th><td>${conn.mode === 'supabase' ? 'Supabase + 로컬 캐시' : '로컬(localStorage) 전용'}</td></tr>
           <tr><th>첨부파일 저장</th><td>${fileMode === 'r2' ? 'Cloudflare R2 (Worker API)' : '현재 브라우저 IndexedDB 전용'}</td></tr>
           <tr><th>버전</th><td>${esc(APP.version)}</td></tr>
         </tbody></table></div>
-      <div class="help" style="margin-top:12px">
+      ${usingSupabase ? `<div class="help" style="margin-top:12px">${authHelp}</div>` : ''}
+      <div class="help" style="margin-top:12px;display:${usingSupabase ? 'none' : 'block'}">
         <b>접속 방식</b> — 공용 비밀번호로 진입한 사용자는 모두 작성·수정할 수 있지만 삭제는 할 수 없습니다. 마스터 관리자 비밀번호로 접속한 사용자만 행·첨부·자동 백업을 삭제할 수 있습니다.<br>
         <b>⚠ 주의</b> — 비밀번호 해시는 앱 소스에 포함되어 있어 외부 유출을 막는 보안장치가 아닙니다.
         비밀번호를 바꾸려면 <code>js/core.js</code> 의 <code>GATE_HASH</code>(공용)와 <code>MASTER_GATE_HASH</code>(마스터)를 각각 교체하십시오.

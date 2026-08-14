@@ -10,8 +10,8 @@
    ============================================================ */
 
 window.SHMS_SUPABASE = {
-  url: 'https://YOUR-PROJECT.supabase.co',
-  anonKey: 'YOUR-ANON-PUBLIC-KEY'
+  url: 'https://zjnjbvkbxzpxtswqzoau.supabase.co',
+  anonKey: 'sb_publishable_T0loyctj480POqvxD7a7HQ_pG1b_sOw'
 };
 
 /* Cloudflare Worker 첨부파일 API (선택)
