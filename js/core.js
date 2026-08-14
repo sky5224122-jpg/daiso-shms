@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_hotfix1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_loginfix1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -100,19 +100,21 @@ export function hideSpinner() {
 
 /* ---------------- Supabase 설정 ----------------
    운영 키는 소스에 하드코딩하지 않고, 아래 우선순위로 읽는다.
-   1) localStorage('shms.supabase')  ← 앱 [설정] 화면에서 입력
-   2) window.SHMS_SUPABASE           ← 배포 시 config.js 주입
+   1) window.SHMS_SUPABASE           ← 배포 시 config.js 주입(공식 공동 운영 연결)
+   2) localStorage('shms.supabase')  ← 공식 연결이 없을 때만 앱 [설정] 화면 값 사용
    anon key는 공개되어도 되는 키이며, 실제 접근통제는 Supabase RLS가 수행한다.
 ------------------------------------------------- */
 const CFG_KEY = 'shms.supabase';
 
 export function getSupabaseConfig() {
+  const w = window.SHMS_SUPABASE;
+  // 배포본에 연결 정보가 있으면 이전 브라우저의 임시 설정보다 항상 우선한다.
+  // 서로 다른 Supabase 프로젝트를 잘못 바라봐 로그인에 실패하는 일을 막는다.
+  if (w && w.url && w.anonKey && !String(w.url).includes('YOUR-PROJECT')) return w;
   try {
     const raw = localStorage.getItem(CFG_KEY);
     if (raw) { const c = JSON.parse(raw); if (c && c.url && c.anonKey) return c; }
   } catch (_) { /* 손상된 설정은 무시 */ }
-  const w = window.SHMS_SUPABASE;
-  if (w && w.url && w.anonKey && !String(w.url).includes('YOUR-PROJECT')) return w;
   return null;
 }
 export function setSupabaseConfig(url, anonKey) {
