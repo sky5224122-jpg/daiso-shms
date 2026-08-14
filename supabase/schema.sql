@@ -27,6 +27,20 @@ create table if not exists public.shms_profiles (
 
 comment on table public.shms_profiles is '사용자 권한 프로필 — 앱의 편집 권한은 role 값으로 결정된다';
 
+create table if not exists public.shms_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_id uuid references auth.users(id) on delete set null,
+  login_id text,
+  actor_name text,
+  action text not null,
+  entity_type text not null,
+  entity_id text not null,
+  before_data jsonb,
+  after_data jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists shms_audit_log_created_idx on public.shms_audit_log (created_at desc);
+
 -- 신규 가입자 자동 프로필 생성
 create or replace function public.shms_handle_new_user()
 returns trigger
@@ -211,6 +225,17 @@ alter table public.shms_org add column if not exists attachments jsonb not null 
 -- ============================================================
 
 alter table public.shms_profiles    enable row level security;
+alter table public.shms_audit_log   enable row level security;
+
+drop policy if exists shms_audit_read on public.shms_audit_log;
+create policy shms_audit_read on public.shms_audit_log
+  for select to authenticated using (true);
+drop policy if exists shms_audit_insert on public.shms_audit_log;
+create policy shms_audit_insert on public.shms_audit_log
+  for insert to authenticated with check (actor_id = auth.uid());
+drop policy if exists shms_audit_delete on public.shms_audit_log;
+create policy shms_audit_delete on public.shms_audit_log
+  for delete to authenticated using (public.shms_can_delete());
 alter table public.shms_records     enable row level security;
 alter table public.shms_documents   enable row level security;
 alter table public.shms_inspections enable row level security;

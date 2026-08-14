@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260814_userid1';
+} from './data/frameworks.js?v=20260814_audit1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
-  showSpinner, hideSpinner, attachmentStorageMode
-} from './core.js?v=20260814_userid1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_userid1';
+  showSpinner, hideSpinner, attachmentStorageMode, getAuditLog
+} from './core.js?v=20260814_audit1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_audit1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -85,7 +85,8 @@ export function renderDocuments() {
             ${docs.filter(d => d.category === c).map(docCard).join('')}
           </div>`).join('')}
     </div>
-  </div>`;
+  </div>
+
 }
 
 function docCard(d) {
@@ -912,6 +913,13 @@ export function renderSettings() {
     ? `<b>공동 운영</b> — 각 사용자가 부여받은 아이디로 로그인하면 같은 업무 자료를 함께 조회·작성·수정할 수 있습니다. 삭제는 <b>master</b> 역할의 관리자 계정만 가능합니다.<br>
         <b>첨부파일</b> — Cloudflare R2 Worker가 아직 연결되지 않은 경우 첨부 원본은 각 브라우저에만 보관됩니다. R2 연결을 마치면 파일도 공동으로 볼 수 있습니다.`
     : `<b>접속 방식</b> — 공용 비밀번호 방식에서는 작성·수정은 가능하지만 삭제는 마스터 관리자만 가능합니다. 실제 공동 운영을 하려면 Supabase Auth와 RLS 정책을 연결해야 합니다.`;
+  const auditName = { record: '이행기록', document: '문서', capa: '개선조치', inspections: '이행점검', org: '선임·조직', evidence: '증빙자료' };
+  const auditAction = { create: '작성', update: '수정', delete: '삭제' };
+  const auditRows = getAuditLog().slice(0, 100).map(a => {
+    const dt = new Date(a.created_at);
+    const when = Number.isNaN(dt.getTime()) ? '-' : `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    return `<tr><td>${esc(when)}</td><td>${esc(a.login_id || a.actor_name || '미상')} · ${esc(a.actor_name || '')}</td><td>${esc(auditAction[a.action] || a.action)}</td><td>${esc(auditName[a.entity_type] || a.entity_type)}<br><small>${esc(a.entity_id)}</small></td></tr>`;
+  }).join('');
   const liveUrl = 'https://sky5224122-jpg.github.io/daiso-shms/';
   const recordStore = conn.mode === 'supabase' ? 'Supabase PostgreSQL + 브라우저 캐시' : '현재 PC 브라우저 localStorage';
   const fileStore = fileMode === 'r2' ? 'Cloudflare R2 (Worker 경유)' : '현재 PC 브라우저 IndexedDB';
@@ -1071,6 +1079,15 @@ export function renderSettings() {
         <b>⚠ 주의</b> — 비밀번호 해시는 앱 소스에 포함되어 있어 외부 유출을 막는 보안장치가 아닙니다.
         비밀번호를 바꾸려면 <code>js/core.js</code> 의 <code>GATE_HASH</code>(공용)와 <code>MASTER_GATE_HASH</code>(마스터)를 각각 교체하십시오.
         실제 데이터 접근 통제가 필요하면 Supabase 연결 후 RLS 정책으로 제한해야 합니다.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-head"><h3>🧾 변경 이력</h3></div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-2);margin:0 0 12px;line-height:1.6">
+        작성·수정·삭제한 사용자와 시각을 최근 100건까지 표시합니다. 공동 운영에서는 Supabase에 저장되어 모든 사용자가 같은 이력을 봅니다.</p>
+      ${auditRows ? `<div class="tbl-wrap"><table class="tbl" style="min-width:0;font-size:12.5px"><thead><tr><th>시각</th><th>사용자</th><th>작업</th><th>대상</th></tr></thead><tbody>${auditRows}</tbody></table></div>` : '<div style="font-size:12.5px;color:var(--muted);padding:8px 0">아직 변경 이력이 없습니다.</div>'}
     </div>
   </div>`;
 }

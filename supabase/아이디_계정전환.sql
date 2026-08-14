@@ -11,6 +11,27 @@ create unique index if not exists shms_profiles_login_id_uidx
   on public.shms_profiles (login_id)
   where login_id is not null;
 
+create table if not exists public.shms_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_id uuid references auth.users(id) on delete set null,
+  login_id text,
+  actor_name text,
+  action text not null,
+  entity_type text not null,
+  entity_id text not null,
+  before_data jsonb,
+  after_data jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists shms_audit_log_created_idx on public.shms_audit_log (created_at desc);
+alter table public.shms_audit_log enable row level security;
+drop policy if exists shms_audit_read on public.shms_audit_log;
+create policy shms_audit_read on public.shms_audit_log for select to authenticated using (true);
+drop policy if exists shms_audit_insert on public.shms_audit_log;
+create policy shms_audit_insert on public.shms_audit_log for insert to authenticated with check (actor_id = auth.uid());
+drop policy if exists shms_audit_delete on public.shms_audit_log;
+create policy shms_audit_delete on public.shms_audit_log for delete to authenticated using (public.shms_can_delete());
+
 create or replace function public.shms_handle_new_user()
 returns trigger
 language plpgsql

@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_userid1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_audit1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -411,6 +411,7 @@ export const TABLES = {
   org:         'shms_org',          // 조직·선임 현황
   evidence:    'shms_evidence'      // 증빙 자료 목록
 };
+const AUDIT_TABLE = 'shms_audit_log';
 
 const LS_PREFIX = 'shms.data.';
 const lsGet = (k, dflt) => {
@@ -429,6 +430,7 @@ export const state = {
   inspections: [],
   org: [],
   evidence: [],
+  auditLog: [],
   loaded: false
 };
 
@@ -499,6 +501,7 @@ export async function loadAll() {
   state.inspections = lsGet('inspections', []);
   state.org         = lsGet('org', []);
   state.evidence    = lsGet('evidence', []);
+  state.auditLog    = lsGet('auditLog', []);
 
   if (conn.mode === 'supabase') {
     try {
@@ -530,6 +533,11 @@ export async function loadAll() {
       state.org         = org.data  || [];
       state.evidence    = evi.data  || [];
       persistAll();
+      try {
+        const { data: audit } = await conn.client.from(AUDIT_TABLE).select('*').order('created_at', { ascending: false }).limit(200);
+        state.auditLog = audit || [];
+        lsSet('auditLog', state.auditLog);
+      } catch (_) { /* 감사 테이블 마이그레이션 전에도 기존 자료는 표시한다. */ }
     } catch (e) {
       conn.error = e?.message || String(e);
       console.warn('[SHMS] 원격 조회 실패 — 로컬 캐시로 표시합니다.', e);
@@ -575,13 +583,35 @@ async function remoteDelete(table, id) {
 
 const stamp = () => ({ updated_at: new Date().toISOString(), updated_by: state.user?.name || '미상' });
 
+function auditActor() {
+  return { actor_id: state.user?.id || null, login_id: state.user?.loginId || state.user?.login_id || '', actor_name: state.user?.name || '미상' };
+}
+
+async function writeAudit(action, entityType, entityId, beforeData, afterData) {
+  const auditId = conn.mode === 'supabase' && crypto.randomUUID ? crypto.randomUUID() : uid('audit');
+  const entry = { id: auditId, ...auditActor(), action, entity_type: entityType, entity_id: String(entityId || ''), before_data: beforeData || null, after_data: afterData || null, created_at: new Date().toISOString() };
+  state.auditLog = [entry, ...(state.auditLog || [])].slice(0, 200);
+  lsSet('auditLog', state.auditLog);
+  if (conn.mode !== 'supabase') return { ok: true, local: true };
+  try {
+    const { error } = await conn.client.from(AUDIT_TABLE).insert(entry);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) { conn.error = e?.message || String(e); return { ok: false, error: conn.error }; }
+}
+
+export function getAuditLog() { return state.auditLog || []; }
+
 export async function saveRecord(itemId, patch, half = state.half) {
   const key = recordKey(itemId, half);
+  const before = state.records[key] || null;
   const row = { ...getRecord(itemId, half), ...patch, item_id: itemId, half, ...stamp() };
   state.records[key] = row;
   lsSet('records', state.records);
   emit();
-  return remoteUpsert(TABLES.records, recordToRemote(row), 'item_id,half');
+  const result = await remoteUpsert(TABLES.records, recordToRemote(row), 'item_id,half');
+  await writeAudit(before ? 'update' : 'create', 'record', `${itemId}@${half}`, before, row);
+  return result;
 }
 
 /** 법령·ISO 항목의 작성 기록만 삭제한다. 마스터 데이터 항목 자체는 유지된다. */
@@ -594,12 +624,14 @@ export async function deleteRecord(itemId, half = state.half) {
   emit();
   if (conn.mode !== 'supabase') {
     await Promise.allSettled((row?.attachments || []).map(deleteAttachmentFile));
+    await writeAudit('delete', 'record', `${itemId}@${half}`, row, null);
     return { ok: true, local: true };
   }
   try {
     const { error } = await conn.client.from(TABLES.records).delete().eq('item_id', itemId).eq('half', half);
     if (error) throw error;
     await Promise.allSettled((row?.attachments || []).map(deleteAttachmentFile));
+    await writeAudit('delete', 'record', `${itemId}@${half}`, row, null);
     return { ok: true };
   } catch (e) {
     conn.error = e?.message || String(e);
@@ -608,23 +640,29 @@ export async function deleteRecord(itemId, half = state.half) {
 }
 
 export async function saveDocument(doc) {
+  const before = state.documents.find(d => d.id === doc.id) || null;
   const row = { ...doc, ...stamp() };
   const i = state.documents.findIndex(d => d.id === row.id);
   if (i >= 0) state.documents[i] = row; else state.documents.push(row);
   lsSet('documents', state.documents);
   emit();
-  return remoteUpsert(TABLES.documents, row, 'id');
+  const result = await remoteUpsert(TABLES.documents, row, 'id');
+  await writeAudit(before ? 'update' : 'create', 'document', row.id, before, row);
+  return result;
 }
 
 export async function saveRow(kind, row) {
   const table = TABLES[kind];
   const list = state[kind];
   const r = { ...row, id: row.id || uid(kind), ...stamp() };
+  const before = list.find(x => x.id === r.id) || null;
   const i = list.findIndex(x => x.id === r.id);
   if (i >= 0) list[i] = r; else list.push(r);
   lsSet(kind, list);
   emit();
-  return remoteUpsert(table, r, 'id');
+  const result = await remoteUpsert(table, r, 'id');
+  await writeAudit(before ? 'update' : 'create', kind, r.id, before, r);
+  return result;
 }
 
 export async function deleteRow(kind, id) {
@@ -635,6 +673,7 @@ export async function deleteRow(kind, id) {
   emit();
   const res = await remoteDelete(TABLES[kind], id);
   if (res.ok) await Promise.allSettled((deleted?.attachments || []).map(deleteAttachmentFile));
+  if (res.ok) await writeAudit('delete', kind, id, deleted, null);
   return res;
 }
 

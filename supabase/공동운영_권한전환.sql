@@ -3,6 +3,25 @@
 
 alter table public.shms_profiles alter column role set default 'safety';
 
+create table if not exists public.shms_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_id uuid references auth.users(id) on delete set null,
+  login_id text,
+  actor_name text,
+  action text not null,
+  entity_type text not null,
+  entity_id text not null,
+  before_data jsonb,
+  after_data jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists shms_audit_log_created_idx on public.shms_audit_log (created_at desc);
+alter table public.shms_audit_log enable row level security;
+drop policy if exists shms_audit_read on public.shms_audit_log;
+create policy shms_audit_read on public.shms_audit_log for select to authenticated using (true);
+drop policy if exists shms_audit_insert on public.shms_audit_log;
+create policy shms_audit_insert on public.shms_audit_log for insert to authenticated with check (actor_id = auth.uid());
+
 create or replace function public.shms_handle_new_user()
 returns trigger
 language plpgsql
@@ -29,6 +48,9 @@ as $$
     where p.id = auth.uid() and p.role = 'master'
   );
 $$;
+
+drop policy if exists shms_audit_delete on public.shms_audit_log;
+create policy shms_audit_delete on public.shms_audit_log for delete to authenticated using (public.shms_can_delete());
 
 drop policy if exists shms_profiles_admin_write on public.shms_profiles;
 drop policy if exists shms_profiles_master_update on public.shms_profiles;
