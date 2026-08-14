@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_autocompress1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_capacity1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -161,17 +161,18 @@ export async function initSupabase() {
 ------------------------------------------------- */
 const FILE_DB = 'shms.attachments';
 const FILE_STORE = 'files';
-export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-export const MAX_IMAGE_BYTES = 50 * 1024;
+export const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+// 50KB는 목표값일 뿐이며, 품질 보호 압축본은 모든 첨부와 동일하게 15MB까지 허용한다.
+export const MAX_IMAGE_BYTES = MAX_ATTACHMENT_BYTES;
 const IMAGE_TARGET_BYTES = 49 * 1024;
 const MAX_SOURCE_IMAGE_BYTES = 30 * 1024 * 1024;
 // config.js가 브라우저에서 실행되지 않는 경우에도 공식 R2 Worker를 사용한다.
 // Worker URL은 공개 주소이며 실제 파일 접근은 Supabase 로그인 JWT로 검증한다.
 const DEPLOYED_ATTACHMENT_API_URL = 'https://daiso-shms-attachments.sky5224122.workers.dev';
-// 50KB를 넘으면 단계적으로 해상도·품질을 더 낮춰 저장한다.
-// 현장 사진은 저장 실패보다 기록 보존을 우선하므로 최저 96px·품질 0.08까지 시도한다.
-const IMAGE_DIMENSIONS = [1280, 1080, 900, 765, 650, 560, 460, 360, 280, 220, 160, 128, 96];
-const IMAGE_QUALITIES = [0.72, 0.60, 0.52, 0.46, 0.42, 0.34, 0.26, 0.18, 0.12, 0.08];
+// 50KB는 비용 절감 목표값이다. 식별성을 해치지 않도록 최소 긴 변 560px·품질 0.42까지만 낮춘다.
+// 이 기준에서도 50KB를 넘으면 가장 작은 안전 품질본을 그대로 저장한다.
+const IMAGE_DIMENSIONS = [1280, 1080, 900, 765, 650, 560];
+const IMAGE_QUALITIES = [0.72, 0.60, 0.52, 0.46, 0.42];
 const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx',
   'jpg', 'jpeg', 'png', 'webp', 'txt', 'csv', 'zip'
@@ -240,6 +241,7 @@ async function compressImageFile(file) {
     if (typeof source.close === 'function') source.close();
     throw new Error('이 브라우저에서는 사진 압축을 처리할 수 없습니다.');
   }
+  let fallback = null;
   try {
     for (const maxDimension of IMAGE_DIMENSIONS) {
       const scale = Math.min(1, maxDimension / Math.max(source.width, source.height));
@@ -249,6 +251,7 @@ async function compressImageFile(file) {
       context.drawImage(source, 0, 0, canvas.width, canvas.height);
       for (const quality of IMAGE_QUALITIES) {
         const blob = await canvasBlob(canvas, 'image/webp', quality);
+        if (blob && (!fallback || blob.size < fallback.size)) fallback = blob;
         if (blob && blob.size <= IMAGE_TARGET_BYTES) {
           return {
             file: new File([blob], `${baseFileName(file.name)}.webp`, { type: 'image/webp', lastModified: file.lastModified }),
@@ -260,6 +263,14 @@ async function compressImageFile(file) {
     }
   } finally {
     if (typeof source.close === 'function') source.close();
+  }
+  if (fallback && fallback.size <= MAX_IMAGE_BYTES) {
+    return {
+      file: new File([fallback], `${baseFileName(file.name)}.webp`, { type: 'image/webp', lastModified: file.lastModified }),
+      originalSize: file.size,
+      compressed: true,
+      targetReached: false
+    };
   }
   throw new Error('사진 압축 처리에 실패했습니다. 원본 파일을 다시 선택해 주세요.');
 }
@@ -293,7 +304,7 @@ async function compressDocumentFile(file, ext) {
     type: 'application/zip', lastModified: file.lastModified
   });
   if (compressedFile.size > MAX_ATTACHMENT_BYTES) {
-    throw new Error('자동 압축 후에도 문서·ZIP이 10MB를 넘습니다. PDF는 원본 이미지 해상도를 낮춘 뒤 다시 첨부해 주세요.');
+    throw new Error('자동 압축 후에도 문서·ZIP이 15MB를 넘습니다. PDF는 원본 이미지 해상도를 낮춘 뒤 다시 첨부해 주세요.');
   }
   return { file: compressedFile, originalSize: file.size, compressed: true };
 }
@@ -314,7 +325,7 @@ export async function prepareAttachmentFile(file) {
   }
   if (file.size > MAX_SOURCE_IMAGE_BYTES) throw new Error('사진 원본은 30MB 이하만 선택해 주세요.');
   const prepared = await compressImageFile(file);
-  if (prepared.file.size > MAX_IMAGE_BYTES) throw new Error('사진은 압축 후 50KB 이하만 등록할 수 있습니다.');
+  if (prepared.file.size > MAX_IMAGE_BYTES) throw new Error('사진은 압축 후 15MB 이하만 등록할 수 있습니다.');
   return { ...prepared, contentHash: await attachmentHash(prepared.file) };
 }
 
@@ -371,7 +382,7 @@ export async function saveAttachmentFile(file, { itemId = '', half = '', note = 
   const ext = allowedAttachmentFile(file);
   const isImage = COMPRESSIBLE_IMAGE_EXTENSIONS.has(ext);
   if (file.size > (isImage ? MAX_IMAGE_BYTES : MAX_ATTACHMENT_BYTES)) {
-    throw new Error(isImage ? '사진은 압축 후 50KB 이하만 등록할 수 있습니다.' : '문서·압축파일은 10MB 이하만 등록할 수 있습니다.');
+    throw new Error(isImage ? '사진은 압축 후 15MB 이하만 등록할 수 있습니다.' : '문서·압축파일은 15MB 이하만 등록할 수 있습니다.');
   }
   const contentHash = await attachmentHash(file);
   const api = attachmentApiUrl();
@@ -390,7 +401,7 @@ export async function saveAttachmentFile(file, { itemId = '', half = '', note = 
       id: data.id || uid('att'), kind: 'file', storage: 'r2', key: data.key,
       name: data.name || file.name || 'attachment', note, date,
       mime: data.mime || file.type || 'application/octet-stream', size: data.size ?? file.size,
-      contentHash
+      contentHash, storageUsage: data.usage || null
     };
   }
 
@@ -404,6 +415,19 @@ export async function saveAttachmentFile(file, { itemId = '', half = '', note = 
     name: file.name || 'attachment', note, date,
     mime: file.type || 'application/octet-stream', size: file.size, contentHash
   };
+}
+
+export async function getAttachmentStorageUsage() {
+  const api = attachmentApiUrl();
+  if (!api || conn.mode !== 'supabase') return null;
+  try {
+    const headers = await attachmentAuthHeader();
+    const res = await fetch(`${api}/usage`, { headers });
+    const data = await res.json().catch(() => null);
+    return res.ok ? data : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function openBlob(blob, name = 'attachment') {

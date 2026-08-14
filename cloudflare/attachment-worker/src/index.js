@@ -7,6 +7,54 @@ const ALLOWED_EXTENSIONS = new Set([
 ]);
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
 
+function storageSummary(totalBytes, env) {
+  const limitBytes = Number(env.TOTAL_STORAGE_LIMIT_BYTES || 3 * 1024 * 1024 * 1024);
+  const warningBytes = Number(env.STORAGE_WARNING_BYTES || Math.floor(limitBytes * 0.9));
+  const pct = limitBytes ? Math.min(100, Math.round(totalBytes / limitBytes * 100)) : 0;
+  return {
+    totalBytes, limitBytes, warningBytes, pct,
+    warning: totalBytes >= warningBytes
+      ? `공용 첨부 저장공간 사용량이 ${pct}%입니다. 3GB 도달 시 새 파일 저장이 차단됩니다.`
+      : ''
+  };
+}
+
+export class ShmsStorageLimiter {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const { action, bytes = 0 } = await request.json().catch(() => ({}));
+    const current = Number(await this.state.storage.get('totalBytes') || 0);
+    if (action === 'reserve') {
+      const next = current + Math.max(0, Number(bytes) || 0);
+      const summary = storageSummary(next, this.env);
+      if (next > summary.limitBytes) {
+        return Response.json({ ok: false, ...storageSummary(current, this.env) }, { status: 507 });
+      }
+      await this.state.storage.put('totalBytes', next);
+      return Response.json({ ok: true, ...summary });
+    }
+    if (action === 'release') {
+      const next = Math.max(0, current - Math.max(0, Number(bytes) || 0));
+      await this.state.storage.put('totalBytes', next);
+      return Response.json({ ok: true, ...storageSummary(next, this.env) });
+    }
+    return Response.json({ ok: true, ...storageSummary(current, this.env) });
+  }
+}
+
+async function storageUsage(env, action = 'usage', bytes = 0) {
+  const id = env.SHMS_STORAGE_LIMITER.idFromName('daiso-shms-global-storage');
+  const res = await env.SHMS_STORAGE_LIMITER.get(id).fetch('https://storage-limiter/usage', {
+    method: 'POST', body: JSON.stringify({ action, bytes })
+  });
+  const data = await res.json();
+  return { ok: res.ok && data.ok, status: res.status, ...data };
+}
+
 function allowedOrigin(request, env) {
   const origin = request.headers.get('Origin') || '';
   const allowed = String(env.APP_ORIGIN || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -81,22 +129,38 @@ async function upload(request, env, user) {
   if (!(file instanceof File)) return json(request, env, { error: '첨부파일이 없습니다.' }, 400);
   const ext = fileExtension(file.name);
   if (!ALLOWED_EXTENSIONS.has(ext)) return json(request, env, { error: '허용되지 않은 파일 형식입니다.' }, 415);
-  const max = Number(env.MAX_FILE_BYTES || 10 * 1024 * 1024);
+  const max = Number(env.MAX_FILE_BYTES || 15 * 1024 * 1024);
+  const maxImage = Number(env.MAX_IMAGE_BYTES || max);
   const isImage = IMAGE_EXTENSIONS.has(ext);
-  const limit = isImage ? Math.min(max, 50 * 1024) : max;
+  const limit = isImage ? maxImage : max;
   if (!file.size || file.size > limit) {
-    const message = isImage ? '사진은 압축 후 50KB 이하만 등록할 수 있습니다.' : `파일은 ${Math.floor(limit / 1024 / 1024)}MB 이하만 등록할 수 있습니다.`;
+    const message = isImage ? `사진은 압축 후 ${Math.floor(limit / 1024 / 1024)}MB 이하만 등록할 수 있습니다.` : `파일은 ${Math.floor(limit / 1024 / 1024)}MB 이하만 등록할 수 있습니다.`;
     return json(request, env, { error: message }, 413);
   }
   const contentHash = await sha256(file);
   const key = fileKey(user.sub, form.get('half'), form.get('itemId'), contentHash, file.name);
-  await env.SHMS_FILES.put(key, file.stream(), {
-    httpMetadata: { contentType: file.type || 'application/octet-stream' },
-    customMetadata: { name: file.name, uploadedBy: String(user.sub), uploadedAt: new Date().toISOString(), contentHash }
-  });
+  const existing = await env.SHMS_FILES.head(key);
+  const delta = file.size - (existing?.size || 0);
+  let usage = await storageUsage(env);
+  if (delta > 0) {
+    usage = await storageUsage(env, 'reserve', delta);
+    if (!usage.ok) return json(request, env, {
+      error: '공용 첨부 저장공간 3GB에 도달해 새 파일을 저장할 수 없습니다.', usage
+    }, 507);
+  }
+  try {
+    await env.SHMS_FILES.put(key, file.stream(), {
+      httpMetadata: { contentType: file.type || 'application/octet-stream' },
+      customMetadata: { name: file.name, uploadedBy: String(user.sub), uploadedAt: new Date().toISOString(), contentHash }
+    });
+  } catch (error) {
+    if (delta > 0) await storageUsage(env, 'release', delta);
+    throw error;
+  }
+  if (delta < 0) usage = await storageUsage(env, 'release', -delta);
   return json(request, env, {
     id: crypto.randomUUID(), key, name: file.name,
-    mime: file.type || 'application/octet-stream', size: file.size, contentHash
+    mime: file.type || 'application/octet-stream', size: file.size, contentHash, usage
   }, 201);
 }
 
@@ -117,8 +181,10 @@ async function removeFile(request, env, key, user) {
   if (!key.startsWith(`${safePart(user.sub, 'user')}/`) && !(await isMaster(user, env))) {
     return json(request, env, { error: '본인이 등록한 첨부파일만 삭제할 수 있습니다.' }, 403);
   }
+  const object = await env.SHMS_FILES.head(key);
   await env.SHMS_FILES.delete(key);
-  return json(request, env, { ok: true });
+  const usage = object?.size ? await storageUsage(env, 'release', object.size) : await storageUsage(env);
+  return json(request, env, { ok: true, usage });
 }
 
 export default {
@@ -133,6 +199,7 @@ export default {
     }
     try {
       const url = new URL(request.url);
+      if (request.method === 'GET' && url.pathname === '/usage') return json(request, env, await storageUsage(env));
       if (request.method === 'POST' && url.pathname === '/files') return upload(request, env, user);
       if (url.pathname.startsWith('/files/')) {
         const key = decodeURIComponent(url.pathname.slice('/files/'.length));

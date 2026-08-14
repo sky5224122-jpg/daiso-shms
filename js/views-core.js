@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260814_autocompress1';
+} from './data/frameworks.js?v=20260814_capacity1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260814_autocompress1';
+} from './core.js?v=20260814_capacity1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -684,7 +684,7 @@ export function attachmentPanelHtml(attachments = [], editable, { hint = '' } = 
           <button type="button" class="btn sm" id="xAttachLinkBtn">링크 추가</button>
         </div>
       </div>` : ''}
-      <div class="help">${hint ? `${esc(hint)} · ` : ''}사진은 자동으로 WebP 50KB 이하까지 축소하고, 10MB 초과 문서·ZIP은 자동 최고 압축 ZIP으로 변환합니다.</div>
+      <div class="help">${hint ? `${esc(hint)} · ` : ''}사진은 50KB를 목표로 식별 가능한 품질까지 WebP 압축하고, 15MB 초과 문서·ZIP은 자동 최고 압축 ZIP으로 변환합니다.</div>
     </div>`;
 }
 
@@ -722,7 +722,8 @@ export function createAttachmentManager(root, { attachments = [], editable = fal
         fileEl.value = '';
         root.querySelector('#xAttachFileNote').value = '';
         render();
-        toast(prepared.compressed ? `사진을 ${formatBytes(prepared.originalSize)}에서 ${formatBytes(prepared.file.size)}로 압축했습니다.` : '파일을 첨부 목록에 추가했습니다.', 'ok');
+        const targetNote = prepared.targetReached === false ? ' 50KB 목표를 넘지만 식별성 보호 품질로 저장합니다.' : '';
+        toast(prepared.compressed ? `파일을 ${formatBytes(prepared.originalSize)}에서 ${formatBytes(prepared.file.size)}로 압축했습니다.${targetNote}` : '파일을 첨부 목록에 추가했습니다.', 'ok');
       } catch (err) {
         toast(err?.message || String(err), 'bad');
       } finally {
@@ -778,6 +779,7 @@ export function createAttachmentManager(root, { attachments = [], editable = fal
           stored.contentHash = att.contentHash || stored.contentHash;
           storedAttachments.push(stored);
           newlyStored.push(stored);
+          if (stored.storageUsage?.warning) toast(stored.storageUsage.warning, 'bad');
         } else {
           const { _file, ...clean } = att;
           storedAttachments.push(clean);
@@ -881,7 +883,7 @@ export function openItemDrawer(itemId, onSaved) {
       </div>
       ${editable ? `<div class="attach-upload-grid">
         <div class="attach-add-group">
-          <div class="attach-add-title"><span class="upload-icon">↑</span><span>파일 첨부<small>사진 50KB 이하 · 대용량 문서 자동 ZIP 압축</small></span></div>
+          <div class="attach-add-title"><span class="upload-icon">↑</span><span>파일 첨부<small>사진 50KB 목표 · 15MB 초과 문서 자동 ZIP 압축</small></span></div>
           <div class="attach-add">
             <input class="inp attach-file" type="file" id="fAttachFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.webp,.txt,.csv,.zip">
             <input class="inp" id="fAttachFileNote" placeholder="파일 비고 (선택)">
@@ -900,7 +902,7 @@ export function openItemDrawer(itemId, onSaved) {
           </div>
         </div>
       </div>` : ''}
-      <div class="storage-note"><span>i</span><p>사진(JPG·PNG·WebP)은 WebP로 단계적으로 축소·압축하여 <b>1장당 50KB 이하</b>로 저장합니다. 10MB를 넘는 PDF·Office·한글·ZIP은 자동으로 최고 압축 ZIP으로 변환합니다. 변환 후에도 10MB를 넘는 경우에만 저장되지 않습니다.</p></div>
+      <div class="storage-note"><span>i</span><p>사진(JPG·PNG·WebP)은 WebP로 단계적으로 압축하되, <b>식별 가능한 최소 품질·해상도</b>를 지킵니다. 50KB는 목표값이며 넘더라도 품질 보호본을 저장합니다. 15MB를 넘는 PDF·Office·한글·ZIP은 자동으로 최고 압축 ZIP으로 변환하며, 변환 후에도 15MB를 넘는 경우에만 저장되지 않습니다.</p></div>
     </section>
 
     <section class="drawer-section">

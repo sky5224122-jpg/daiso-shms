@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260814_autocompress1';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260814_autocompress1';
+} from './core.js?v=20260814_capacity1';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260814_capacity1';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260814_autocompress1';
+} from './views-core.js?v=20260814_capacity1';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260814_autocompress1';
+} from './views-ext.js?v=20260814_capacity1';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [

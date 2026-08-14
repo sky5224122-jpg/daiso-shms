@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260814_autocompress1';
+} from './data/frameworks.js?v=20260814_capacity1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
-  showSpinner, hideSpinner, attachmentStorageMode, getAuditLog
-} from './core.js?v=20260814_autocompress1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_autocompress1';
+  showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
+} from './core.js?v=20260814_capacity1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_capacity1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -966,7 +966,7 @@ export function renderSettings() {
       <span class="ops-arrow split">→</span>
       <div class="ops-destinations">
         <div class="ops-destination database"><span>업무데이터</span><strong>Supabase</strong><p>이행기록·문서·점검·개선조치·첨부 메타데이터</p></div>
-        <div class="ops-destination storage"><span>사진·파일</span><strong>Cloudflare Worker → R2</strong><p>사진은 50KB 미만 압축 · 문서 본문은 R2 분리 저장</p></div>
+        <div class="ops-destination storage"><span>사진·파일</span><strong>Cloudflare Worker → R2</strong><p>사진은 50KB 목표 압축 · 문서는 최대 15MB 분리 저장</p></div>
       </div>
     </div>
 
@@ -1037,6 +1037,7 @@ export function renderSettings() {
           점검 ${state.inspections.length}건 · 개선조치 ${state.capa.length}건 ·
           증빙 ${state.evidence.length}건 · 선임 ${state.org.length}건
         </div>
+        ${fileMode === 'r2' ? '<div id="r2Usage" style="margin-top:10px;font-size:12px;color:var(--muted)">R2 공용 첨부 저장공간 사용량을 확인 중입니다.</div>' : ''}
         <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
           <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:600">🔄 자동 백업 (최근 5개)</h4>
           <p style="font-size:12px;color:var(--text-2);margin:0 0 12px;line-height:1.6">
@@ -1092,6 +1093,13 @@ export function renderSettings() {
 }
 
 export function bindSettingsEvents(root, rerender) {
+  const usageEl = $('#r2Usage', root);
+  if (usageEl) getAttachmentStorageUsage().then(usage => {
+    if (!usage) { usageEl.textContent = 'R2 공용 첨부 저장공간 사용량을 확인할 수 없습니다.'; return; }
+    const text = `R2 공용 첨부 저장공간: ${formatBytes(usage.totalBytes)} / ${formatBytes(usage.limitBytes)} (${usage.pct}%)`;
+    usageEl.textContent = usage.warning ? `${text} · ⚠ ${usage.warning}` : text;
+    if (usage.warning) usageEl.style.color = 'var(--bad)';
+  });
   const save = $('#sbSave', root);
   if (save) save.addEventListener('click', () => {
     const url = $('#sbUrl', root).value.trim();
@@ -1110,10 +1118,13 @@ export function bindSettingsEvents(root, rerender) {
   });
 
   const ex = $('#bkExport', root);
-  if (ex) ex.addEventListener('click', () => {
+  if (ex) ex.addEventListener('click', async () => {
+    const attachmentStorage = await getAttachmentStorageUsage();
     const data = { exported_at: new Date().toISOString(), app: APP.short, version: APP.version,
       records: state.records, documents: state.documents, capa: state.capa,
-      inspections: state.inspections, org: state.org, evidence: state.evidence };
+      inspections: state.inspections, org: state.org, evidence: state.evidence,
+      r2_attachment_storage: attachmentStorage,
+      attachment_backup_note: '첨부 원본은 Cloudflare R2에 보관되며, 이 백업에는 첨부 목록·메타데이터와 저장공간 현황이 포함됩니다.' };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const d = new Date();
     const a = document.createElement('a');
