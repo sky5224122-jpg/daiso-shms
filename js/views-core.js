@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260814_audit1';
+} from './data/frameworks.js?v=20260814_analytics1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260814_audit1';
+} from './core.js?v=20260814_analytics1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -144,6 +144,74 @@ function executiveReportHtml({ half, all, mssa, osha, iso, docs, critical, due, 
     </article>`;
 }
 
+/* ---------------- Supabase 통합 분석 보고서 ----------------
+   서버에 모인 이행·CAPA·문서·증빙 데이터를 한 번에 해석한다.
+------------------------------------------------------------- */
+function improvementGuide(item, record) {
+  const missingEvidence = !String(record.evidence || record.userEvidence || '').trim() && !(record.attachments || []).length;
+  if (record.status === 'none') return '담당자를 지정하고 이행기한을 등록한 뒤, 요구사항에 맞는 실행계획과 증빙자료를 확보하세요.';
+  if (record.status === 'hold') return '미흡사항의 원인을 확인해 CAPA로 등록하고, 조치 담당자·완료기한·효과성 검증까지 관리하세요.';
+  if (missingEvidence) return '실행 내용은 있으나 증빙이 부족합니다. 점검표·결재문서·사진·회의록 중 해당 자료를 첨부하세요.';
+  if (!record.owner) return '이행 책임자가 지정되지 않았습니다. 담당 부서 또는 담당자를 지정하고 점검 주기를 확인하세요.';
+  return `${item.cycle || '정기'} 점검 주기에 맞춰 이행 현황과 증빙의 최신성을 확인하세요.`;
+}
+
+function analyticsReportHtml({ half, all, mssa, osha, iso, docs, critical, due, openCapa, overdueCapa }) {
+  const records = ALL_ITEMS.map(i => ({ item:i, record:getRecord(i.id, half) }));
+  const statusCounts = ['done','progress','hold','none'].map(key => ({ key, label:(STATUS[key] || {}).label || key, n:records.filter(x => x.record.status === key).length }));
+  const identified = records.filter(({ record }) => ['none','hold'].includes(record.status) || String(record.findings || '').trim());
+  const evidenceGaps = records.filter(({ record }) => !['none'].includes(record.status) && !String(record.evidence || record.userEvidence || '').trim() && !(record.attachments || []).length);
+  const ownerGaps = records.filter(({ record }) => !['none','done'].includes(record.status) && !String(record.owner || '').trim());
+  const highPriority = [...identified]
+    .sort((a, b) => (b.item.severity === 'critical') - (a.item.severity === 'critical'))
+    .slice(0, 12);
+  const capaByStatus = ['open','analyzing','acting','verifying','closed'].map(key => ({ key, n:state.capa.filter(c => c.status === key).length }));
+  const frameworkStats = [
+    ['중대재해처벌법', mssa, '#d92d20'], ['산업안전보건법', osha, '#2b6cb0'], ['ISO 45001', iso, '#0f9d76']
+  ];
+  const dataUpdated = records.filter(({ record }) => record.updated_at).length;
+  const totalCapa = state.capa.length;
+  const actionSummary = critical.length || overdueCapa
+    ? '즉시: 중대 미이행 또는 기한 초과 개선조치의 책임자·완료기한을 확정하고 경영진 주간 점검 대상으로 지정하세요.'
+    : identified.length
+      ? '우선: 미이행·보완 필요 항목을 CAPA로 전환하고, 각 항목에 담당자·기한·증빙을 연결하세요.'
+      : '유지: 정기점검과 증빙 갱신을 지속하며, 변경사항 발생 시 이행기록을 즉시 업데이트하세요.';
+
+  return `
+  <article class="analytics-report" id="analyticsReport" aria-label="Supabase 통합 통계 및 개선 분석 보고서">
+    <header class="analytics-head">
+      <div><span>SUPABASE DATA INSIGHT</span><h2>통합 통계 · 미흡사항 · 개선 실행 분석</h2><p>${esc(halfLabel(half))} 기준, 공동 서버에 저장된 이행기록·점검·문서·개선조치·증빙을 분석합니다.</p></div>
+      <div class="analytics-score"><span>통합 이행지수</span><b>${all.pct}<small>점</small></b></div>
+    </header>
+    <section class="analytics-section">
+      <div class="analytics-section-title"><span>01</span><div><h3>경영 통계 요약</h3><p>법령별 이행 현황과 실행관리 지표를 한 번에 확인합니다.</p></div></div>
+      <div class="analytics-kpis">
+        <div><span>등록 이행기록</span><strong>${dataUpdated}<small>/${all.total}개</small></strong><p>서버 동기화 대상</p></div>
+        <div><span>식별된 미흡사항</span><strong>${identified.length}<small>건</small></strong><p>미이행·보완 필요</p></div>
+        <div><span>증빙 보강 필요</span><strong>${evidenceGaps.length}<small>건</small></strong><p>실행 기록 대비 증빙 공란</p></div>
+        <div><span>기한 초과 CAPA</span><strong>${overdueCapa}<small>건</small></strong><p>진행중 ${openCapa.length}건</p></div>
+      </div>
+      <div class="analytics-split">
+        <div class="analytics-panel"><h4>법령·표준별 이행률</h4>${frameworkStats.map(([name, stat, color]) => `<div class="analytics-bar"><div><b>${esc(name)}</b><span>${stat.counts.done} 완료 / ${stat.total} 대상</span></div><div class="bar"><i style="width:${Math.max(2,stat.pct)}%;background:${color}"></i></div><strong>${stat.pct}%</strong></div>`).join('')}</div>
+        <div class="analytics-panel"><h4>이행상태 분포</h4>${statusCounts.map(s => `<div class="analytics-status"><span>${esc(s.label)}</span><b>${s.n}건</b><i style="width:${all.total ? Math.round(s.n/all.total*100) : 0}%"></i></div>`).join('')}</div>
+      </div>
+    </section>
+    <section class="analytics-section analytics-two-col">
+      <div>
+        <div class="analytics-section-title"><span>02</span><div><h3>미흡사항 우선순위 및 개선 방법</h3><p>중대성·이행상태·증빙 여부를 기준으로 우선 검토 대상을 정리합니다.</p></div></div>
+        <div class="analytics-command"><b>권고 실행 방향</b><p>${esc(actionSummary)}</p><button class="btn primary" data-goto="capa">개선조치(CAPA) 관리로 이동</button></div>
+        ${highPriority.length ? `<div class="analytics-gap-list">${highPriority.map(({item, record}, idx) => `<div class="analytics-gap ${item.severity === 'critical' ? 'critical' : ''}"><div class="analytics-no">${String(idx+1).padStart(2,'0')}</div><div><div class="analytics-gap-title"><b>${esc(item.code)} · ${esc(item.title)}</b>${statusBadge(record.status)}</div><p><strong>확인 내용:</strong> ${esc(record.findings || record.implementation || '이행현황 미기록')}</p><p><strong>개선 방법:</strong> ${esc(improvementGuide(item, record))}</p><small>${esc(item.requirement || '')}</small></div></div>`).join('')}</div>` : `<div class="exec-clear"><b>✓</b><div><strong>현재 등록 기준 미이행·보완 필요 항목이 없습니다</strong><p>정기 점검과 증빙 보강 현황을 계속 확인하세요.</p></div></div>`}
+      </div>
+      <div>
+        <div class="analytics-section-title"><span>03</span><div><h3>개선조치 실행력</h3><p>CAPA의 원인분석·조치·효과검증 진행 상태입니다.</p></div></div>
+        <div class="analytics-panel analytics-capa"><h4>CAPA 상태별 현황</h4>${capaByStatus.map(s => `<div><span>${esc({open:'접수',analyzing:'원인분석',acting:'조치중',verifying:'효과검증',closed:'종결'}[s.key])}</span><b>${s.n}건</b></div>`).join('')}<hr><p>종결률 <b>${totalCapa ? Math.round((totalCapa-openCapa.length)/totalCapa*100) : 0}%</b> · 전체 ${totalCapa}건</p></div>
+        <div class="analytics-panel"><h4>관리 누락 신호</h4><ul class="analytics-alerts"><li><b>${ownerGaps.length}건</b> 진행·보완 항목의 담당자 미지정</li><li><b>${evidenceGaps.length}건</b> 이행기록의 증빙 공란</li><li><b>${due.length}건</b> 30일 이내 이행기한 도래</li><li><b>${docs.total-docs.approved}건</b> 문서체계 승인 전 상태</li></ul></div>
+      </div>
+    </section>
+    <footer class="analytics-foot">자료 기준: Supabase 공동 데이터 · ${esc(halfLabel(half))} · 이 분석은 등록된 정보의 관리 우선순위를 보여주며 법률 적합성의 최종 판단은 원본 증빙과 현장 확인이 필요합니다.</footer>
+  </article>`;
+}
+
 /* ---------------- 대시보드 ---------------- */
 
 export function renderDashboard() {
@@ -188,10 +256,11 @@ export function renderDashboard() {
   <section class="exec-launch" aria-label="경영진 보고서">
     <div class="exec-launch-mark">CEO</div>
     <div class="exec-launch-copy"><span>EXECUTIVE REPORTING</span><strong>대표이사 보고용 안전보건관리체계 종합 보고서</strong><p>${esc(halfLabel(half))} 기준 핵심 리스크·이행 수준·의사결정 요청사항을 자동으로 정리합니다.</p></div>
-    <div class="exec-launch-actions"><button class="btn primary" id="execReportToggle">보고서 보기</button><button class="btn" id="execReportPrint">PDF 인쇄 · 저장</button></div>
+    <div class="exec-launch-actions"><button class="btn primary" id="execReportToggle">경영 보고서 보기</button><button class="btn" id="analyticsReportToggle">통계 · 개선 분석</button><button class="btn" id="execReportPrint">PDF 인쇄 · 저장</button></div>
   </section>
 
   ${executiveReportHtml({ half, all, mssa, osha, iso, docs, critical, due, openCapa, overdueCapa, halfDone, halfCycleItems })}
+  ${analyticsReportHtml({ half, all, mssa, osha, iso, docs, critical, due, openCapa, overdueCapa })}
 
   <div class="grid g4">
     ${kpi({ title:'⚖️ 종합 이행률', value:all.pct, unit:'%', tone:'', pct:all.pct,
@@ -327,7 +396,16 @@ export function bindDashboardEvents(root, openItem) {
       const report = $('#execReport', root);
       report?.classList.toggle('is-open');
       const opened = report?.classList.contains('is-open');
-      toggle.textContent = opened ? '보고서 닫기' : '보고서 보기';
+      toggle.textContent = opened ? '경영 보고서 닫기' : '경영 보고서 보기';
+      if (opened) report.scrollIntoView({ behavior:'smooth', block:'start' });
+      return;
+    }
+    const analyticsToggle = e.target.closest('#analyticsReportToggle');
+    if (analyticsToggle) {
+      const report = $('#analyticsReport', root);
+      report?.classList.toggle('is-open');
+      const opened = report?.classList.contains('is-open');
+      analyticsToggle.textContent = opened ? '통계 · 개선 분석 닫기' : '통계 · 개선 분석';
       if (opened) report.scrollIntoView({ behavior:'smooth', block:'start' });
       return;
     }
