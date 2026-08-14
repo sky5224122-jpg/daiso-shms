@@ -41,7 +41,19 @@ async function authenticate(request, env) {
     audience: 'authenticated'
   });
   if (!payload.sub) throw new Error('사용자 식별값이 없는 토큰입니다.');
-  return payload;
+  return { ...payload, token };
+}
+
+async function isMaster(user, env) {
+  const base = String(env.SUPABASE_URL || '').replace(/\/+$/, '');
+  const anonKey = String(env.SUPABASE_ANON_KEY || '').trim();
+  if (!base || !anonKey || !user?.sub || !user?.token) return false;
+  const res = await fetch(`${base}/rest/v1/shms_profiles?select=role&id=eq.${encodeURIComponent(user.sub)}`, {
+    headers: { apikey: anonKey, Authorization: `Bearer ${user.token}` }
+  });
+  if (!res.ok) return false;
+  const rows = await res.json().catch(() => []);
+  return rows[0]?.role === 'master';
 }
 
 function safePart(value, fallback) {
@@ -102,7 +114,7 @@ async function readFile(request, env, key) {
 }
 
 async function removeFile(request, env, key, user) {
-  if (!key.startsWith(`${safePart(user.sub, 'user')}/`)) {
+  if (!key.startsWith(`${safePart(user.sub, 'user')}/`) && !(await isMaster(user, env))) {
     return json(request, env, { error: '본인이 등록한 첨부파일만 삭제할 수 있습니다.' }, 403);
   }
   await env.SHMS_FILES.delete(key);

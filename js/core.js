@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_versioninfo1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_r2ready1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -165,6 +165,9 @@ export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 export const MAX_IMAGE_BYTES = 50 * 1024;
 const IMAGE_TARGET_BYTES = 49 * 1024;
 const MAX_SOURCE_IMAGE_BYTES = 30 * 1024 * 1024;
+// config.js가 브라우저에서 실행되지 않는 경우에도 공식 R2 Worker를 사용한다.
+// Worker URL은 공개 주소이며 실제 파일 접근은 Supabase 로그인 JWT로 검증한다.
+const DEPLOYED_ATTACHMENT_API_URL = 'https://daiso-shms-attachments.sky5224122.workers.dev';
 // 위험성평가 앱의 식별성 보호 기준(최소 560px, 품질 0.42)을 동일하게 유지한다.
 const IMAGE_DIMENSIONS = [1280, 1080, 900, 765, 650, 560];
 const IMAGE_QUALITIES = [0.72, 0.60, 0.52, 0.46, 0.42];
@@ -176,8 +179,9 @@ const COMPRESSIBLE_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
 
 function attachmentApiUrl() {
   const raw = window.SHMS_ATTACHMENT_API?.url;
-  if (!raw || String(raw).includes('YOUR-WORKER')) return '';
-  return String(raw).trim().replace(/\/+$/, '');
+  const configured = raw && !String(raw).includes('YOUR-WORKER') ? raw : DEPLOYED_ATTACHMENT_API_URL;
+  if (!configured) return '';
+  return String(configured).trim().replace(/\/+$/, '');
 }
 
 export function attachmentStorageMode() {

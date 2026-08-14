@@ -6,13 +6,13 @@ Supabase Auth가 발급한 JWT를 검증한 뒤 Cloudflare R2에 첨부파일을
 
 - `POST /files`: 사진은 앱에서 50KB 미만으로 자동 축소·압축된 뒤 최대 50KB, 문서는 최대 10MB로 R2에 저장
 - `GET /files/{key}`: 인증된 사용자가 파일 열람
-- `DELETE /files/{key}`: 업로드한 본인의 파일 삭제
+- `DELETE /files/{key}`: 업로드한 본인의 파일 또는 master 관리자의 모든 첨부파일 삭제
 - R2 비밀키나 Supabase `service_role` 키를 브라우저에 노출하지 않음
 
 ## 배포 전 준비
 
 1. Cloudflare에서 R2 버킷 `daiso-shms-files`를 생성합니다.
-2. `wrangler.toml.example`을 `wrangler.toml`로 복사하고 `SUPABASE_URL`, `APP_ORIGIN`, 버킷명을 실제 값으로 바꿉니다.
+2. `wrangler.toml.example`을 `wrangler.toml`로 복사하고 `SUPABASE_URL`, `SUPABASE_ANON_KEY`(공개 키), `APP_ORIGIN`, 버킷명을 실제 값으로 바꿉니다.
 3. Supabase Auth의 JWT 서명 키는 RS256 또는 ES256 비대칭 키를 사용합니다.
 4. 아래 명령으로 의존성을 설치하고 배포합니다.
 
