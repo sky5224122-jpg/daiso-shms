@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_loginfix1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_loginfix2';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -105,12 +105,20 @@ export function hideSpinner() {
    anon key는 공개되어도 되는 키이며, 실제 접근통제는 Supabase RLS가 수행한다.
 ------------------------------------------------- */
 const CFG_KEY = 'shms.supabase';
+// GitHub Pages에서 config.js가 차단되거나 이전 캐시가 남은 경우에도
+// 공식 공동 운영 프로젝트로 연결하기 위한 공개 키 보조값이다.
+// 이 키는 RLS가 적용되는 publishable 키이며 service_role 키가 아니다.
+const DEPLOYED_SUPABASE = {
+  url: 'https://zjnjbvkbxzpxtswqzoau.supabase.co',
+  anonKey: 'sb_publishable_T0loyctj480POqvxD7a7HQ_pG1b_sOw'
+};
 
 export function getSupabaseConfig() {
   const w = window.SHMS_SUPABASE;
   // 배포본에 연결 정보가 있으면 이전 브라우저의 임시 설정보다 항상 우선한다.
   // 서로 다른 Supabase 프로젝트를 잘못 바라봐 로그인에 실패하는 일을 막는다.
   if (w && w.url && w.anonKey && !String(w.url).includes('YOUR-PROJECT')) return w;
+  if (DEPLOYED_SUPABASE.url && DEPLOYED_SUPABASE.anonKey) return DEPLOYED_SUPABASE;
   try {
     const raw = localStorage.getItem(CFG_KEY);
     if (raw) { const c = JSON.parse(raw); if (c && c.url && c.anonKey) return c; }
