@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260814_sharedauth1';
+} from './data/frameworks.js?v=20260814_userid1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode
-} from './core.js?v=20260814_sharedauth1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_sharedauth1';
+} from './core.js?v=20260814_userid1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260814_userid1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -906,10 +906,10 @@ export function renderSettings() {
   const fileMode = attachmentStorageMode();
   const usingSupabase = conn.mode === 'supabase';
   const authMethod = usingSupabase
-    ? '이메일 계정 로그인 (Supabase Auth)'
+    ? '아이디 로그인 (Supabase Auth 내부 계정 연결)'
     : '공용 작성 비밀번호 + 마스터 관리자 삭제 비밀번호';
   const authHelp = usingSupabase
-    ? `<b>공동 운영</b> — 각 사용자가 자신의 이메일 계정을 만든 뒤 로그인하면 같은 업무 자료를 함께 조회·작성·수정할 수 있습니다. 삭제는 <b>master</b> 역할의 관리자 계정만 가능합니다.<br>
+    ? `<b>공동 운영</b> — 각 사용자가 부여받은 아이디로 로그인하면 같은 업무 자료를 함께 조회·작성·수정할 수 있습니다. 삭제는 <b>master</b> 역할의 관리자 계정만 가능합니다.<br>
         <b>첨부파일</b> — Cloudflare R2 Worker가 아직 연결되지 않은 경우 첨부 원본은 각 브라우저에만 보관됩니다. R2 연결을 마치면 파일도 공동으로 볼 수 있습니다.`
     : `<b>접속 방식</b> — 공용 비밀번호 방식에서는 작성·수정은 가능하지만 삭제는 마스터 관리자만 가능합니다. 실제 공동 운영을 하려면 Supabase Auth와 RLS 정책을 연결해야 합니다.`;
   const liveUrl = 'https://sky5224122-jpg.github.io/daiso-shms/';
@@ -967,7 +967,7 @@ export function renderSettings() {
       <div class="ops-policy current">
         <div class="ops-policy-title"><span>현재 실제 동작</span><b>${conn.mode === 'supabase' ? 'Supabase 연결' : '로컬 저장'}</b></div>
         <ul>
-          <li>인증: ${usingSupabase ? '이메일 계정으로 로그인 · master 관리자만 삭제' : '공용 비밀번호는 작성·수정, 관리자 비밀번호만 삭제'}</li>
+          <li>인증: ${usingSupabase ? '사용자 아이디로 로그인 · master 관리자만 삭제' : '공용 비밀번호는 작성·수정, 관리자 비밀번호만 삭제'}</li>
           <li>업무데이터: ${esc(recordStore)}</li>
           <li>첨부파일: ${esc(fileStore)}</li>
           <li>자동 백업: 앱이 열려 있으면 매일 오전 9시 1회 · 최근 5개 보관</li>

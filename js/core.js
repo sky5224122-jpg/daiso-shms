@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_sharedauth1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260814_userid1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -786,9 +786,22 @@ async function sha256Hex(text) {
 
 async function loadSupabaseProfile(authUser) {
   const { data, error } = await conn.client.from('shms_profiles')
-    .select('id,email,name,dept,role').eq('id', authUser.id).single();
+    .select('id,login_id,email,name,dept,role').eq('id', authUser.id).single();
   if (error) throw new Error(`사용자 권한 정보를 불러오지 못했습니다: ${error.message}`);
-  return { ...data, email: data.email || authUser.email || '', name: data.name || authUser.email || '사용자', source: 'supabase' };
+  return { ...data, loginId: data.login_id || '', email: data.email || authUser.email || '', name: data.name || data.login_id || '사용자', source: 'supabase' };
+}
+
+function normalizeLoginId(value) {
+  const loginId = String(value || '').trim().toLowerCase();
+  if (!/^[a-z][a-z0-9._-]{2,31}$/.test(loginId)) {
+    throw new Error('아이디는 영문으로 시작하는 3~32자의 영문·숫자·점·밑줄·하이픈만 사용할 수 있습니다.');
+  }
+  return loginId;
+}
+
+// Supabase Auth 내부 식별용 별칭입니다. 사용자에게 이메일을 요구하지 않습니다.
+function authEmailForLoginId(loginId) {
+  return `${loginId}@accounts.daiso-shms.local`;
 }
 
 export async function restoreSession() {
@@ -806,11 +819,11 @@ export async function restoreSession() {
   return null;
 }
 
-export async function signIn({ email = '', password, remember }) {
+export async function signIn({ loginId = '', password, remember }) {
   if (conn.mode === 'supabase') {
-    const cleanEmail = String(email || '').trim();
-    if (!cleanEmail || !password) throw new Error('이메일과 비밀번호를 입력하세요.');
-    const { data, error } = await conn.client.auth.signInWithPassword({ email: cleanEmail, password });
+    const cleanLoginId = normalizeLoginId(loginId);
+    if (!password) throw new Error('아이디와 비밀번호를 입력하세요.');
+    const { data, error } = await conn.client.auth.signInWithPassword({ email: authEmailForLoginId(cleanLoginId), password });
     if (error) throw new Error(error.message);
     state.user = await loadSupabaseProfile(data.user);
     return state.user;
@@ -830,13 +843,13 @@ export async function signIn({ email = '', password, remember }) {
   return state.user;
 }
 
-export async function signUp({ email, password, name }) {
+export async function signUp({ loginId, password, name }) {
   if (conn.mode !== 'supabase') throw new Error('공동 운영 서버가 아직 연결되지 않았습니다.');
-  const cleanEmail = String(email || '').trim();
-  if (!cleanEmail || !password) throw new Error('이메일과 비밀번호를 입력하세요.');
+  const cleanLoginId = normalizeLoginId(loginId);
+  if (!password) throw new Error('아이디와 비밀번호를 입력하세요.');
   const { data, error } = await conn.client.auth.signUp({
-    email: cleanEmail, password,
-    options: { data: { name: String(name || '').trim() || cleanEmail } }
+    email: authEmailForLoginId(cleanLoginId), password,
+    options: { data: { login_id: cleanLoginId, name: String(name || '').trim() || cleanLoginId } }
   });
   if (error) throw new Error(error.message);
   if (!data.session) return { confirmRequired: true };

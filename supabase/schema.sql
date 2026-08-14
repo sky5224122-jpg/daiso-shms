@@ -15,6 +15,7 @@ create extension if not exists "pgcrypto";
 -- ── 1. 사용자 프로필 (권한) ────────────────────────────────
 create table if not exists public.shms_profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
+  login_id   text unique,
   email      text,
   name       text,
   dept       text,
@@ -34,8 +35,9 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.shms_profiles (id, email, name, role)
-  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'name', new.email), 'safety')
+  insert into public.shms_profiles (id, login_id, email, name, role)
+  values (new.id, lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))), new.email,
+          coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'login_id', new.email), 'safety')
   on conflict (id) do nothing;
   return new;
 end;

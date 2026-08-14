@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260814_sharedauth1';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260814_sharedauth1';
+} from './core.js?v=20260814_userid1';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260814_userid1';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260814_sharedauth1';
+} from './views-core.js?v=20260814_userid1';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260814_sharedauth1';
+} from './views-ext.js?v=20260814_userid1';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -65,8 +65,8 @@ function renderLogin() {
       </div>
       <form id="loginForm" autocomplete="on">
         ${conn.mode === 'supabase' ? `
-        <label for="lgEmail">이메일</label>
-        <input id="lgEmail" type="email" autocomplete="email" placeholder="name@company.com" required autofocus>
+        <label for="lgLoginId">아이디</label>
+        <input id="lgLoginId" type="text" autocomplete="username" placeholder="예: safety02" required autofocus>
         <label for="lgName" id="lgNameLabel" style="display:none">이름</label>
         <input id="lgName" type="text" autocomplete="name" placeholder="이름 (계정 만들기 시 입력)" style="display:none">
         <label for="lgPw">비밀번호</label>` : '<label for="lgPw">접속 비밀번호</label>'}
@@ -84,7 +84,7 @@ function renderLogin() {
       <div class="login-hint">
         <b>${conn.mode === 'supabase' ? '🟢 Supabase 연결됨' : '🟡 로컬 저장 모드'}</b><br>
         ${conn.mode === 'supabase'
-          ? '개인 이메일 계정으로 로그인하면 작성 자료가 모든 사용자에게 공유됩니다. 모든 가입 사용자는 작성·수정할 수 있고, 마스터 관리자만 삭제할 수 있습니다.'
+          ? '아이디로 로그인하면 작성 자료가 모든 사용자에게 공유됩니다. 모든 가입 사용자는 작성·수정할 수 있고, master 관리자만 삭제할 수 있습니다.'
           : `작성 자료는 이 브라우저에만 저장됩니다. 여러 명이 함께 쓰려면
              로그인 후 <b>[설정 · 백업]</b> 화면에서 Supabase를 연결하십시오.`}
       </div>
@@ -125,11 +125,11 @@ function renderLogin() {
     err.textContent = '';
     try {
       if (conn.mode === 'supabase' && signupMode) {
-        const result = await signUp({ email: $('#lgEmail').value, password: $('#lgPw').value, name: $('#lgName').value });
+        const result = await signUp({ loginId: $('#lgLoginId').value, password: $('#lgPw').value, name: $('#lgName').value });
         if (result.confirmRequired) { err.textContent = '가입 확인 이메일을 열어 인증한 뒤 로그인해 주세요.'; return; }
       } else {
         await signIn({
-          email: $('#lgEmail')?.value,
+          loginId: $('#lgLoginId')?.value,
           password: $('#lgPw').value,
           remember: $('#lgRemember')?.checked
         });
