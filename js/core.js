@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260818_review1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260818_review2';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -64,7 +64,10 @@ export function halfLabel(h) {
 }
 export function recentHalves(n = 6) {
   const out = [];
-  let y = new Date().getFullYear(), p = new Date().getMonth() < 6 ? 1 : 2;
+  const now = new Date();
+  let y = now.getFullYear(), p = now.getMonth() < 6 ? 1 : 2;
+  // 다음 반기 1개를 포함하여 계획·평가 수립 가능하게 한다
+  if (p === 1) { out.push(`${y}-H2`); } else { out.push(`${y + 1}-H1`); }
   for (let i = 0; i < n; i++) {
     out.push(`${y}-H${p}`);
     if (p === 1) { p = 2; y -= 1; } else { p = 1; }
