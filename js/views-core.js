@@ -5,12 +5,12 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260814_capacity1';
+} from './data/frameworks.js?v=20260818_review1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260814_capacity1';
+} from './core.js?v=20260818_review1';
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -65,7 +65,7 @@ function radarSVG(axes) {
 /* ---------------- 경영진 보고서 ---------------- */
 
 function executiveRiskLabel(all, critical, due, overdueCapa) {
-  if (critical.length || overdueCapa) return { cls: 'urgent', label: '즉시 경영진 관여 필요', note: '중대 의무 미이행 또는 기한 초과 개선조치가 확인되었습니다.' };
+  if (critical.length || overdueCapa) return { cls: 'urgent', label: '즉시 경영진 관여 필요', note: '중대 의무가 완료되지 않았거나(이행중·보완필요·미이행) 기한 초과 개선조치가 확인되었습니다.' };
   if (due.length || all.pct < 80) return { cls: 'watch', label: '중점 관리 필요', note: '기한 임박 항목과 이행 수준을 경영진 차원에서 점검할 필요가 있습니다.' };
   return { cls: 'stable', label: '관리 체계 안정', note: '등록된 이행 현황 기준으로 중대 우선조치 신호가 확인되지 않았습니다.' };
 }
@@ -232,7 +232,7 @@ export function renderDashboard() {
   const critical = ALL_ITEMS
     .filter(i => i.severity === 'critical')
     .map(i => ({ i, r: getRecord(i.id, half) }))
-    .filter(({ r }) => ['none', 'hold'].includes(r.status));
+    .filter(({ r }) => !['done', 'na'].includes(r.status));
 
   const due = dueSoon(30, half);
   const openCapa = state.capa.filter(c => c.status !== 'closed');

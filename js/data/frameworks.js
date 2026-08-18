@@ -16,7 +16,7 @@ export const STATUS = {
 };
 export const STATUS_ORDER = ['done','progress','hold','none','na'];
 
-export const CYCLES = ['수시','월 1회','분기 1회','반기 1회','연 1회','2년 1회','최초 1회'];
+export const CYCLES = ['수시','월 1회','분기 1회','반기 1회','연 1회','2년 1회','3년 1회','최초 1회'];
 
 export const ROLES = {
   master:  { key:'master',  label:'시스템 관리자',   scope:'all'   },
@@ -254,8 +254,8 @@ export const OSHA_ITEMS = [
 
   { id:'OSHA-029', framework:'osha', group:'교육', code:'법 제29조', title:'근로자 안전보건교육(정기·채용시·변경시·특별)',
     clause:'사업주는 소속 근로자에게 고용노동부령으로 정하는 바에 따라 정기적으로 안전보건교육을 하여야 하며, 채용할 때 및 작업내용을 변경할 때에도 교육을 하여야 한다.',
-    requirement:'정기교육(사무직 외 근로자 분기 3시간 이상 등), 채용 시 교육, 작업내용 변경 시 교육, 유해·위험작업 특별교육을 실시하고 기록을 3년간 보존한다.',
-    evidence:['연간 교육계획서','교육일지 및 참석 서명부','교재·강사 이력','대상자별 이수율 집계'], cycle:'분기 1회', docRefs:['SHP-07'], isoRefs:['7.2','7.3'], severity:'critical',
+    requirement:'정기교육(판매업무 종사자·사무직 근로자는 매 반기 6시간 이상, 그 외 근로자는 매 반기 12시간 이상), 채용 시 교육, 작업내용 변경 시 교육, 유해·위험작업 특별교육을 실시하고 기록을 3년간 보존한다.',
+    evidence:['연간 교육계획서','교육일지 및 참석 서명부','교재·강사 이력','대상자별 이수율 집계'], cycle:'반기 1회', docRefs:['SHP-07'], isoRefs:['7.2','7.3'], severity:'critical',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["연간안전보건관리 계획서 내 교육계획","연간안전보건교육 계획서 및 결과 보고서"],
     companyStatus:'[본사] 온라인교육실행 [매장] TBM으로 전환 [채용 시 교육] 교육자료 보완 및 접근성 향상 필요',
@@ -306,16 +306,16 @@ export const OSHA_ITEMS = [
     companyStatus:'보건조치 대상: 근골격계 관련 작업, 환경 위생, 폭염한파, 유해화학물질',
     evidenceFiles:[] },
 
-  { id:'OSHA-039A', framework:'osha', group:'보건관리', code:'시행규칙 제657조', title:'근골격계 유해요인조사',
+  { id:'OSHA-039A', framework:'osha', group:'보건관리', code:'안전보건규칙 제657조', title:'근골격계 유해요인조사',
     clause:'사업주는 근골격계 부담작업에 근로자를 종사하도록 하는 경우 3년마다 유해요인조사를 실시하여야 한다.',
     requirement:'중량물 취급·반복작업 등 근골격계 부담작업을 파악하고, 3년마다 유해요인조사를 실시한다. 질환자 발생·작업환경 변경 시 수시조사를 실시하고 개선대책을 수립·이행한다.',
-    evidence:['근골격계 부담작업 목록','유해요인조사 결과보고서','개선대책 및 이행 실적','근골격계 질환 예방 교육 기록'], cycle:'연 1회', docRefs:['SHP-20'], isoRefs:['8.1.2','9.1.1'], severity:'high',
+    evidence:['근골격계 부담작업 목록','유해요인조사 결과보고서','개선대책 및 이행 실적','근골격계 질환 예방 교육 기록'], cycle:'3년 1회', docRefs:['SHP-20'], isoRefs:['8.1.2','9.1.1'], severity:'high',
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["근골격계 유해요인 조사 결과 보고서"],
     companyStatus:'2023년 최초 시행. 2026년 4월~5월 예정. 수시조사기준 보완 필요',
     evidenceFiles:['AAD-HSHT-G-2022-010(2) 근골격계질환 예방 지침서.docx','23년 근골격계 부담작업 유해요인조사 종합보고서.pdf'] },
 
-  { id:'OSHA-039B', framework:'osha', group:'보건관리', code:'법 제39조 관련', title:'직무스트레스 예방 관리',
+  { id:'OSHA-039B', framework:'osha', group:'보건관리', code:'법 제39조·안전보건규칙 제669조', title:'직무스트레스 예방 관리',
     clause:'사업주는 근로자의 직무스트레스에 의한 건강장해를 예방하기 위하여 필요한 조치를 하여야 한다.',
     requirement:'직무스트레스 요인을 평가하고 고위험군을 파악하여 상담·치료 지원, 근무조건 개선 등 조치를 시행한다. 고객응대근로자 등 감정노동 직군에 대한 특별 관리를 포함한다.',
     evidence:['직무스트레스 요인 평가 결과','고위험군 관리 대장','상담·EAP 프로그램 운영 기록','근무조건 개선 실적'], cycle:'연 1회', docRefs:['SHP-20','SHP-21'], isoRefs:['8.1.2'], severity:'high',
@@ -456,7 +456,7 @@ export const OSHA_ITEMS = [
     evidence:['화학물질 경고표시 부착 현황','소분 용기 경고표시 사진','경고표시 점검 기록'], cycle:'반기 1회', docRefs:['SHI-07'], isoRefs:['8.1.2'], severity:'medium',
     penalty:'과태료 3백만원 이하 (법 제175조)',
     requiredDocs:["화학물질 경고표시 부착 현황"],
-    companyStatus:'염화칼슘 제품에 경고표시 有. 매장별 MDSD 비치 및 확인. 인테리어부 확인 필요',
+    companyStatus:'염화칼슘 제품에 경고표시 有. 매장별 MSDS 비치 및 확인. 인테리어부 확인 필요',
     evidenceFiles:[] },
 
   { id:'OSHA-119', framework:'osha', group:'건축물·석면', code:'법 제119조', title:'석면조사',
@@ -504,7 +504,7 @@ export const OSHA_ITEMS = [
     companyStatus:'',
     evidenceFiles:[] },
 
-  { id:'OSHA-618', framework:'osha', group:'밀폐공간', code:'시행규칙 제618~632조', title:'밀폐공간 안전보건조치',
+  { id:'OSHA-618', framework:'osha', group:'밀폐공간', code:'안전보건규칙 제618~632조', title:'밀폐공간 안전보건조치',
     clause:'사업주는 밀폐공간에서 근로자에게 작업을 하도록 하는 경우 산소 및 유해가스 농도를 측정하고, 환기·보호구 지급 등 필요한 조치를 하여야 한다.',
     requirement:'매장 지하저장소·물류센터 탱크·피트 등 밀폐공간을 파악하고 작업 전 산소·유해가스 측정·환기를 실시한다. 밀폐공간 출입금지 표지를 부착하고, 비상시 구조 장비를 갖춘다.',
     evidence:['밀폐공간 목록','산소·유해가스 측정 기록','환기 설비 점검 기록','밀폐공간 출입금지 표지 사진','구조 장비 비치 현황'], cycle:'수시', docRefs:['SHP-10','SHI-01'], isoRefs:['8.1.2','8.2'], severity:'critical',
@@ -673,7 +673,7 @@ export const DOC_MASTER = [
   { docNo:'SHP-09', type:'procedure', title:'문서 및 기록관리 절차서', category:'지원',
     purpose:'문서의 제·개정·배포·폐기와 기록의 법정 보존연한 관리 방법을 규정한다.', isoRefs:['7.5'], lawRefs:['OSHA-164','OSHA-025'] },
   { docNo:'SHP-10', type:'procedure', title:'작업 안전관리 절차서', category:'운용',
-    purpose:'매장·물류센터 작업의 안전기준 수립과 일상점검·관리 위계 적용 방법을 규정한다.', isoRefs:['8.1.1','8.1.2'], lawRefs:['OSHA-037','OSHA-038'] },
+    purpose:'매장·물류센터 작업의 안전기준 수립과 일상점검·관리 위계 적용 방법을 규정한다.', isoRefs:['8.1.1','8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHP-11', type:'procedure', title:'변경관리 절차서', category:'운용',
     purpose:'신규 오픈·리뉴얼·설비/인력/법규 변경 시 사전 안전성 검토 방법을 규정한다.', isoRefs:['8.1.3'], lawRefs:[] },
   { docNo:'SHP-12', type:'procedure', title:'도급·용역·위탁 안전보건 관리 절차서', category:'운용',
@@ -699,14 +699,14 @@ export const DOC_MASTER = [
 
   { docNo:'SHI-01', type:'instruction', title:'매장 일상 안전점검 지침서', category:'현장', purpose:'점장(관리감독자)이 매일 수행하는 안전점검 항목과 방법을 정한다.', isoRefs:['8.1.1'], lawRefs:['OSHA-016'] },
   { docNo:'SHI-02', type:'instruction', title:'롤테이너·중량물 취급 안전 지침서', category:'현장', purpose:'롤테이너 이동·적재 및 중량물 취급 시 부딪힘·끼임·근골격계 재해 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-039'] },
-  { docNo:'SHI-03', type:'instruction', title:'사다리·고소작업 안전 지침서', category:'현장', purpose:'진열대 상단 작업 등 사다리 사용 시 추락 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-03', type:'instruction', title:'사다리·고소작업 안전 지침서', category:'현장', purpose:'진열대 상단 작업 등 사다리 사용 시 추락 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-04', type:'instruction', title:'화재예방 및 소방시설 관리 지침서', category:'현장', purpose:'소방시설 점검, 피난통로 확보, 화기취급 관리 방법을 정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
-  { docNo:'SHI-05', type:'instruction', title:'미끄러짐·넘어짐 예방 지침서', category:'현장', purpose:'바닥 물기·장애물 제거 및 통로 확보 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
-  { docNo:'SHI-06', type:'instruction', title:'전기·설비 안전 지침서', category:'현장', purpose:'분전반·조명·냉난방 설비의 안전점검과 감전 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
-  { docNo:'SHI-07', type:'instruction', title:'개인보호구 지급 및 관리 지침서', category:'현장', purpose:'작업별 보호구 선정·지급·착용·폐기 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-05', type:'instruction', title:'미끄러짐·넘어짐 예방 지침서', category:'현장', purpose:'바닥 물기·장애물 제거 및 통로 확보 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
+  { docNo:'SHI-06', type:'instruction', title:'전기·설비 안전 지침서', category:'현장', purpose:'분전반·조명·냉난방 설비의 안전점검과 감전 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
+  { docNo:'SHI-07', type:'instruction', title:'개인보호구 지급 및 관리 지침서', category:'현장', purpose:'작업별 보호구 선정·지급·착용·폐기 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-08', type:'instruction', title:'응급처치 및 구호 지침서', category:'비상', purpose:'재해자 발생 시 응급처치, 119 신고, 병원 인계 절차를 정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
   { docNo:'SHI-09', type:'instruction', title:'고객 폭언·폭행 대응 지침서', category:'현장', purpose:'감정노동 상황 발생 시 현장 대응 단계와 보고 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-041'] },
-  { docNo:'SHI-10', type:'instruction', title:'물류센터 지게차·컨베이어 안전 지침서', category:'물류', purpose:'물류센터 하역장비 운용 시 안전기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-038'] },
+  { docNo:'SHI-10', type:'instruction', title:'물류센터 지게차·컨베이어 안전 지침서', category:'물류', purpose:'물류센터 하역장비 운용 시 안전기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-11', type:'instruction', title:'혹서기·혹한기 건강장해 예방 지침서', category:'보건', purpose:'온열·한랭 질환 예방을 위한 물·그늘·휴식 관리 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-039'] },
   { docNo:'SHI-12', type:'instruction', title:'작업중지권 행사 지침서', category:'비상', purpose:'급박한 위험 시 근로자·관리감독자의 작업중지 판단과 재개 승인 절차를 정한다.', isoRefs:['7.3','8.2'], lawRefs:['OSHA-051'] },
 
