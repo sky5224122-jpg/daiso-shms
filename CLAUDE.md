@@ -117,31 +117,27 @@ node --check js/data/frameworks.js
 
 ## 6. 인증 · 권한 처리
 
-### 현재 방식 (2026-07-31 변경)
+### 현재 운영 방식 (2026-08-21 확인)
 
-아이디 없이 **공용 비밀번호 하나**로 진입합니다.
+운영 주소는 **Supabase Auth 계정 로그인**을 사용합니다. 화면의 아이디는 내부 로그인 별칭이며,
+Supabase에는 `<아이디>@accounts.daiso-shms.local` 형식으로만 저장됩니다. 실제 이메일 입력이나 이메일 인증은 요구하지 않습니다.
 
-- `js/core.js` 의 `GATE_HASH` = 비밀번호의 SHA-256 해시
-- 진입한 사용자는 모두 `role: 'safety'` (작성·수정 가능)
-- 비밀번호 변경:
-  ```bash
-  node -e "console.log(require('crypto').createHash('sha256').update('새비밀번호','utf8').digest('hex'))"
-  ```
-  출력값으로 `GATE_HASH` 교체 → 캐시버스트 버전 올리고 배포
+- 작성·수정: `master`, `safety`, `head` 역할
+- 삭제: `master` 역할만 가능하며, Supabase RLS와 Cloudflare R2 Worker가 서버에서 다시 확인
+- 조회: 로그인한 사용자는 가능
+- 신규 계정 만들기 화면은 남아 있고, 현재 스키마상 신규 가입자는 `safety` 역할로 생성된다. 즉 신규 가입자도 작성·수정 권한을 갖는다. 이 정책을 바꾸려면 사용자 승인 후 `supabase/schema.sql`과 운영 DB 정책을 함께 바꾼다.
 
-> ⚠️ **이 해시는 공개 저장소 소스에 포함됩니다.** 외부 유출을 막는 보안장치가 아니라
-> "아무나 실수로 들어오지 않게 하는 문턱"입니다. 실제 데이터 접근 통제는
-> Supabase 연결 시 RLS 정책으로 걸어야 합니다.
+### 로컬 비상 폴백
+
+Supabase 연결 자체가 실패한 경우에만 과거 공용 비밀번호 해시 방식으로 로컬 브라우저에 들어갈 수 있다.
+이 폴백은 공동 운영 데이터·R2 첨부와 연결되지 않으므로 정상 운영 수단으로 안내하거나 권한 근거로 사용하지 않는다.
 
 ### 권한 판정
 
 - 화면 편집 권한: `canEdit()` — `role`이 `master|safety|head`인 경우만 true
-- **화면의 버튼 비활성화는 편의 기능일 뿐**이며, 실제 통제는 Supabase RLS의 `shms_can_edit()`가 수행
-- 권한 로직을 바꿀 때는 `core.js`의 `canEdit()`와 `schema.sql`의 `shms_can_edit()`를 **함께** 수정
-
-> ⚠️ 현재 공용 비밀번호 방식은 Supabase Auth 로그인을 하지 않으므로,
-> Supabase를 연결하면 `shms_can_edit()`가 false가 되어 **저장이 거부됩니다.**
-> Supabase 연결 시 인증 방식을 함께 재설계해야 합니다. (미해결 과제)
+- 삭제 권한: `canDelete()` — Supabase의 `master` 역할만 true
+- **화면의 버튼 비활성화는 편의 기능일 뿐**이며, 실제 통제는 Supabase RLS의 `shms_can_edit()`·`shms_can_delete()`와 R2 Worker가 수행한다.
+- 권한 로직을 바꿀 때는 `core.js`, `supabase/schema.sql`, R2 Worker 정책의 영향 범위를 함께 확인한다.
 
 ## 7. 절대 하면 안 되는 것
 
