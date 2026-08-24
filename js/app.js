@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260818_review2';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260818_review2';
+} from './core.js?v=20260824_loginid';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_loginid';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260818_review2';
+} from './views-core.js?v=20260824_loginid';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260818_review2';
+} from './views-ext.js?v=20260824_loginid';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -51,6 +51,18 @@ const NAV_FLAT = NAV.flatMap(g => g.items);
 
 const app = () => document.getElementById('app');
 
+/* ---------------- 최근 로그인 아이디 (클릭 시 선택 가능) ---------------- */
+const RECENT_LOGIN_KEY = 'shms_recent_login_ids';
+function getRecentLoginIds() {
+  try { return JSON.parse(localStorage.getItem(RECENT_LOGIN_KEY)) || []; } catch (_) { return []; }
+}
+function saveRecentLoginId(id) {
+  if (!id) return;
+  const list = getRecentLoginIds().filter(v => v !== id);
+  list.unshift(id);
+  try { localStorage.setItem(RECENT_LOGIN_KEY, JSON.stringify(list.slice(0, 8))); } catch (_) {}
+}
+
 /* ---------------- 로그인 화면 ---------------- */
 function renderLogin() {
   app().innerHTML = `
@@ -66,7 +78,8 @@ function renderLogin() {
       <form id="loginForm" autocomplete="on">
         ${conn.mode === 'supabase' ? `
         <label for="lgLoginId">아이디</label>
-        <input id="lgLoginId" type="text" autocomplete="username" placeholder="예: safety02" required autofocus>
+        <input id="lgLoginId" type="text" autocomplete="username" list="lgLoginIdList" placeholder="예: safety02" required autofocus>
+        <datalist id="lgLoginIdList"></datalist>
         <label for="lgName" id="lgNameLabel" style="display:none">이름</label>
         <input id="lgName" type="text" autocomplete="name" placeholder="이름 (계정 만들기 시 입력)" style="display:none">
         <label for="lgPw">비밀번호</label>` : '<label for="lgPw">접속 비밀번호</label>'}
@@ -93,6 +106,10 @@ function renderLogin() {
       </div>
     </div>
   </div>`;
+
+  if (conn.mode === 'supabase') {
+    $('#lgLoginIdList').innerHTML = getRecentLoginIds().map(id => `<option value="${esc(id)}">`).join('');
+  }
 
   let signupMode = false;
   $('#lgPwToggle').addEventListener('click', () => {
@@ -134,6 +151,7 @@ function renderLogin() {
           remember: $('#lgRemember')?.checked
         });
       }
+      saveRecentLoginId($('#lgLoginId')?.value?.trim());
       await boot();
     } catch (ex) {
       err.textContent = ex.message || String(ex);
