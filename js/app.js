@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260824_loginid';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_loginid';
+} from './core.js?v=20260824_gate';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_gate';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260824_loginid';
+} from './views-core.js?v=20260824_gate';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -19,7 +19,7 @@ import {
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260824_loginid';
+} from './views-ext.js?v=20260824_gate';
 
 /* ---------------- 화면 정의 ---------------- */
 const NAV = [
@@ -50,6 +50,63 @@ const NAV = [
 const NAV_FLAT = NAV.flatMap(g => g.items);
 
 const app = () => document.getElementById('app');
+
+/* ---------------- 접속 관문 (실제 계정 로그인 화면 이전 단계) ----------------
+   아무나 URL만 알고 접속·자동가입 시도하는 것을 막기 위한 1차 문턱이다.
+   여기를 통과해도 시스템에 로그인되지 않으며, 이후 실제 아이디·비밀번호(Supabase 계정)로
+   다시 로그인해야 한다. 통과 코드를 바꾸려면 새 해시를 만들어 GATE_CODE_HASH를 교체한다.
+     node -e "console.log(require('crypto').createHash('sha256').update('새코드','utf8').digest('hex'))"
+------------------------------------------------------------------------------- */
+const GATE_PASS_KEY = 'shms.gatepass';
+const GATE_IDS = ['guest01', 'guest02', 'guest03'];
+const GATE_CODE_HASH = '04b10b1ea8a3db83aa866819302939f8784264a53c6415111579c03c32e46452';
+
+async function gateSha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text)));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function renderGate(onPass) {
+  app().innerHTML = `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-badge">
+        <img src="assets/asung-group-symbol.png" alt="아성다이소" onerror="this.style.display='none'">
+        <div>
+          <div class="t1">ASUNG DAISO · SAFETY &amp; HEALTH</div>
+          <div class="t2">안전보건관리체계<br>이행 관리 시스템</div>
+        </div>
+      </div>
+      <form id="gateForm">
+        <label for="gateId">접속 코드 아이디</label>
+        <input id="gateId" type="text" placeholder="예: guest01" required autofocus>
+        <label for="gateCode">접속 코드</label>
+        <input id="gateCode" type="password" placeholder="접속 코드를 입력하세요" required>
+        <button class="login-btn" type="submit" id="gateSubmit">확인</button>
+        <div class="login-err" id="gateErr"></div>
+      </form>
+      <div class="login-hint">
+        <b>🔒 접속 확인</b><br>
+        관계자 전용 시스템입니다. 발급받은 접속 코드를 입력해 주세요.
+      </div>
+    </div>
+  </div>`;
+
+  $('#gateForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('#gateErr');
+    err.textContent = '';
+    const id = $('#gateId').value.trim().toLowerCase();
+    const code = $('#gateCode').value;
+    const hash = await gateSha256Hex(code);
+    if (GATE_IDS.includes(id) && hash === GATE_CODE_HASH) {
+      sessionStorage.setItem(GATE_PASS_KEY, '1');
+      onPass();
+    } else {
+      err.textContent = '접속 코드가 올바르지 않습니다.';
+    }
+  });
+}
 
 /* ---------------- 최근 로그인 아이디 (클릭 시 선택 가능) ---------------- */
 const RECENT_LOGIN_KEY = 'shms_recent_login_ids';
@@ -332,7 +389,11 @@ window.addEventListener('hashchange', () => {
 });
 
 async function boot() {
-  if (!state.user) { renderLogin(); return; }
+  if (!state.user) {
+    if (sessionStorage.getItem(GATE_PASS_KEY) === '1') { renderLogin(); }
+    else { renderGate(renderLogin); }
+    return;
+  }
   renderShell();
   showSpinner('자료를 불러오는 중…');
   await loadAll();
