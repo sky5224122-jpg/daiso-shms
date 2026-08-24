@@ -25,7 +25,8 @@ export const ROLES = {
   auditor: { key:'auditor', label:'심사원/감사(읽기)', scope:'read' },
   part:    { key:'part',    label:'파트장',          scope:'part'  },
   store:   { key:'store',   label:'점장(관리감독자)', scope:'store' },
-  ref:     { key:'ref',     label:'참조(임원/부서장)', scope:'read' }
+  ref:     { key:'ref',     label:'참조(임원/부서장)', scope:'read' },
+  guest:   { key:'guest',   label:'게스트(읽기 전용)', scope:'read' }
 };
 
 export const DOC_TYPES = {

@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260824_gate';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_gate';
+} from './core.js?v=20260824_roles';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_roles';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260824_gate';
+} from './views-core.js?v=20260824_roles';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -18,10 +18,13 @@ import {
   renderEvidence, bindEvidenceEvents,
   renderOrg, bindOrgEvents,
   renderAudit, bindAuditEvents,
-  renderSettings, bindSettingsEvents
-} from './views-ext.js?v=20260824_gate';
+  renderSettings, bindSettingsEvents,
+  renderBackup, bindBackupEvents,
+  renderRestore, bindRestoreEvents
+} from './views-ext.js?v=20260824_roles';
 
 /* ---------------- 화면 정의 ---------------- */
+/* roles가 없으면 로그인한 모든 사용자에게 보인다. roles가 있으면 그 권한만 접근할 수 있다. */
 const NAV = [
   { group: '이행 현황', items: [
     { key:'dashboard', icon:'📊', label:'종합 대시보드', crumb:'현황', title:'안전보건관리체계 종합 이행 현황' }
@@ -44,7 +47,9 @@ const NAV = [
     { key:'org',        icon:'👥', label:'조직 · 법정선임', crumb:'실행 관리', title:'조직 및 법정 선임 현황' }
   ]},
   { group: '시스템', items: [
-    { key:'settings', icon:'⚙️', label:'설정 · 백업', crumb:'시스템', title:'시스템 설정 및 자료 백업' }
+    { key:'settings', icon:'⚙️', label:'설정',       crumb:'시스템', title:'시스템 설정', roles:['master'] },
+    { key:'backup',   icon:'💾', label:'백업',       crumb:'시스템', title:'자료 백업', roles:['master','safety','head'] },
+    { key:'restore',  icon:'🔄', label:'복원',       crumb:'시스템', title:'자료 복원', roles:['master'] }
   ]}
 ];
 const NAV_FLAT = NAV.flatMap(g => g.items);
@@ -58,12 +63,23 @@ const app = () => document.getElementById('app');
      node -e "console.log(require('crypto').createHash('sha256').update('새코드','utf8').digest('hex'))"
 ------------------------------------------------------------------------------- */
 const GATE_PASS_KEY = 'shms.gatepass';
+const GUEST_SESSION_KEY = 'shms.guestsession';
 const GATE_IDS = ['guest01', 'guest02', 'guest03'];
 const GATE_CODE_HASH = '04b10b1ea8a3db83aa866819302939f8784264a53c6415111579c03c32e46452';
+
+/** 게스트로 열람할 때 부여되는 읽기 전용 로컬 세션 — Supabase 계정이 아니며 작성·수정·삭제 권한이 없다. */
+const GUEST_USER = { id: 'shms_guest', email: '', name: '게스트', role: 'guest', dept: '외부 게스트', source: 'guest' };
 
 async function gateSha256Hex(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text)));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function checkGateCode() {
+  const id = $('#gateId').value.trim().toLowerCase();
+  const code = $('#gateCode').value;
+  const hash = await gateSha256Hex(code);
+  return GATE_IDS.includes(id) && hash === GATE_CODE_HASH;
 }
 
 function renderGate(onPass) {
@@ -82,12 +98,14 @@ function renderGate(onPass) {
         <input id="gateId" type="text" placeholder="예: guest01" required autofocus>
         <label for="gateCode">접속 코드</label>
         <input id="gateCode" type="password" placeholder="접속 코드를 입력하세요" required>
-        <button class="login-btn" type="submit" id="gateSubmit">확인</button>
+        <button class="login-btn" type="submit" id="gateSubmit">확인 (직원 로그인)</button>
+        <button class="btn" type="button" id="gateGuestBtn" style="width:100%;margin-top:9px">게스트로 열람 (읽기 전용)</button>
         <div class="login-err" id="gateErr"></div>
       </form>
       <div class="login-hint">
         <b>🔒 접속 확인</b><br>
-        관계자 전용 시스템입니다. 발급받은 접속 코드를 입력해 주세요.
+        관계자 전용 시스템입니다. 발급받은 접속 코드를 입력해 주세요.<br>
+        게스트로 열람하면 자료를 확인만 할 수 있고, 작성·수정·삭제는 할 수 없습니다.
       </div>
     </div>
   </div>`;
@@ -96,12 +114,22 @@ function renderGate(onPass) {
     e.preventDefault();
     const err = $('#gateErr');
     err.textContent = '';
-    const id = $('#gateId').value.trim().toLowerCase();
-    const code = $('#gateCode').value;
-    const hash = await gateSha256Hex(code);
-    if (GATE_IDS.includes(id) && hash === GATE_CODE_HASH) {
+    if (await checkGateCode()) {
       sessionStorage.setItem(GATE_PASS_KEY, '1');
       onPass();
+    } else {
+      err.textContent = '접속 코드가 올바르지 않습니다.';
+    }
+  });
+
+  $('#gateGuestBtn').addEventListener('click', async () => {
+    const err = $('#gateErr');
+    err.textContent = '';
+    if (await checkGateCode()) {
+      sessionStorage.setItem(GATE_PASS_KEY, '1');
+      sessionStorage.setItem(GUEST_SESSION_KEY, '1');
+      state.user = { ...GUEST_USER };
+      await boot();
     } else {
       err.textContent = '접속 코드가 올바르지 않습니다.';
     }
@@ -269,6 +297,7 @@ function renderShell() {
   </div>`;
 
   $('#btnLogout').addEventListener('click', async () => {
+    sessionStorage.removeItem(GUEST_SESSION_KEY);
     await signOut();
     renderLogin();
   });
@@ -278,21 +307,30 @@ function renderShell() {
   renderNav();
 }
 
+/** roles가 없으면 전체 허용, 있으면 현재 사용자의 role이 포함된 경우만 허용 */
+function navAllowed(item) {
+  return !item.roles || item.roles.includes(state.user?.role);
+}
+
 function renderNav() {
   const root = $('#navRoot');
   if (!root) return;
   const cur = currentView();
-  root.innerHTML = NAV.map(g => `
+  root.innerHTML = NAV.map(g => {
+    const items = g.items.filter(navAllowed);
+    if (!items.length) return '';
+    return `
     <div class="nav-group">
       <div class="nav-group-t">${esc(g.group)}</div>
-      ${g.items.map(i => {
+      ${items.map(i => {
         const b = badgeFor(i.key);
         return `<button class="nav-item ${i.key === cur ? 'active' : ''}" data-nav="${i.key}" title="${esc(i.label)}">
           <span class="ico">${i.icon}</span><span class="lb">${esc(i.label)}</span>
           ${b ? `<span class="bd">${b}</span>` : '<span></span>'}
         </button>`;
       }).join('')}
-    </div>`).join('');
+    </div>`;
+  }).join('');
   root.querySelectorAll('[data-nav]').forEach(b =>
     b.addEventListener('click', () => { location.hash = '#/' + b.dataset.nav; }));
 }
@@ -300,7 +338,8 @@ function renderNav() {
 /* ---------------- 라우팅 ---------------- */
 function currentView() {
   const k = (location.hash || '').replace(/^#\/?/, '') || 'dashboard';
-  return NAV_FLAT.some(i => i.key === k) ? k : 'dashboard';
+  const meta = NAV_FLAT.find(i => i.key === k);
+  return (meta && navAllowed(meta)) ? k : 'dashboard';
 }
 
 function route() {
@@ -372,6 +411,16 @@ function route() {
       view.innerHTML = renderSettings();
       bindSettingsEvents(view, rerender);
       break;
+
+    case 'backup':
+      view.innerHTML = renderBackup();
+      bindBackupEvents(view);
+      break;
+
+    case 'restore':
+      view.innerHTML = renderRestore();
+      bindRestoreEvents(view, rerender);
+      break;
   }
   // 같은 화면 안에서의 재렌더는 스크롤 위치를 유지하고, 화면이 바뀌면 최상단으로 이동
   window.scrollTo(0, key === renderedKey ? scrollY : 0);
@@ -406,7 +455,11 @@ async function boot() {
 (async function main() {
   document.title = `${APP.name} | ${APP.org}`;
   await initSupabase();
-  await restoreSession();
+  if (sessionStorage.getItem(GUEST_SESSION_KEY) === '1') {
+    state.user = { ...GUEST_USER };
+  } else {
+    await restoreSession();
+  }
 
   onChange(() => { if (state.user && $('#navRoot')) renderNav(); });
   await boot();

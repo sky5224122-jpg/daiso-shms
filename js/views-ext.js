@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260824_gate';
+} from './data/frameworks.js?v=20260824_roles';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260824_gate';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260824_gate';
+} from './core.js?v=20260824_roles';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260824_roles';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -1022,41 +1022,11 @@ export function renderSettings() {
     </div>
 
     <div class="card">
-      <div class="card-head"><h3>💾 자료 백업 · 복원</h3></div>
+      <div class="card-head"><h3>🆔 전체 사용자 계정 (마스터 전용)</h3></div>
       <div class="card-body">
-        <p style="font-size:12.5px;color:var(--text-2);line-height:1.75;margin:0 0 14px">
-          작성한 이행기록·문서·점검·개선조치를 JSON 파일로 내려받아 D드라이브에 보관하세요.
-          <b>Supabase 쿼터 초과나 계정 문제에 대비한 이중 보관</b>은 안전보건팀 작업규칙의 필수 항목입니다.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn primary" id="bkExport">⬇️ 전체 백업 내려받기</button>
-          <button class="btn" id="bkImportBtn">⬆️ 백업 파일 복원</button>
-          <input type="file" id="bkImport" accept="application/json" style="display:none">
-        </div>
-        <div style="margin-top:16px;font-size:12px;color:var(--muted);line-height:1.8">
-          이행기록 ${Object.keys(state.records).length}건 · 문서 ${state.documents.length}건 ·
-          점검 ${state.inspections.length}건 · 개선조치 ${state.capa.length}건 ·
-          증빙 ${state.evidence.length}건 · 선임 ${state.org.length}건
-        </div>
-        ${fileMode === 'r2' ? '<div id="r2Usage" style="margin-top:10px;font-size:12px;color:var(--muted)">R2 공용 첨부 저장공간 사용량을 확인 중입니다.</div>' : ''}
-        <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
-          <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:600">🔄 자동 백업 (최근 5개)</h4>
-          <p style="font-size:12px;color:var(--text-2);margin:0 0 12px;line-height:1.6">
-            앱이 열려 있는 경우 매일 오전 9시에 한 번만 브라우저에 자동 백업됩니다 (최대 5개 보관). 앱·PC가 꺼져 있으면 자동 실행되지 않으므로, 중요한 작업 후에는 위의 전체 백업 내려받기를 사용하세요.</p>
-          ${(()=>{
-            const bks = getBackups();
-            if (!bks.length) return '<div style="font-size:12.5px;color:var(--muted);padding:8px 0">자동 백업이 아직 없습니다. 앱을 오전 9시에 열어 두면 생성됩니다. 중요한 자료는 전체 백업 내려받기를 사용하세요.</div>';
-            return '<div class="tbl-wrap"><table class="tbl" style="min-width:0;font-size:12.5px"><thead><tr><th>시각</th><th>이행기록</th><th>문서</th><th>개선조치</th><th>점검</th><th></th></tr></thead><tbody>'
-              + bks.map(b => {
-                const dt = new Date(b.ts);
-                const tStr = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')
-                  +' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
-                return '<tr><td>'+esc(tStr)+'</td><td>'+b.records+'</td><td>'+b.documents+'</td><td>'+b.capa+'</td><td>'+b.inspections+'</td>'
-                  +'<td style="white-space:nowrap"><button class="btn primary" style="font-size:11px;padding:3px 8px" data-bk-restore="'+esc(b.key)+'">복원</button> '
-                  +(canDelete() ? '<button class="btn" style="font-size:11px;padding:3px 8px" data-bk-del="'+esc(b.key)+'">삭제</button>' : '')+'</td></tr>';
-              }).join('')
-              + '</tbody></table></div>';
-          })()}
-        </div>
+        ${usingSupabase
+          ? '<div id="allAccounts" style="font-size:12.5px;color:var(--muted)">계정 목록을 불러오는 중…</div>'
+          : '<div style="font-size:12.5px;color:var(--muted)">Supabase 연결 모드에서만 계정 목록을 조회할 수 있습니다.</div>'}
       </div>
     </div>
   </div>
@@ -1093,13 +1063,17 @@ export function renderSettings() {
 }
 
 export function bindSettingsEvents(root, rerender) {
-  const usageEl = $('#r2Usage', root);
-  if (usageEl) getAttachmentStorageUsage().then(usage => {
-    if (!usage) { usageEl.textContent = 'R2 공용 첨부 저장공간 사용량을 확인할 수 없습니다.'; return; }
-    const text = `R2 공용 첨부 저장공간: ${formatBytes(usage.totalBytes)} / ${formatBytes(usage.limitBytes)} (${usage.pct}%)`;
-    usageEl.textContent = usage.warning ? `${text} · ⚠ ${usage.warning}` : text;
-    if (usage.warning) usageEl.style.color = 'var(--bad)';
-  });
+  const accEl = $('#allAccounts', root);
+  if (accEl && conn.mode === 'supabase') {
+    conn.client.from('shms_profiles').select('login_id,name,dept,role,created_at').order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) { accEl.innerHTML = `<div style="font-size:12.5px;color:var(--bad)">계정 목록을 불러오지 못했습니다: ${esc(error.message)}</div>`; return; }
+        if (!data || !data.length) { accEl.innerHTML = '<div style="font-size:12.5px;color:var(--muted)">등록된 계정이 없습니다.</div>'; return; }
+        accEl.innerHTML = '<div class="tbl-wrap"><table class="tbl" style="min-width:0;font-size:12.5px"><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>권한</th><th>가입일</th></tr></thead><tbody>'
+          + data.map(p => `<tr><td>${esc(p.login_id || '-')}</td><td>${esc(p.name || '-')}</td><td>${esc(p.dept || '-')}</td><td>${esc(ROLES[p.role]?.label || p.role || '-')}</td><td>${esc((p.created_at || '').slice(0, 10))}</td></tr>`).join('')
+          + '</tbody></table></div>';
+      });
+  }
   const save = $('#sbSave', root);
   if (save) save.addEventListener('click', () => {
     const url = $('#sbUrl', root).value.trim();
@@ -1116,7 +1090,60 @@ export function bindSettingsEvents(root, rerender) {
     setSupabaseConfig(null, null);
     setTimeout(() => location.reload(), 400);
   });
+}
 
+/* ============================================================
+   9. 백업 (안전보건팀 전 직원 접근 가능 — 다운로드 전용)
+   ============================================================ */
+export function renderBackup() {
+  const fileMode = attachmentStorageMode();
+  return `
+  <div class="banner">
+    <div class="i">💾</div>
+    <div><b>자료 백업</b> — 작성한 이행기록·문서·점검·개선조치를 JSON 파일로 내려받아 D드라이브 등 별도 위치에 보관하세요.
+      <b>Supabase 쿼터 초과나 계정 문제에 대비한 이중 보관</b>은 안전보건팀 작업규칙의 필수 항목입니다.</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>⬇️ 전체 백업 내려받기</h3></div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" id="bkExport">⬇️ 전체 백업 내려받기</button>
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:var(--muted);line-height:1.8">
+        이행기록 ${Object.keys(state.records).length}건 · 문서 ${state.documents.length}건 ·
+        점검 ${state.inspections.length}건 · 개선조치 ${state.capa.length}건 ·
+        증빙 ${state.evidence.length}건 · 선임 ${state.org.length}건
+      </div>
+      ${fileMode === 'r2' ? '<div id="r2Usage" style="margin-top:10px;font-size:12px;color:var(--muted)">R2 공용 첨부 저장공간 사용량을 확인 중입니다.</div>' : ''}
+      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+        <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:600">🔄 자동 백업 현황 (최근 5개)</h4>
+        <p style="font-size:12px;color:var(--text-2);margin:0 0 12px;line-height:1.6">
+          앱이 열려 있는 경우 매일 오전 9시에 한 번만 브라우저에 자동 백업됩니다 (최대 5개 보관, 이 PC에만 저장됨). 앱·PC가 꺼져 있으면 자동 실행되지 않으므로, 중요한 작업 후에는 위의 전체 백업 내려받기를 사용하세요. 복원은 <b>[설정 · 복원]</b> 화면(마스터 전용)에서 할 수 있습니다.</p>
+        ${(() => {
+          const bks = getBackups();
+          if (!bks.length) return '<div style="font-size:12.5px;color:var(--muted);padding:8px 0">자동 백업이 아직 없습니다. 앱을 오전 9시에 열어 두면 생성됩니다. 중요한 자료는 전체 백업 내려받기를 사용하세요.</div>';
+          return '<div class="tbl-wrap"><table class="tbl" style="min-width:0;font-size:12.5px"><thead><tr><th>시각</th><th>이행기록</th><th>문서</th><th>개선조치</th><th>점검</th></tr></thead><tbody>'
+            + bks.map(b => {
+              const dt = new Date(b.ts);
+              const tStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0')
+                + ' ' + String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+              return '<tr><td>' + esc(tStr) + '</td><td>' + b.records + '</td><td>' + b.documents + '</td><td>' + b.capa + '</td><td>' + b.inspections + '</td></tr>';
+            }).join('')
+            + '</tbody></table></div>';
+        })()}
+      </div>
+    </div>
+  </div>`;
+}
+
+export function bindBackupEvents(root) {
+  const usageEl = $('#r2Usage', root);
+  if (usageEl) getAttachmentStorageUsage().then(usage => {
+    if (!usage) { usageEl.textContent = 'R2 공용 첨부 저장공간 사용량을 확인할 수 없습니다.'; return; }
+    const text = `R2 공용 첨부 저장공간: ${formatBytes(usage.totalBytes)} / ${formatBytes(usage.limitBytes)} (${usage.pct}%)`;
+    usageEl.textContent = usage.warning ? `${text} · ⚠ ${usage.warning}` : text;
+    if (usage.warning) usageEl.style.color = 'var(--bad)';
+  });
   const ex = $('#bkExport', root);
   if (ex) ex.addEventListener('click', async () => {
     const attachmentStorage = await getAttachmentStorageUsage();
@@ -1134,7 +1161,46 @@ export function bindSettingsEvents(root, rerender) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('백업 파일을 내려받았습니다.', 'ok');
   });
+}
 
+/* ============================================================
+   10. 복원 (마스터 전용)
+   ============================================================ */
+export function renderRestore() {
+  return `
+  <div class="banner warn">
+    <div class="i">🔄</div>
+    <div><b>자료 복원</b> — 백업 파일이나 자동 백업 시점으로 현재 자료를 되돌립니다. <b>현재 작성된 자료가 덮어써지므로 마스터 관리자만 사용할 수 있습니다.</b></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>⬆️ 백업 파일로 복원</h3></div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" id="bkImportBtn">⬆️ 백업 파일 복원</button>
+        <input type="file" id="bkImport" accept="application/json" style="display:none">
+      </div>
+      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+        <h4 style="margin:0 0 10px;font-size:13.5px;font-weight:600">🕒 자동 백업 시점으로 복원 (최근 5개)</h4>
+        ${(() => {
+          const bks = getBackups();
+          if (!bks.length) return '<div style="font-size:12.5px;color:var(--muted);padding:8px 0">자동 백업이 아직 없습니다.</div>';
+          return '<div class="tbl-wrap"><table class="tbl" style="min-width:0;font-size:12.5px"><thead><tr><th>시각</th><th>이행기록</th><th>문서</th><th>개선조치</th><th>점검</th><th></th></tr></thead><tbody>'
+            + bks.map(b => {
+              const dt = new Date(b.ts);
+              const tStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0')
+                + ' ' + String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+              return '<tr><td>' + esc(tStr) + '</td><td>' + b.records + '</td><td>' + b.documents + '</td><td>' + b.capa + '</td><td>' + b.inspections + '</td>'
+                + '<td style="white-space:nowrap"><button class="btn primary" style="font-size:11px;padding:3px 8px" data-bk-restore="' + esc(b.key) + '">복원</button> '
+                + '<button class="btn" style="font-size:11px;padding:3px 8px" data-bk-del="' + esc(b.key) + '">삭제</button></td></tr>';
+            }).join('')
+            + '</tbody></table></div>';
+        })()}
+      </div>
+    </div>
+  </div>`;
+}
+
+export function bindRestoreEvents(root, rerender) {
   const ib = $('#bkImportBtn', root), inp = $('#bkImport', root);
   if (ib && inp) {
     ib.addEventListener('click', () => inp.click());
@@ -1143,11 +1209,11 @@ export function bindSettingsEvents(root, rerender) {
       if (!confirmDel('현재 작성된 자료를 백업 파일 내용으로 덮어씁니다. 계속할까요?')) { inp.value = ''; return; }
       try {
         const data = JSON.parse(await f.text());
-        ['records','documents','capa','inspections','org','evidence'].forEach(k => {
+        ['records', 'documents', 'capa', 'inspections', 'org', 'evidence'].forEach(k => {
           if (data[k]) state[k] = data[k];
         });
         localStorage.setItem('shms.data.records', JSON.stringify(state.records));
-        ['documents','capa','inspections','org','evidence'].forEach(k =>
+        ['documents', 'capa', 'inspections', 'org', 'evidence'].forEach(k =>
           localStorage.setItem('shms.data.' + k, JSON.stringify(state[k])));
         toast('백업을 복원했습니다.', 'ok');
         rerender();
