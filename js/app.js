@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260824_roles';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_roles';
+} from './core.js?v=20260824_nogate';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_nogate';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260824_roles';
+} from './views-core.js?v=20260824_nogate';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -21,7 +21,7 @@ import {
   renderSettings, bindSettingsEvents,
   renderBackup, bindBackupEvents,
   renderRestore, bindRestoreEvents
-} from './views-ext.js?v=20260824_roles';
+} from './views-ext.js?v=20260824_nogate';
 
 /* ---------------- 화면 정의 ---------------- */
 /* roles가 없으면 로그인한 모든 사용자에게 보인다. roles가 있으면 그 권한만 접근할 수 있다. */
@@ -56,16 +56,14 @@ const NAV_FLAT = NAV.flatMap(g => g.items);
 
 const app = () => document.getElementById('app');
 
-/* ---------------- 접속 관문 (실제 계정 로그인 화면 이전 단계) ----------------
-   아무나 URL만 알고 접속·자동가입 시도하는 것을 막기 위한 1차 문턱이다.
-   여기를 통과해도 시스템에 로그인되지 않으며, 이후 실제 아이디·비밀번호(Supabase 계정)로
-   다시 로그인해야 한다. 통과 코드를 바꾸려면 새 해시를 만들어 GATE_CODE_HASH를 교체한다.
+/* ---------------- 게스트 읽기 전용 열람 ----------------
+   로그인 화면의 "게스트로 열람" 버튼에서 사용하는 코드다. Supabase 계정이 아니며
+   작성·수정·삭제 권한이 없다. 코드를 바꾸려면 새 해시를 만들어 GUEST_CODE_HASH를 교체한다.
      node -e "console.log(require('crypto').createHash('sha256').update('새코드','utf8').digest('hex'))"
 ------------------------------------------------------------------------------- */
-const GATE_PASS_KEY = 'shms.gatepass';
 const GUEST_SESSION_KEY = 'shms.guestsession';
-const GATE_IDS = ['guest01', 'guest02', 'guest03'];
-const GATE_CODE_HASH = '04b10b1ea8a3db83aa866819302939f8784264a53c6415111579c03c32e46452';
+const GUEST_IDS = ['guest01', 'guest02', 'guest03'];
+const GUEST_CODE_HASH = '04b10b1ea8a3db83aa866819302939f8784264a53c6415111579c03c32e46452';
 
 /** 게스트로 열람할 때 부여되는 읽기 전용 로컬 세션 — Supabase 계정이 아니며 작성·수정·삭제 권한이 없다. */
 const GUEST_USER = { id: 'shms_guest', email: '', name: '게스트', role: 'guest', dept: '외부 게스트', source: 'guest' };
@@ -75,65 +73,11 @@ async function gateSha256Hex(text) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function checkGateCode() {
-  const id = $('#gateId').value.trim().toLowerCase();
-  const code = $('#gateCode').value;
+async function checkGuestCode(idFieldId, codeFieldId) {
+  const id = $('#' + idFieldId).value.trim().toLowerCase();
+  const code = $('#' + codeFieldId).value;
   const hash = await gateSha256Hex(code);
-  return GATE_IDS.includes(id) && hash === GATE_CODE_HASH;
-}
-
-function renderGate(onPass) {
-  app().innerHTML = `
-  <div class="login-wrap">
-    <div class="login-card">
-      <div class="login-badge">
-        <img src="assets/asung-group-symbol.png" alt="아성다이소" onerror="this.style.display='none'">
-        <div>
-          <div class="t1">ASUNG DAISO · SAFETY &amp; HEALTH</div>
-          <div class="t2">안전보건관리체계<br>이행 관리 시스템</div>
-        </div>
-      </div>
-      <form id="gateForm">
-        <label for="gateId">접속 코드 아이디</label>
-        <input id="gateId" type="text" placeholder="예: guest01" required autofocus>
-        <label for="gateCode">접속 코드</label>
-        <input id="gateCode" type="password" placeholder="접속 코드를 입력하세요" required>
-        <button class="login-btn" type="submit" id="gateSubmit">확인 (직원 로그인)</button>
-        <button class="btn" type="button" id="gateGuestBtn" style="width:100%;margin-top:9px">게스트로 열람 (읽기 전용)</button>
-        <div class="login-err" id="gateErr"></div>
-      </form>
-      <div class="login-hint">
-        <b>🔒 접속 확인</b><br>
-        관계자 전용 시스템입니다. 발급받은 접속 코드를 입력해 주세요.<br>
-        게스트로 열람하면 자료를 확인만 할 수 있고, 작성·수정·삭제는 할 수 없습니다.
-      </div>
-    </div>
-  </div>`;
-
-  $('#gateForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const err = $('#gateErr');
-    err.textContent = '';
-    if (await checkGateCode()) {
-      sessionStorage.setItem(GATE_PASS_KEY, '1');
-      onPass();
-    } else {
-      err.textContent = '접속 코드가 올바르지 않습니다.';
-    }
-  });
-
-  $('#gateGuestBtn').addEventListener('click', async () => {
-    const err = $('#gateErr');
-    err.textContent = '';
-    if (await checkGateCode()) {
-      sessionStorage.setItem(GATE_PASS_KEY, '1');
-      sessionStorage.setItem(GUEST_SESSION_KEY, '1');
-      state.user = { ...GUEST_USER };
-      await boot();
-    } else {
-      err.textContent = '접속 코드가 올바르지 않습니다.';
-    }
-  });
+  return GUEST_IDS.includes(id) && hash === GUEST_CODE_HASH;
 }
 
 /* ---------------- 최근 로그인 아이디 (클릭 시 선택 가능) ---------------- */
@@ -179,6 +123,18 @@ function renderLogin() {
         ${conn.mode === 'supabase' ? '<button class="btn" type="button" id="lgMode" style="width:100%;margin-top:9px">처음이면 계정 만들기</button>' : ''}
         <div class="login-err" id="lgErr"></div>
       </form>
+      ${conn.mode === 'supabase' ? `
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+        <button class="btn" type="button" id="lgGuestBtn" style="width:100%">게스트로 열람 (읽기 전용)</button>
+        <div id="guestBox" style="display:none;margin-top:10px">
+          <label for="guestId">게스트 아이디</label>
+          <input id="guestId" type="text" placeholder="예: guest01">
+          <label for="guestCode">게스트 코드</label>
+          <input id="guestCode" type="password" placeholder="발급받은 코드">
+          <button class="btn primary" type="button" id="guestConfirm" style="width:100%;margin-top:9px">게스트로 입장</button>
+          <div class="login-err" id="guestErr"></div>
+        </div>
+      </div>` : ''}
       <div class="login-hint">
         <b>${conn.mode === 'supabase' ? '🟢 Supabase 연결됨' : '🟡 로컬 저장 모드'}</b><br>
         ${conn.mode === 'supabase'
@@ -219,6 +175,23 @@ function renderLogin() {
     $('#lgSubmit').textContent = signupMode ? '계정 만들기' : '로그인';
     $('#lgMode').textContent = signupMode ? '기존 계정으로 로그인' : '처음이면 계정 만들기';
     $('#lgErr').textContent = '';
+  });
+
+  $('#lgGuestBtn')?.addEventListener('click', () => {
+    $('#guestBox').style.display = 'block';
+    $('#lgGuestBtn').style.display = 'none';
+  });
+
+  $('#guestConfirm')?.addEventListener('click', async () => {
+    const err = $('#guestErr');
+    err.textContent = '';
+    if (await checkGuestCode('guestId', 'guestCode')) {
+      sessionStorage.setItem(GUEST_SESSION_KEY, '1');
+      state.user = { ...GUEST_USER };
+      await boot();
+    } else {
+      err.textContent = '게스트 코드가 올바르지 않습니다.';
+    }
   });
 
   $('#loginForm').addEventListener('submit', async e => {
@@ -438,11 +411,7 @@ window.addEventListener('hashchange', () => {
 });
 
 async function boot() {
-  if (!state.user) {
-    if (sessionStorage.getItem(GATE_PASS_KEY) === '1') { renderLogin(); }
-    else { renderGate(renderLogin); }
-    return;
-  }
+  if (!state.user) { renderLogin(); return; }
   renderShell();
   showSpinner('자료를 불러오는 중…');
   await loadAll();
