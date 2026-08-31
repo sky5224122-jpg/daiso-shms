@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260824_nogate';
+} from './data/frameworks.js?v=20260825_memo';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260824_nogate';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260824_nogate';
+} from './core.js?v=20260825_memo';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260825_memo';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -1241,5 +1241,82 @@ export function bindRestoreEvents(root, rerender) {
       toast('백업을 삭제했습니다.', 'ok');
       rerender();
     });
+  });
+}
+
+/* ============================================================
+   11. 메모장 (심사결과·업무 메모)
+   ============================================================ */
+const MEMO_CATS = ['심사', '점검', '회의', '전화·구두 지시', '기타'];
+
+export function renderMemo() {
+  const list = [...state.memos].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+
+  return `
+  <div class="banner">
+    <div class="i">📝</div>
+    <div><b>메모장</b> — 심사·점검 중 오간 이야기, 지적 받은 내용, 확인이 필요한 사항 등을 날짜별로 자유롭게 기록합니다.
+    정식 문서가 아니라도 나중에 찾아보기 쉽도록 남겨 두는 업무 메모입니다.</div>
+  </div>
+
+  <div class="toolbar">
+    <div style="flex:1"></div>
+    ${canEdit() ? `<button class="btn primary" id="memoNew">＋ 메모 작성</button>` : ''}
+  </div>
+
+  ${list.length === 0
+    ? `<div class="card"><div class="empty"><div class="e">📝</div><div class="t">작성된 메모가 없습니다</div>
+        <div class="s">심사결과나 확인해야 할 내용을 메모로 남겨 두세요.</div></div></div>`
+    : `<div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th style="width:100px">일자</th><th style="width:110px">구분</th><th>제목·내용</th><th style="width:100px">작성자</th><th style="width:60px"></th></tr></thead>
+        <tbody>${list.map(m => `
+          <tr data-memo="${esc(m.id)}" style="cursor:pointer">
+            <td>${fmtDate(m.date)}</td>
+            <td><span class="tag">${esc(m.category || '기타')}</span></td>
+            <td><div class="cell-title">${esc(m.title || '(제목 없음)')}</div>
+                <div class="cell-sub">${esc((m.content || '').slice(0, 80))}${(m.content || '').length > 80 ? '…' : ''}</div></td>
+            <td>${esc(m.updated_by || '-')}</td>
+            <td>${canDelete() ? `<button class="btn sm" data-del-memo="${esc(m.id)}">삭제</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`}`;
+}
+
+function openMemoDrawer(rec, rerender) {
+  const isNew = !rec;
+  const m = rec || { id: uid('memo'), date: today(), category: '심사', title: '', content: '' };
+  openDrawer({
+    code: isNew ? '메모 신규 작성' : `메모 · ${fmtDate(m.date)}`,
+    title: isNew ? '메모 작성' : (m.title || '메모'),
+    editable: canEdit(),
+    body: `
+      <div class="fld-row">
+        <div class="fld"><label>일자</label><input class="inp" type="date" id="mDate" value="${esc(m.date)}"></div>
+        <div class="fld"><label>구분</label>
+          <select class="inp" id="mCat">${MEMO_CATS.map(c => `<option ${m.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+      </div>
+      <div class="fld"><label>제목 (선택)</label><input class="inp" id="mTitle" value="${esc(m.title)}" placeholder="예) 2026년 상반기 내부심사 지적사항"></div>
+      <div class="fld"><label>내용</label><textarea class="inp" id="mContent" style="min-height:220px" placeholder="심사 중 확인된 내용, 심사원 코멘트, 후속 확인 사항 등을 자유롭게 적으세요.">${esc(m.content)}</textarea></div>`,
+    async onSave(root) {
+      const next = { ...m,
+        date: $('#mDate', root).value, category: $('#mCat', root).value,
+        title: $('#mTitle', root).value.trim(), content: $('#mContent', root).value.trim() };
+      if (!next.content) { toast('내용을 입력하세요.', 'bad'); return; }
+      showSpinner('저장 중…');
+      const res = await saveRow('memos', next);
+      hideSpinner();
+      toast(res.ok ? '메모를 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
+      closeDrawer(); rerender();
+    }
+  });
+}
+
+export function bindMemoEvents(root, rerender) {
+  const nb = $('#memoNew', root); if (nb) nb.addEventListener('click', () => openMemoDrawer(null, rerender));
+  root.addEventListener('click', async e => {
+    const del = e.target.closest('[data-del-memo]');
+    if (del) { e.stopPropagation();
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+      if (confirmDel('이 메모를 삭제할까요?')) { const res = await deleteRow('memos', del.dataset.delMemo); toast(res.ok ? '삭제했습니다.' : res.error, res.ok ? 'ok' : 'bad'); rerender(); }
+      return; }
+    const row = e.target.closest('[data-memo]');
+    if (row) openMemoDrawer(state.memos.find(x => x.id === row.dataset.memo), rerender);
   });
 }

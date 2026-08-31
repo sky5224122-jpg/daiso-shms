@@ -218,6 +218,29 @@ create table if not exists public.shms_org (
 );
 alter table public.shms_org add column if not exists attachments jsonb not null default '[]'::jsonb;
 
+-- ── 8. 메모장 (심사결과·업무 메모) ──────────────────────────
+create table if not exists public.shms_memos (
+  id         text primary key,
+  date       date,
+  category   text default '기타',
+  title      text default '',
+  content    text default '',
+  updated_at timestamptz not null default now(),
+  updated_by text default ''
+);
+
+-- ── 9. 심사 개요 (ISO 요구사항 관리 화면) ───────────────────
+create table if not exists public.shms_audit_overview (
+  id          text primary key,
+  audit_date  date,
+  auditor     text default '',
+  result      text default '적합',   -- 적합|경미 부적합|중대 부적합|관찰사항
+  content     text default '',
+  half        text default '',
+  updated_at  timestamptz not null default now(),
+  updated_by  text default ''
+);
+
 -- ============================================================
 -- RLS (행 수준 보안)
 --   · 로그인한 사용자는 전체 조회 가능
@@ -236,12 +259,14 @@ create policy shms_audit_insert on public.shms_audit_log
 drop policy if exists shms_audit_delete on public.shms_audit_log;
 create policy shms_audit_delete on public.shms_audit_log
   for delete to authenticated using (public.shms_can_delete());
-alter table public.shms_records     enable row level security;
-alter table public.shms_documents   enable row level security;
-alter table public.shms_inspections enable row level security;
-alter table public.shms_capa        enable row level security;
-alter table public.shms_evidence    enable row level security;
-alter table public.shms_org         enable row level security;
+alter table public.shms_records        enable row level security;
+alter table public.shms_documents      enable row level security;
+alter table public.shms_inspections    enable row level security;
+alter table public.shms_capa           enable row level security;
+alter table public.shms_evidence       enable row level security;
+alter table public.shms_org            enable row level security;
+alter table public.shms_memos          enable row level security;
+alter table public.shms_audit_overview enable row level security;
 
 -- 프로필: 본인 것만 조회, 마스터만 전체 조회·수정
 drop policy if exists shms_profiles_self_read on public.shms_profiles;
@@ -260,7 +285,7 @@ create policy shms_profiles_master_update on public.shms_profiles
 do $$
 declare t text;
 begin
-  foreach t in array array['shms_records','shms_documents','shms_inspections','shms_capa','shms_evidence','shms_org']
+  foreach t in array array['shms_records','shms_documents','shms_inspections','shms_capa','shms_evidence','shms_org','shms_memos','shms_audit_overview']
   loop
     execute format('drop policy if exists %I on public.%I', t || '_read', t);
     execute format(

@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260824_nogate';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260824_nogate';
+} from './core.js?v=20260825_memo';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260825_memo';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260824_nogate';
+} from './views-core.js?v=20260825_memo';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -20,8 +20,9 @@ import {
   renderAudit, bindAuditEvents,
   renderSettings, bindSettingsEvents,
   renderBackup, bindBackupEvents,
-  renderRestore, bindRestoreEvents
-} from './views-ext.js?v=20260824_nogate';
+  renderRestore, bindRestoreEvents,
+  renderMemo, bindMemoEvents
+} from './views-ext.js?v=20260825_memo';
 
 /* ---------------- 화면 정의 ---------------- */
 /* roles가 없으면 로그인한 모든 사용자에게 보인다. roles가 있으면 그 권한만 접근할 수 있다. */
@@ -44,7 +45,8 @@ const NAV = [
     { key:'inspection', icon:'🗓️', label:'이행 점검', crumb:'실행 관리', title:'반기 1회 이상 법정 이행 점검' },
     { key:'capa',       icon:'🔧', label:'개선조치(CAPA)', crumb:'실행 관리', title:'부적합 개선조치 관리' },
     { key:'evidence',   icon:'🗂️', label:'증빙 자료함', crumb:'실행 관리', title:'이행 증빙 자료 등록부' },
-    { key:'org',        icon:'👥', label:'조직 · 법정선임', crumb:'실행 관리', title:'조직 및 법정 선임 현황' }
+    { key:'org',        icon:'👥', label:'조직 · 법정선임', crumb:'실행 관리', title:'조직 및 법정 선임 현황' },
+    { key:'memo',       icon:'📝', label:'메모장',     crumb:'실행 관리', title:'심사결과·업무 메모장' }
   ]},
   { group: '시스템', items: [
     { key:'settings', icon:'⚙️', label:'설정',       crumb:'시스템', title:'시스템 설정', roles:['master'] },
@@ -378,6 +380,11 @@ function route() {
     case 'org':
       view.innerHTML = renderOrg();
       bindOrgEvents(view, rerender);
+      break;
+
+    case 'memo':
+      view.innerHTML = renderMemo();
+      bindMemoEvents(view, rerender);
       break;
 
     case 'settings':

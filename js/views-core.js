@@ -5,12 +5,15 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260824_nogate';
+} from './data/frameworks.js?v=20260825_memo';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
-  canEdit, canDelete, halfLabel, fmtDate, toast, showSpinner, hideSpinner, uid,
+  canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
+  saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260824_nogate';
+} from './core.js?v=20260825_memo';
+
+const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -457,6 +460,8 @@ export function renderCompliance(fw) {
     <b>이행 현황·담당자·증빙자료·미흡사항</b>을 직접 입력해 주세요. 입력한 내용은 그대로 이행 증빙으로 출력됩니다.</div>
   </div>
 
+  ${fw === 'iso' ? auditOverviewSectionHtml() : ''}
+
   <div class="grid g4" style="margin-bottom:18px">
     ${kpi({ title:'이행률', value:p.pct, unit:'%', pct:p.pct, desc:`${esc(halfLabel(half))} 기준` })}
     ${kpi({ title:'이행완료', value:p.counts.done, unit:'건', tone:'green', desc:`전체 ${p.total}개 조항 중` })}
@@ -486,6 +491,61 @@ export function renderCompliance(fw) {
       <div class="item-list">
         ${list.map(i => itemCard(i, half)).join('')}
       </div>`).join('')}`;
+}
+
+/* ---------------- 심사 개요 (ISO 요구사항 관리 화면 전용) ---------------- */
+function auditOverviewSectionHtml() {
+  const list = [...state.auditOverview].sort((a, b) => String(b.audit_date || '').localeCompare(String(a.audit_date || '')));
+  return `
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-head" style="display:flex;align-items:center;gap:10px">
+      <h3 style="margin:0">🗒️ 심사 개요</h3>
+      <div style="flex:1"></div>
+      ${canEdit() ? `<button class="btn primary" id="auditOvNew">＋ 심사 개요 등록</button>` : ''}
+    </div>
+    <div class="card-body">
+      ${list.length === 0
+        ? `<div style="font-size:12.5px;color:var(--muted);padding:8px 0">등록된 심사 개요가 없습니다. 심사실시일·심사자·심사내용·심사결과를 등록해 두면 이 화면에서 바로 확인할 수 있습니다.</div>`
+        : `<div class="tbl-wrap"><table class="tbl" style="min-width:0">
+            <thead><tr><th style="width:110px">심사실시일</th><th style="width:120px">심사자</th><th style="width:110px">심사결과</th><th>심사 내용</th><th style="width:60px"></th></tr></thead>
+            <tbody>${list.map(a => `
+              <tr data-audit-ov="${esc(a.id)}" style="cursor:pointer">
+                <td>${fmtDate(a.audit_date)}</td>
+                <td>${esc(a.auditor || '-')}</td>
+                <td><span class="tag ${a.result === '적합' ? '' : 'law'}">${esc(a.result || '-')}</span></td>
+                <td><div class="cell-sub">${esc((a.content || '').slice(0, 80))}${(a.content || '').length > 80 ? '…' : ''}</div></td>
+                <td>${canDelete() ? `<button class="btn sm" data-del-audit-ov="${esc(a.id)}">삭제</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`}
+    </div>
+  </div>`;
+}
+
+function openAuditOverviewDrawer(rec, rerender) {
+  const isNew = !rec;
+  const a = rec || { id: uid('auditov'), audit_date: today(), auditor: '', result: '적합', content: '', half: state.half };
+  openDrawer({
+    code: isNew ? '심사 개요 신규 등록' : `심사 개요 · ${fmtDate(a.audit_date)}`,
+    title: isNew ? '심사 개요 등록' : (a.auditor ? `${a.auditor} 심사` : '심사 개요'),
+    editable: canEdit(),
+    body: `
+      <div class="fld-row">
+        <div class="fld"><label>심사실시일</label><input class="inp" type="date" id="aoDate" value="${esc(a.audit_date)}"></div>
+        <div class="fld"><label>심사결과</label>
+          <select class="inp" id="aoResult">${AUDIT_RESULTS.map(r => `<option ${a.result === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
+      </div>
+      <div class="fld"><label>심사자</label><input class="inp" id="aoAuditor" value="${esc(a.auditor)}" placeholder="예) 한국품질재단 김OO 심사원"></div>
+      <div class="fld"><label>심사 내용</label><textarea class="inp" id="aoContent" style="min-height:180px" placeholder="심사 범위, 지적사항, 심사원 의견 등을 기재합니다.">${esc(a.content)}</textarea></div>`,
+    async onSave(root) {
+      const next = { ...a,
+        audit_date: $('#aoDate', root).value, result: $('#aoResult', root).value,
+        auditor: $('#aoAuditor', root).value.trim(), content: $('#aoContent', root).value.trim() };
+      if (!next.auditor) { toast('심사자를 입력하세요.', 'bad'); return; }
+      showSpinner('저장 중…');
+      const res = await saveRow('auditOverview', next);
+      hideSpinner();
+      toast(res.ok ? '심사 개요를 저장했습니다.' : `로컬 저장됨 · 동기화 실패: ${res.error}`, res.ok ? 'ok' : 'bad');
+      closeDrawer(); rerender();
+    }
+  });
 }
 
 function itemCard(i, half) {
@@ -1129,7 +1189,18 @@ export function bindComplianceEvents(root, rerender) {
   const pr = $('#cPrint', root);
   if (pr) pr.addEventListener('click', () => window.print());
 
-  root.addEventListener('click', e => {
+  const aoNew = $('#auditOvNew', root);
+  if (aoNew) aoNew.addEventListener('click', () => openAuditOverviewDrawer(null, rerender));
+
+  root.addEventListener('click', async e => {
+    const delAo = e.target.closest('[data-del-audit-ov]');
+    if (delAo) { e.stopPropagation();
+      if (!canDelete()) { toast('삭제는 마스터 관리자만 할 수 있습니다.', 'bad'); return; }
+      if (window.confirm('이 심사 개요를 삭제할까요?')) { const res = await deleteRow('auditOverview', delAo.dataset.delAuditOv); toast(res.ok ? '삭제했습니다.' : res.error, res.ok ? 'ok' : 'bad'); rerender(); }
+      return; }
+    const aoRow = e.target.closest('[data-audit-ov]');
+    if (aoRow) { openAuditOverviewDrawer(state.auditOverview.find(x => x.id === aoRow.dataset.auditOv), rerender); return; }
+
     const card = e.target.closest('[data-item]');
     if (card && !e.target.closest('a')) openItemDrawer(card.dataset.item, rerender);
   });

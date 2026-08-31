@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260824_nogate';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260825_memo';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -486,12 +486,14 @@ export async function deleteAttachmentFile(att) {
 
 /* ---------------- 테이블 정의 ---------------- */
 export const TABLES = {
-  records:     'shms_records',      // 법령/ISO 조항별 이행 기록
-  documents:   'shms_documents',    // 절차서·지침서
-  capa:        'shms_capa',         // 개선조치
-  inspections: 'shms_inspections',  // 반기 점검
-  org:         'shms_org',          // 조직·선임 현황
-  evidence:    'shms_evidence'      // 증빙 자료 목록
+  records:      'shms_records',        // 법령/ISO 조항별 이행 기록
+  documents:    'shms_documents',      // 절차서·지침서
+  capa:         'shms_capa',           // 개선조치
+  inspections:  'shms_inspections',    // 반기 점검
+  org:          'shms_org',            // 조직·선임 현황
+  evidence:     'shms_evidence',       // 증빙 자료 목록
+  memos:        'shms_memos',          // 메모장
+  auditOverview:'shms_audit_overview'  // 심사 개요(요구사항 관리 화면)
 };
 const AUDIT_TABLE = 'shms_audit_log';
 
@@ -512,6 +514,8 @@ export const state = {
   inspections: [],
   org: [],
   evidence: [],
+  memos: [],
+  auditOverview: [],
   auditLog: [],
   loaded: false
 };
@@ -583,17 +587,21 @@ export async function loadAll() {
   state.inspections = lsGet('inspections', []);
   state.org         = lsGet('org', []);
   state.evidence    = lsGet('evidence', []);
+  state.memos       = lsGet('memos', []);
+  state.auditOverview = lsGet('auditOverview', []);
   state.auditLog    = lsGet('auditLog', []);
 
   if (conn.mode === 'supabase') {
     try {
-      const [rec, doc, capa, insp, org, evi] = await Promise.all([
+      const [rec, doc, capa, insp, org, evi, memo, auditOv] = await Promise.all([
         conn.client.from(TABLES.records).select('*'),
         conn.client.from(TABLES.documents).select('*'),
         conn.client.from(TABLES.capa).select('*'),
         conn.client.from(TABLES.inspections).select('*'),
         conn.client.from(TABLES.org).select('*'),
-        conn.client.from(TABLES.evidence).select('*')
+        conn.client.from(TABLES.evidence).select('*'),
+        conn.client.from(TABLES.memos).select('*'),
+        conn.client.from(TABLES.auditOverview).select('*')
       ]);
       const firstErr = [rec, doc, capa, insp, org, evi].find(r => r.error);
       if (firstErr) throw firstErr.error;
@@ -614,6 +622,9 @@ export async function loadAll() {
       state.inspections = insp.data || [];
       state.org         = org.data  || [];
       state.evidence    = evi.data  || [];
+      // 메모장·심사개요 테이블은 schema.sql 적용 전에는 없을 수 있으므로 오류가 나도 무시하고 로컬 자료를 유지한다.
+      if (!memo.error) state.memos = memo.data || [];
+      if (!auditOv.error) state.auditOverview = auditOv.data || [];
       persistAll();
       try {
         const { data: audit } = await conn.client.from(AUDIT_TABLE).select('*').order('created_at', { ascending: false }).limit(200);
@@ -636,6 +647,8 @@ function persistAll() {
   lsSet('inspections', state.inspections);
   lsSet('org', state.org);
   lsSet('evidence', state.evidence);
+  lsSet('memos', state.memos);
+  lsSet('auditOverview', state.auditOverview);
 }
 
 /* ---------------- 저장 (upsert) ---------------- */
