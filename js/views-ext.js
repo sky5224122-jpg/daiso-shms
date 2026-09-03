@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260903_stat';
+} from './data/frameworks.js?v=20260903_doc44';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260903_stat';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260903_stat';
+} from './core.js?v=20260903_doc44';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260903_doc44';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -101,6 +101,7 @@ function docCard(d) {
       ${canDelete() ? `<button class="btn sm" data-del-doc="${esc(d.id)}">삭제</button>` : ''}
     </div>
     <h4>${esc(d.title)}</h4>
+    ${d.company_doc_no ? `<div style="font-size:10.5px;color:var(--primary);font-weight:700;margin:-2px 0 4px">${esc(d.company_doc_no)}</div>` : ''}
     <div style="font-size:11.8px;color:var(--text-2);line-height:1.65;
       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(d.purpose || '목적이 작성되지 않았습니다.')}</div>
     <div class="m">
@@ -143,6 +144,10 @@ function openDocDrawer(docId, rerender) {
       <div class="fld-row">
         <div class="fld"><label>문서번호</label>
           <input class="inp" id="gNo" value="${esc(d.doc_no)}" ${editable ? '' : 'disabled'}></div>
+        <div class="fld"><label>회사 문서번호</label>
+          <input class="inp" id="gCompanyNo" value="${esc(d.company_doc_no || '')}" placeholder="예) AAD-HSHT-P-2022-001(4)" ${editable ? '' : 'disabled'}></div>
+      </div>
+      <div class="fld-row">
         <div class="fld"><label>문서 단계</label>
           <select class="inp" id="gType" ${editable ? '' : 'disabled'}>
             ${Object.values(DOC_TYPES).map(t => `<option value="${t.key}" ${d.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
@@ -237,6 +242,7 @@ function openDocDrawer(docId, rerender) {
       const next = {
         ...d,
         doc_no: $('#gNo', root).value.trim() || d.doc_no,
+        company_doc_no: $('#gCompanyNo', root)?.value.trim() || d.company_doc_no || '',
         type: $('#gType', root).value,
         title: $('#gTitle', root).value.trim() || d.title,
         category: $('#gCat', root).value.trim(),

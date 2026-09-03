@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260903_stat';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260903_doc44';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -570,6 +570,7 @@ function seedDocuments() {
     purpose: m.purpose,
     scope: '',
     body: '',
+    company_doc_no: m.companyDocNo || '',
     iso_refs: m.isoRefs || [],
     law_refs: m.lawRefs || [],
     revisions: [],
