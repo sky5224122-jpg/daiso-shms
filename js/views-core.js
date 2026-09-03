@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260903_hub';
+} from './data/frameworks.js?v=20260903_stat';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260903_hub';
+} from './core.js?v=20260903_stat';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -389,6 +389,25 @@ export function renderDashboard() {
               </div>`).join('')}</div>`}
       </div>
     </div>
+  </div>
+
+  <div class="sec-t" style="margin-top:28px"><h2>관련 시스템 바로가기</h2><div class="l"></div>
+    <span class="n">위험성평가 · 비상대응훈련 앱</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    ${[
+      { label:'위험성평가 v1', sub:'마스터', icon:'📋', url:'https://asung-daiso-risk-app-master.web.app' },
+      { label:'위험성평가 v2', sub:'', icon:'📋', url:'https://asung-daiso-risk-v2.web.app' },
+      { label:'위험성평가 v3', sub:'', icon:'📋', url:'https://asung-daiso-risk-v3.web.app' },
+      { label:'위험성평가 v4', sub:'', icon:'📋', url:'https://asung-daiso-risk-v4.web.app' },
+      { label:'위험성평가 v5', sub:'', icon:'📋', url:'https://asung-daiso-risk-v5.web.app' },
+      { label:'위험성평가 v6', sub:'', icon:'📋', url:'https://asung-daiso-risk-v6.web.app' },
+      { label:'위험성평가 v7', sub:'', icon:'📋', url:'https://asung-daiso-risk-v7.web.app' },
+      { label:'비상대응훈련', sub:'', icon:'🚨', url:'https://asung-daiso-emergency-training.web.app' }
+    ].map(a => \`<a href="\${a.url}" target="_blank" rel="noopener" class="card" style="text-decoration:none;cursor:pointer;text-align:center;padding:16px 8px;transition:box-shadow .15s">
+      <div style="font-size:24px;margin-bottom:4px">\${a.icon}</div>
+      <div style="font-weight:800;font-size:12.5px;color:var(--fg)">\${a.label}</div>
+      \${a.sub ? \`<div style="font-size:10.5px;color:var(--faint);margin-top:1px">\${a.sub}</div>\` : ''}
+    </a>\`).join('')}
   </div>`;
 }
 
