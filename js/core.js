@@ -3,7 +3,7 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_hide';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_docst';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -553,31 +553,43 @@ function recordToRemote(row) {
 }
 
 /* ---------------- 초기 문서 생성(문서체계 마스터 기반) ---------------- */
+function docDefaultVersion(companyDocNo) {
+  if (!companyDocNo) return '';
+  const m = companyDocNo.match(/\((\d+)\)/g);
+  if (!m) return '';
+  const revs = m.map(r => parseInt(r.replace(/[()]/g, '')));
+  return String(Math.max(...revs));
+}
+
 function seedDocuments() {
-  return DOC_MASTER.map(m => ({
-    id: `doc_${m.docNo}`,
-    doc_no: m.docNo,
-    type: m.type,
-    title: m.title,
-    category: m.category,
-    version: '',
-    status: 'draft',
-    owner: '',
-    approver: '',
-    issued_date: '',
-    revised_date: '',
-    next_review: '',
-    purpose: m.purpose,
-    scope: '',
-    body: '',
-    company_doc_no: m.companyDocNo || '',
-    iso_refs: m.isoRefs || [],
-    law_refs: m.lawRefs || [],
-    revisions: [],
-    attachments: [],
-    updated_at: '',
-    updated_by: ''
-  }));
+  return DOC_MASTER.map(m => {
+    const hasDoc = !!m.companyDocNo;
+    const isForm = m.type === 'form';
+    return {
+      id: `doc_${m.docNo}`,
+      doc_no: m.docNo,
+      type: m.type,
+      title: m.title,
+      category: m.category,
+      version: hasDoc ? docDefaultVersion(m.companyDocNo) : (isForm ? '1' : ''),
+      status: (hasDoc || isForm) ? 'approved' : 'draft',
+      owner: '',
+      approver: '',
+      issued_date: '',
+      revised_date: '',
+      next_review: '',
+      purpose: m.purpose,
+      scope: '',
+      body: '',
+      company_doc_no: m.companyDocNo || '',
+      iso_refs: m.isoRefs || [],
+      law_refs: m.lawRefs || [],
+      revisions: [],
+      attachments: [],
+      updated_at: '',
+      updated_by: ''
+    };
+  });
 }
 
 /* ---------------- 로드 ---------------- */
@@ -637,8 +649,50 @@ export async function loadAll() {
       console.warn('[SHMS] 원격 조회 실패 — 로컬 캐시로 표시합니다.', e);
     }
   }
+  migrateDocStatus();
   state.loaded = true;
   emit();
+}
+
+function migrateDocStatus() {
+  const MIG_KEY = 'shms.doc_migration_v2';
+  try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
+  const existingNos = new Set(state.documents.map(d => d.doc_no));
+  let changed = false;
+  DOC_MASTER.forEach(m => {
+    if (!existingNos.has(m.docNo)) {
+      const hasDoc = !!m.companyDocNo;
+      const isForm = m.type === 'form';
+      state.documents.push({
+        id: `doc_${m.docNo}`, doc_no: m.docNo, type: m.type, title: m.title,
+        category: m.category, version: hasDoc ? docDefaultVersion(m.companyDocNo) : (isForm ? '1' : ''),
+        status: (hasDoc || isForm) ? 'approved' : 'draft',
+        owner: '', approver: '', issued_date: '', revised_date: '', next_review: '',
+        purpose: m.purpose, scope: '', body: '',
+        company_doc_no: m.companyDocNo || '',
+        iso_refs: m.isoRefs || [], law_refs: m.lawRefs || [],
+        revisions: [], attachments: [], updated_at: '', updated_by: ''
+      });
+      changed = true;
+    }
+  });
+  state.documents.forEach(d => {
+    const m = DOC_MASTER.find(x => x.docNo === d.doc_no);
+    if (!m) return;
+    if (d.status === 'draft') {
+      const hasDoc = !!m.companyDocNo;
+      const isForm = m.type === 'form';
+      if (hasDoc || isForm) {
+        d.status = 'approved';
+        if (!d.version) d.version = hasDoc ? docDefaultVersion(m.companyDocNo) : '1';
+        changed = true;
+      }
+    }
+    if (!d.company_doc_no && m.companyDocNo) { d.company_doc_no = m.companyDocNo; changed = true; }
+    if (!d.version && m.companyDocNo) { d.version = docDefaultVersion(m.companyDocNo); changed = true; }
+  });
+  if (changed) persistAll();
+  try { localStorage.setItem(MIG_KEY, String(Date.now())); } catch (_) {}
 }
 
 function persistAll() {
