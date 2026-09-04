@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260904_merge';
+} from './data/frameworks.js?v=20260904_hide';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260904_merge';
+} from './core.js?v=20260904_hide';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -448,7 +448,7 @@ export function bindDashboardEvents(root, openItem) {
 
 /* ---------------- 법령/ISO 이행관리 목록 ---------------- */
 
-const listFilter = { q: '', status: 'all', group: 'all' };
+const listFilter = { q: '', status: 'all', group: 'all', hideNa: true };
 
 export function renderCompliance(fw) {
   const F = FRAMEWORKS[fw];
@@ -459,6 +459,7 @@ export function renderCompliance(fw) {
 
   const filtered = items.filter(i => {
     const r = getRecord(i.id, half);
+    if (listFilter.hideNa && listFilter.status !== 'na' && (r.status || 'none') === 'na') return false;
     if (listFilter.status !== 'all' && (r.status || 'none') !== listFilter.status) return false;
     if (listFilter.group !== 'all' && i.group !== listFilter.group) return false;
     if (listFilter.q) {
@@ -498,6 +499,9 @@ export function renderCompliance(fw) {
       <button data-s="all" class="${listFilter.status === 'all' ? 'active' : ''}">전체</button>
       ${STATUS_ORDER.map(s => `<button data-s="${s}" class="${listFilter.status === s ? 'active' : ''}">${STATUS[s].label}</button>`).join('')}
     </div>
+    <label class="hide-na-toggle" title="해당없음 항목을 목록에서 숨깁니다">
+      <input type="checkbox" id="cHideNa" ${listFilter.hideNa ? 'checked' : ''}><span>해당없음 숨기기</span>
+    </label>
     <div style="flex:1"></div>
     <button class="btn" id="cPrint">🖨️ 이행현황 인쇄</button>
   </div>
@@ -923,6 +927,7 @@ export function openItemDrawer(itemId, onSaved) {
             ${linkedDocs.map(d => `<span class="tag doc">${esc(d.docNo)} ${esc(d.title)}</span>`).join('')}
           </div>
           ${item.linkedApp ? `<div class="linked-app"><a class="btn sm" href="${esc(item.linkedApp.url)}" target="_blank" rel="noopener">관련 앱에서 확인 ↗</a></div>` : ''}
+          ${(item.reportLinks || []).length ? `<div class="report-links"><span class="ref-icon">📄</span>${item.reportLinks.map(l => `<a class="btn sm" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')}</div>` : ''}
         </div>
         <div class="ref-box ref-evidence">
           <div class="t"><span class="ref-icon">03</span>권장 증빙</div>
@@ -1199,6 +1204,9 @@ export function bindComplianceEvents(root, rerender) {
     listFilter.status = b.dataset.s; rerender();
   });
 
+  const hna = $('#cHideNa', root);
+  if (hna) hna.addEventListener('change', e => { listFilter.hideNa = e.target.checked; rerender(); });
+
   const pr = $('#cPrint', root);
   if (pr) pr.addEventListener('click', () => window.print());
 
@@ -1219,4 +1227,4 @@ export function bindComplianceEvents(root, rerender) {
   });
 }
 
-export function resetFilter() { listFilter.q = ''; listFilter.status = 'all'; listFilter.group = 'all'; }
+export function resetFilter() { listFilter.q = ''; listFilter.status = 'all'; listFilter.group = 'all'; listFilter.hideNa = true; }
