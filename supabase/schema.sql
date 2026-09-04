@@ -134,6 +134,7 @@ create table if not exists public.shms_documents (
   purpose      text default '',
   scope        text default '',
   body         text default '',                    -- 본문 (수기)
+  company_doc_no text default '',                  -- 회사 문서번호 (예: AAD-HSHT-P-2022-001(4))
   iso_refs     jsonb default '[]'::jsonb,
   law_refs     jsonb default '[]'::jsonb,
   revisions    jsonb default '[]'::jsonb,          -- 제·개정 이력
@@ -143,6 +144,7 @@ create table if not exists public.shms_documents (
 );
 create unique index if not exists shms_documents_docno_idx on public.shms_documents (doc_no);
 alter table public.shms_documents add column if not exists attachments jsonb not null default '[]'::jsonb;
+alter table public.shms_documents add column if not exists company_doc_no text default '';
 
 -- ── 4. 이행 점검 기록 ──────────────────────────────────────
 create table if not exists public.shms_inspections (

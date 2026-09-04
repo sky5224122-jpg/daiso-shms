@@ -13,3 +13,6 @@ cloudflare/attachment-worker/wrangler.toml
 
 # 실제 운영 키가 들어간 config — 필요 시 주석 해제해서 사용
 # config.js
+
+# 원본 심사 대응 자료 압축본 (대용량, 필요한 파일만 docs/reports 등으로 개별 등록)
+*.zip
