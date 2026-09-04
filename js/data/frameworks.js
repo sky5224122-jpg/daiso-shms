@@ -821,5 +821,5 @@ export const ALL_ITEMS = [...MSSA_ITEMS, ...OSHA_ITEMS, ...ISO_ITEMS];
 export const FRAMEWORKS = {
   mssa:{ key:'mssa', label:'중대재해처벌법', short:'중처법', items:MSSA_ITEMS, color:'var(--brand-red)', icon:'⚖️' },
   osha:{ key:'osha', label:'산업안전보건법', short:'산안법', items:OSHA_ITEMS, color:'var(--brand-navy)', icon:'📕' },
-  iso: { key:'iso',  label:'ISO 45001:2018', short:'ISO', items:ISO_ITEMS, color:'#0f766e', icon:'🌐' }
+  iso: { key:'iso',  label:'국제인증기준(ISO 45001)', short:'ISO', items:ISO_ITEMS, color:'#0f766e', icon:'🌐' }
 };

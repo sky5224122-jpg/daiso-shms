@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260904_drwr';
+} from './data/frameworks.js?v=20260904_isoterm';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260904_drwr';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260904_drwr';
+} from './core.js?v=20260904_isoterm';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260904_isoterm';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -39,14 +39,14 @@ export function renderDocuments() {
     <div class="i">📁</div>
     <div><b>안전보건 문서체계</b> — 매뉴얼(1단계) → 절차서(2단계) → 지침서(3단계) → 양식·기록(4단계)의 4단계 구조입니다.
     문서를 클릭하면 <b>목적·적용범위·본문을 직접 작성</b>하고 제·개정 이력을 남길 수 있습니다.
-    ISO 45001 심사에서는 이 계층구조와 개정이력이 핵심 확인 대상입니다.</div>
+    인증심사에서는 이 계층구조와 개정이력이 핵심 확인 대상입니다.</div>
   </div>
 
   <div class="grid g4" style="margin-bottom:18px">
     ${kpi({ title:'📁 전체 문서', value:s.total, unit:'건', desc:'마스터에 등록된 안전보건 문서' })}
     ${kpi({ title:'✅ 제정·승인 완료', value:s.approved, unit:'건', tone:'green', pct:s.pct, desc:`구축률 ${s.pct}%` })}
     ${kpi({ title:'📝 작성 필요', value:s.total - s.approved, unit:'건', tone:'orange', desc:'초안·검토중 상태 문서' })}
-    ${kpi({ title:'📐 절차서', value:(s.by.procedure?.approved ?? 0), unit:`/${s.by.procedure?.total ?? 0}`, tone:'blue', desc:'ISO 45001 필수 프로세스 문서' })}
+    ${kpi({ title:'📐 절차서', value:(s.by.procedure?.approved ?? 0), unit:`/${s.by.procedure?.total ?? 0}`, tone:'blue', desc:'안전보건관리체계 필수 프로세스 문서' })}
   </div>
 
   <div class="doc-layout">
@@ -413,7 +413,7 @@ function openInspDrawer(rec, rerender) {
       <div class="fld"><label>점검 구분</label>
         <select class="inp" id="iKind">
           ${['중처법 시행령 제4조 반기점검','중처법 시행령 제5조 법령준수 점검','산업안전보건법 자체점검',
-             'ISO 45001 내부심사','정부·외부기관 점검','수급업체 합동점검','기타'].map(k =>
+             '안전보건관리체계 내부심사','정부·외부기관 점검','수급업체 합동점검','기타'].map(k =>
             `<option ${r.kind === k ? 'selected' : ''}>${k}</option>`).join('')}
         </select></div>
       <div class="fld"><label>점검 대상 · 범위</label>
@@ -486,7 +486,7 @@ export function renderCapa() {
   <div class="banner">
     <div class="i">🔧</div>
     <div><b>개선조치(CAPA)</b> — 점검·심사·사고에서 확인된 부적합을 <b>접수 → 원인분석 → 조치 → 효과검증 → 종결</b>까지 추적합니다.
-    ISO 45001 10.2(사건·부적합 및 시정조치)와 중처법 시행령 제5조 제2호의 이행 증빙이 됩니다.</div>
+    국제인증기준 10.2(사건·부적합 및 시정조치)와 중처법 시행령 제5조 제2호의 이행 증빙이 됩니다.</div>
   </div>
 
   <div class="grid g4" style="margin-bottom:18px">
@@ -835,13 +835,13 @@ export function renderAudit() {
   return `
   <div class="banner">
     <div class="i">🌐</div>
-    <div><b>ISO 45001:2018 심사 대응 매트릭스</b> — 심사원이 확인하는 순서대로
+    <div><b>안전보건관리체계 대응 매트릭스</b> — 심사원이 확인하는 순서대로
     <b>요구조항 → 대응 문서 → 이행 증빙 → 관련 법령</b>을 한 표로 정리했습니다.
     이 화면을 그대로 인쇄하면 <b>심사 대응 팩</b>이 됩니다.</div>
   </div>
 
   <div class="grid g4" style="margin-bottom:18px">
-    ${kpi({ title:'🌐 ISO 적합률', value:p.pct, unit:'%', tone:'green', pct:p.pct, desc:`${ISO_ITEMS.length}개 요구사항` })}
+    ${kpi({ title:'🌐 적합률', value:p.pct, unit:'%', tone:'green', pct:p.pct, desc:`${ISO_ITEMS.length}개 요구사항` })}
     ${kpi({ title:'✅ 적합', value:p.counts.done, unit:'건', tone:'green', desc:'이행완료로 기록됨' })}
     ${kpi({ title:'⚠️ 관찰·부적합 위험', value:p.counts.hold + p.counts.none, unit:'건', tone:'red', desc:'보완필요 + 미이행' })}
     ${kpi({ title:'📎 증빙 미기재', value:noEvidence.length, unit:'건', tone:'orange', desc:'증빙자료 항목이 비어 있음' })}
@@ -885,7 +885,7 @@ export function bindAuditEvents(root, rerender, openItem) {
       rows.push([i.code, i.title, (i.docRefs || []).join(' '), r.implementation, r.evidence, r.findings,
                  r.owner, r.last_checked, (STATUS[r.status] || STATUS.none).label]);
     });
-    downloadCsv(rows, `ISO45001_심사대응매트릭스_claude_${new Date().getFullYear()}_${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}.csv`);
+    downloadCsv(rows, `안전보건관리체계_대응매트릭스_claude_${new Date().getFullYear()}_${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}.csv`);
   });
   root.addEventListener('click', e => {
     const it = e.target.closest('[data-item]');

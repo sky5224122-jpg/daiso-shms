@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260904_drwr';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260904_drwr';
+} from './core.js?v=20260904_isoterm';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260904_isoterm';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260904_drwr';
+} from './views-core.js?v=20260904_isoterm';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -22,7 +22,7 @@ import {
   renderBackup, bindBackupEvents,
   renderRestore, bindRestoreEvents,
   renderMemo, bindMemoEvents
-} from './views-ext.js?v=20260904_drwr';
+} from './views-ext.js?v=20260904_isoterm';
 
 /* ---------------- 화면 정의 ---------------- */
 /* roles가 없으면 로그인한 모든 사용자에게 보인다. roles가 있으면 그 권한만 접근할 수 있다. */
@@ -34,9 +34,9 @@ const NAV = [
     { key:'mssa', icon:'⚖️', label:'중대재해처벌법', crumb:'법령 이행관리', title:'중대재해처벌법 시행령 제4조·제5조 이행관리' },
     { key:'osha', icon:'📕', label:'산업안전보건법', crumb:'법령 이행관리', title:'산업안전보건법 주요 의무 이행관리' }
   ]},
-  { group: '국제표준 (ISO 45001)', items: [
-    { key:'iso',   icon:'🌐', label:'요구사항 관리', crumb:'ISO 45001', title:'ISO 45001:2018 요구사항 이행관리' },
-    { key:'audit', icon:'🎯', label:'ISO 45001 대응 매트릭스', crumb:'ISO 45001', title:'ISO 45001 대응 매트릭스' }
+  { group: '안전보건관리체계 요구사항', items: [
+    { key:'iso',   icon:'🌐', label:'요구사항 관리', crumb:'안전보건관리체계', title:'안전보건관리체계 요구사항 이행관리' },
+    { key:'audit', icon:'🎯', label:'안전보건관리체계 대응 매트릭스', crumb:'안전보건관리체계', title:'안전보건관리체계 대응 매트릭스' }
   ]},
   { group: '문서체계', items: [
     { key:'documents', icon:'📁', label:'절차서 · 지침서', crumb:'문서체계', title:'안전보건 문서체계 (매뉴얼·절차서·지침서·양식)' }

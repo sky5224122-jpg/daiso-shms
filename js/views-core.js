@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260904_drwr';
+} from './data/frameworks.js?v=20260904_isoterm';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260904_drwr';
+} from './core.js?v=20260904_isoterm';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -94,7 +94,7 @@ function executiveReportHtml({ half, all, mssa, osha, iso, docs, critical, due, 
         <div class="exec-report-brand"><span>ASUNG DAISO</span><b>SAFETY · HEALTH GOVERNANCE</b></div>
         <div class="exec-report-period">${esc(halfLabel(half))} · 대표이사 보고용</div>
         <div class="exec-report-title">
-          <div><span class="exec-report-kicker">EXECUTIVE BRIEFING</span><h2>안전보건관리체계 이행 종합 보고</h2><p>중대재해처벌법 · 산업안전보건법 · ISO 45001 통합 관리 현황</p></div>
+          <div><span class="exec-report-kicker">EXECUTIVE BRIEFING</span><h2>안전보건관리체계 이행 종합 보고</h2><p>중대재해처벌법 · 산업안전보건법 · 안전보건관리체계 통합 관리 현황</p></div>
           <div class="exec-report-date">보고일<br><b>${esc(reportDate)}</b></div>
         </div>
       </div>
@@ -120,7 +120,7 @@ function executiveReportHtml({ half, all, mssa, osha, iso, docs, critical, due, 
           ${[
             ['중대재해처벌법', '시행령 제4조·제5조 핵심 의무', mssa, 'red'],
             ['산업안전보건법', '주요 법정 의무 조항', osha, 'blue'],
-            ['ISO 45001', '국제표준 4~10장 요구사항', iso, 'green']
+            ['국제인증기준', '안전보건관리체계 국제표준(ISO 45001) 4~10장 요구사항', iso, 'green']
           ].map(([name, desc, stat, cls]) => `<div class="exec-framework ${cls}"><div><span>${esc(name)}</span><p>${esc(desc)}</p></div><strong>${stat.pct}<small>%</small></strong><div class="exec-progress"><i style="width:${Math.max(2, stat.pct)}%"></i></div><em>완료 ${stat.counts.done} · 보완/미이행 ${stat.counts.hold + stat.counts.none}</em></div>`).join('')}
         </div>
       </section>
@@ -170,7 +170,7 @@ function analyticsReportHtml({ half, all, mssa, osha, iso, docs, critical, due, 
     .slice(0, 12);
   const capaByStatus = ['open','analyzing','acting','verifying','closed'].map(key => ({ key, n:state.capa.filter(c => c.status === key).length }));
   const frameworkStats = [
-    ['중대재해처벌법', mssa, '#d92d20'], ['산업안전보건법', osha, '#2b6cb0'], ['ISO 45001', iso, '#0f9d76']
+    ['중대재해처벌법', mssa, '#d92d20'], ['산업안전보건법', osha, '#2b6cb0'], ['국제인증기준', iso, '#0f9d76']
   ];
   const dataUpdated = records.filter(({ record }) => record.updated_at).length;
   const totalCapa = state.capa.length;
@@ -252,7 +252,7 @@ export function renderDashboard() {
   return `
   <div class="banner">
     <div class="i">🏛️</div>
-    <div><b>${esc(halfLabel(half))} 이행 현황</b> — 중대재해처벌법 시행령 제4조·제5조, 산업안전보건법, ISO 45001:2018 요구사항을
+    <div><b>${esc(halfLabel(half))} 이행 현황</b> — 중대재해처벌법 시행령 제4조·제5조, 산업안전보건법, 안전보건관리체계 국제인증기준 요구사항을
     한 화면에서 관리합니다. 각 조항 카드를 클릭하면 <b>이행 현황·담당자·증빙을 직접 작성</b>할 수 있고, 작성 즉시 이행률에 반영됩니다.</div>
   </div>
 
@@ -272,7 +272,7 @@ export function renderDashboard() {
             desc:`시행령 제4조·제5조 ${mssa.total}개 의무` })}
     ${kpi({ title:'📘 산업안전보건법', value:osha.pct, unit:'%', tone:'blue', pct:osha.pct,
             desc:`주요 의무조항 ${osha.total}개` })}
-    ${kpi({ title:'🌐 ISO 45001 적합률', value:iso.pct, unit:'%', tone:'green', pct:iso.pct,
+    ${kpi({ title:'🌐 국제인증기준 적합률', value:iso.pct, unit:'%', tone:'green', pct:iso.pct,
             desc:`4~10장 ${iso.total}개 요구사항` })}
   </div>
 
@@ -288,7 +288,7 @@ export function renderDashboard() {
             desc:`전체 등록 ${state.capa.length}건` })}
   </div>
 
-  <div class="sec-t"><h2>ISO 45001 조항별 이행 수준</h2><div class="l"></div>
+  <div class="sec-t"><h2>국제인증기준 조항별 이행 수준</h2><div class="l"></div>
     <span class="n">이행 현황 레이더 · 조항 4~10장</span></div>
   <div class="card"><div class="card-body">
     <div class="radar-wrap">
@@ -632,7 +632,7 @@ function itemCard(i, half) {
       </div>` : ''}
       ${(i.isoRefs || []).length ? `
       <div class="lrow">
-        <span class="lk lk-iso">🌐 ISO 45001</span>
+        <span class="lk lk-iso">🌐 국제인증기준</span>
         <span class="lv">${i.isoRefs.map(c => `<span class="chip chip-iso">${esc(c)}</span>`).join('')}</span>
       </div>` : ''}
       ${i.penalty ? `
