@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260904_doc';
+} from './data/frameworks.js?v=20260904_merge';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260904_doc';
+} from './core.js?v=20260904_merge';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -931,26 +931,6 @@ export function openItemDrawer(itemId, onSaved) {
       </div>
     </section>
 
-    <section class="drawer-section">
-      <div class="drawer-section-head">
-        <div><span class="section-kicker">EXECUTION</span><h4>실행 내역</h4></div>
-        <span class="section-caption">실행자료와 현황을 최신 상태로 유지하세요</span>
-      </div>
-      <div class="fld">
-        <label><span class="field-no">01</span>작성 및 보관자료 목록</label>
-        <textarea class="inp" id="fDocs" style="min-height:96px" placeholder="업무에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
-        ${(item.requiredDocs && item.requiredDocs.length && !r.userDocs) ? `<div class="help info-help">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
-      </div>
-      <div class="fld">
-        <label><span class="field-no">02</span>당사 준비현황</label>
-        <textarea class="inp" id="fCompany" style="min-height:82px" placeholder="현재 준비·이행 상황을 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userStatus || item.companyStatus || ''))}</textarea>
-      </div>
-      <div class="fld">
-        <label><span class="field-no">03</span>증빙자료 목록</label>
-        <textarea class="inp" id="fEvFiles" style="min-height:96px" placeholder="보유 중인 증빙자료 파일명·문서번호를 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userEvidence || (item.evidenceFiles || []).join('\n')))}</textarea>
-      </div>
-    </section>
-
     <section class="drawer-section attachment-section">
       <div class="drawer-section-head">
         <div><span class="section-kicker">EVIDENCE FILES</span><h4>첨부자료 · 외부 링크</h4></div>
@@ -987,7 +967,7 @@ export function openItemDrawer(itemId, onSaved) {
     <section class="drawer-section">
       <div class="drawer-section-head">
         <div><span class="section-kicker">IMPLEMENTATION</span><h4>이행 기록</h4></div>
-        <span class="section-caption">누구나 바로 이해할 수 있도록 구체적으로 작성하세요</span>
+        <span class="section-caption">실행 현황과 증빙을 한 곳에서 관리하세요</span>
       </div>
       <div class="fld-row drawer-meta-fields">
         <div class="fld">
@@ -1015,11 +995,25 @@ export function openItemDrawer(itemId, onSaved) {
         <div class="help">날짜·주체·수량을 포함하면 기록의 완성도가 높아집니다.</div>
       </div>
       <div class="fld">
-        <label><span class="field-no">02</span>보유 증빙자료 <em>문서명 · 보관 위치</em></label>
+        <label><span class="field-no">02</span>당사 준비현황</label>
+        <textarea class="inp" id="fCompany" style="min-height:82px" placeholder="현재 준비·이행 상황을 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userStatus || item.companyStatus || ''))}</textarea>
+      </div>
+      <div class="fld">
+        <label><span class="field-no">03</span>작성 및 보관자료 목록</label>
+        <textarea class="inp" id="fDocs" style="min-height:96px" placeholder="업무에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
+        ${(item.requiredDocs && item.requiredDocs.length && !r.userDocs) ? `<div class="help info-help">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
+      </div>
+      <div class="fld">
+        <label><span class="field-no">04</span>보유 증빙자료 <em>문서명 · 보관 위치</em></label>
         <textarea class="inp" id="fEvi" placeholder="예)&#10;1. 안전보건 경영방침 선언문(대표이사 서명본) — 안전보건팀 문서고 / SHP-02 첨부&#10;2. 매장 게시 사진 376건 — 이행증빙 자료함&#10;3. 이사회 의사록(2026.02.20) — 경영지원팀" ${editable ? '' : 'disabled'}>${esc(r.evidence)}</textarea>
       </div>
       <div class="fld">
-        <label><span class="field-no">03</span>미흡사항 / 개선 필요사항</label>
+        <label><span class="field-no">05</span>증빙자료 파일 목록</label>
+        <textarea class="inp" id="fEvFiles" style="min-height:96px" placeholder="보유 중인 증빙자료 파일명·문서번호를 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userEvidence || (item.evidenceFiles || []).join('\n')))}</textarea>
+        ${(item.evidenceFiles && item.evidenceFiles.length && !r.userEvidence) ? `<div class="help info-help">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
+      </div>
+      <div class="fld">
+        <label><span class="field-no">06</span>미흡사항 / 개선 필요사항</label>
         <textarea class="inp" id="fFind" style="min-height:88px" placeholder="점검 결과 확인된 부족한 부분과 보완 계획을 기재합니다. (없으면 '해당없음')" ${editable ? '' : 'disabled'}>${esc(r.findings)}</textarea>
         <div class="help">미흡사항은 개선조치(CAPA) 화면에서 별도 등록해 종결까지 관리하는 것을 권장합니다.</div>
       </div>
