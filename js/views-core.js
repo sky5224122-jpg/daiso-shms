@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260904_iso';
+} from './data/frameworks.js?v=20260904_fix';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260904_iso';
+} from './core.js?v=20260904_fix';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -403,11 +403,11 @@ export function renderDashboard() {
       { label:'위험성평가 v6', sub:'', icon:'📋', url:'https://asung-daiso-risk-v6.web.app' },
       { label:'위험성평가 v7', sub:'', icon:'📋', url:'https://asung-daiso-risk-v7.web.app' },
       { label:'비상대응훈련', sub:'', icon:'🚨', url:'https://asung-daiso-emergency-training.web.app' }
-    ].map(a => \`<a href="\${a.url}" target="_blank" rel="noopener" class="card" style="text-decoration:none;cursor:pointer;text-align:center;padding:16px 8px;transition:box-shadow .15s">
-      <div style="font-size:24px;margin-bottom:4px">\${a.icon}</div>
-      <div style="font-weight:800;font-size:12.5px;color:var(--fg)">\${a.label}</div>
-      \${a.sub ? \`<div style="font-size:10.5px;color:var(--faint);margin-top:1px">\${a.sub}</div>\` : ''}
-    </a>\`).join('')}
+    ].map(a => `<a href="${a.url}" target="_blank" rel="noopener" class="card" style="text-decoration:none;cursor:pointer;text-align:center;padding:16px 8px;transition:box-shadow .15s">
+      <div style="font-size:24px;margin-bottom:4px">${a.icon}</div>
+      <div style="font-weight:800;font-size:12.5px;color:var(--fg)">${a.label}</div>
+      ${a.sub ? `<div style="font-size:10.5px;color:var(--faint);margin-top:1px">${a.sub}</div>` : ''}
+    </a>`).join('')}
   </div>`;
 }
 

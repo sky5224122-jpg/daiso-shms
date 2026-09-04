@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260904_iso';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260904_iso';
+} from './core.js?v=20260904_fix';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260904_fix';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260904_iso';
+} from './views-core.js?v=20260904_fix';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -22,7 +22,7 @@ import {
   renderBackup, bindBackupEvents,
   renderRestore, bindRestoreEvents,
   renderMemo, bindMemoEvents
-} from './views-ext.js?v=20260904_iso';
+} from './views-ext.js?v=20260904_fix';
 
 /* ---------------- 화면 정의 ---------------- */
 /* roles가 없으면 로그인한 모든 사용자에게 보인다. roles가 있으면 그 권한만 접근할 수 있다. */
