@@ -686,9 +686,6 @@ export const ISO_ITEMS = [
    4. 안전보건 문서체계 (매뉴얼 → 절차서 → 지침서 → 양식)
 ------------------------------------------------------------ */
 export const DOC_MASTER = [
-  { docNo:'SHM-00', type:'manual', title:'안전보건경영 매뉴얼', category:'최상위',
-    purpose:'ISO 45001 및 중대재해처벌법·산업안전보건법 요구사항을 충족하는 안전보건경영시스템의 전체 구조와 운영 원칙을 규정한다.',
-    isoRefs:['4.3','4.4','5.1','5.2'], lawRefs:['MSSA-4-1'] },
   { docNo:'SHM-01', type:'manual', title:'안전보건관리규정', category:'최상위', companyDocNo:'AAD-HSHT-M-2021-002(7)',
     purpose:'사업장 안전보건 관리에 관한 조직·역할·의무 등 전반적 사항을 규정하는 최상위 관리규정이다.',
     isoRefs:['5.1','5.2','5.3'], lawRefs:['MSSA-4-1','OSHA-025'] },

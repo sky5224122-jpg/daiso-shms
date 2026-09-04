@@ -3,7 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_docst';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_body';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260904_body';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -580,7 +581,7 @@ function seedDocuments() {
       next_review: '',
       purpose: m.purpose,
       scope: '',
-      body: '',
+      body: DOC_BODIES.get(m.docNo) || '',
       company_doc_no: m.companyDocNo || '',
       iso_refs: m.isoRefs || [],
       law_refs: m.lawRefs || [],
@@ -655,10 +656,14 @@ export async function loadAll() {
 }
 
 function migrateDocStatus() {
-  const MIG_KEY = 'shms.doc_migration_v2';
+  const MIG_KEY = 'shms.doc_migration_v3';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
-  const existingNos = new Set(state.documents.map(d => d.doc_no));
   let changed = false;
+  // SHM-00 삭제 (DOC_MASTER에서 제거됨)
+  const delIdx = state.documents.findIndex(d => d.doc_no === 'SHM-00');
+  if (delIdx >= 0) { state.documents.splice(delIdx, 1); changed = true; }
+  // DOC_MASTER에 있지만 state.documents에 없는 문서 추가
+  const existingNos = new Set(state.documents.map(d => d.doc_no));
   DOC_MASTER.forEach(m => {
     if (!existingNos.has(m.docNo)) {
       const hasDoc = !!m.companyDocNo;
@@ -668,7 +673,7 @@ function migrateDocStatus() {
         category: m.category, version: hasDoc ? docDefaultVersion(m.companyDocNo) : (isForm ? '1' : ''),
         status: (hasDoc || isForm) ? 'approved' : 'draft',
         owner: '', approver: '', issued_date: '', revised_date: '', next_review: '',
-        purpose: m.purpose, scope: '', body: '',
+        purpose: m.purpose, scope: '', body: DOC_BODIES.get(m.docNo) || '',
         company_doc_no: m.companyDocNo || '',
         iso_refs: m.isoRefs || [], law_refs: m.lawRefs || [],
         revisions: [], attachments: [], updated_at: '', updated_by: ''
@@ -690,6 +695,7 @@ function migrateDocStatus() {
     }
     if (!d.company_doc_no && m.companyDocNo) { d.company_doc_no = m.companyDocNo; changed = true; }
     if (!d.version && m.companyDocNo) { d.version = docDefaultVersion(m.companyDocNo); changed = true; }
+    if (!d.body && DOC_BODIES.has(d.doc_no)) { d.body = DOC_BODIES.get(d.doc_no); changed = true; }
   });
   if (changed) persistAll();
   try { localStorage.setItem(MIG_KEY, String(Date.now())); } catch (_) {}
