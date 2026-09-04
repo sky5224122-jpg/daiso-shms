@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260903_doc44';
+} from './data/frameworks.js?v=20260904_iso';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260903_doc44';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260903_doc44';
+} from './core.js?v=20260904_iso';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260904_iso';
 
 const confirmDel = msg => window.confirm(msg);
 
