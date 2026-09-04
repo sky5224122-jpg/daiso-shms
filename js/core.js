@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_body';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260904_body';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_drwr';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260904_drwr';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -656,13 +656,13 @@ export async function loadAll() {
 }
 
 function migrateDocStatus() {
-  const MIG_KEY = 'shms.doc_migration_v3';
+  const MIG_KEY = 'shms.doc_migration_v4';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   let changed = false;
   // SHM-00 삭제 (DOC_MASTER에서 제거됨)
   const delIdx = state.documents.findIndex(d => d.doc_no === 'SHM-00');
   if (delIdx >= 0) { state.documents.splice(delIdx, 1); changed = true; }
-  // DOC_MASTER에 있지만 state.documents에 없는 문서 추가
+  // DOC_MASTER에 있지만 state.documents에 없는 문서 추가 (SHP-24·SHP-25 등)
   const existingNos = new Set(state.documents.map(d => d.doc_no));
   DOC_MASTER.forEach(m => {
     if (!existingNos.has(m.docNo)) {
@@ -684,18 +684,20 @@ function migrateDocStatus() {
   state.documents.forEach(d => {
     const m = DOC_MASTER.find(x => x.docNo === d.doc_no);
     if (!m) return;
-    if (d.status === 'draft') {
-      const hasDoc = !!m.companyDocNo;
-      const isForm = m.type === 'form';
-      if (hasDoc || isForm) {
-        d.status = 'approved';
-        if (!d.version) d.version = hasDoc ? docDefaultVersion(m.companyDocNo) : '1';
-        changed = true;
-      }
+    // 마스터 데이터 제목으로 동기화 (실제 회사 문서 제목과 일치시킴)
+    if (d.title !== m.title) { d.title = m.title; changed = true; }
+    const hasDoc = !!m.companyDocNo;
+    const isForm = m.type === 'form';
+    if (hasDoc || isForm) {
+      if (d.status === 'draft') { d.status = 'approved'; changed = true; }
+      if (!d.company_doc_no && m.companyDocNo) { d.company_doc_no = m.companyDocNo; changed = true; }
+      if (!d.version && m.companyDocNo) { d.version = docDefaultVersion(m.companyDocNo); changed = true; }
+      if (!d.body && DOC_BODIES.has(d.doc_no)) { d.body = DOC_BODIES.get(d.doc_no); changed = true; }
+    } else if (d.company_doc_no) {
+      // 이전에 companyDocNo가 잘못 매핑되었던 문서(SHP-12·SHP-17 등)를 초안 상태로 되돌림
+      d.company_doc_no = ''; d.version = ''; d.body = ''; d.status = 'draft';
+      changed = true;
     }
-    if (!d.company_doc_no && m.companyDocNo) { d.company_doc_no = m.companyDocNo; changed = true; }
-    if (!d.version && m.companyDocNo) { d.version = docDefaultVersion(m.companyDocNo); changed = true; }
-    if (!d.body && DOC_BODIES.has(d.doc_no)) { d.body = DOC_BODIES.get(d.doc_no); changed = true; }
   });
   if (changed) persistAll();
   try { localStorage.setItem(MIG_KEY, String(Date.now())); } catch (_) {}

@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260904_body';
+} from './data/frameworks.js?v=20260904_drwr';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260904_body';
+} from './core.js?v=20260904_drwr';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -655,13 +655,23 @@ function itemCard(i, half) {
 
 /* ---------------- 수기 작성 드로어 ---------------- */
 
+const DRAWER_ZOOM_KEY = 'shms.drawerZoom';
+const DRAWER_WIDTH_KEY = 'shms.drawerWidth';
+const ZOOM_MIN = 0.85, ZOOM_MAX = 1.6, ZOOM_STEP = 0.1;
+
 let drawerEls = null;
 function ensureDrawer() {
   if (drawerEls) return drawerEls;
   const mask = el('div', { class: 'drawer-mask', id: 'drawerMask' });
   const drawer = el('div', { class: 'drawer', id: 'drawer' });
   drawer.innerHTML = `
+    <div class="drawer-resize" id="drawerResize" title="드래그하여 폭 조절"></div>
     <div class="drawer-head" style="position:relative">
+      <div class="drawer-zoom" id="drawerZoom">
+        <button type="button" id="dZoomOut" title="글자 작게">가−</button>
+        <span id="dZoomPct">100%</span>
+        <button type="button" id="dZoomIn" title="글자 크게">가+</button>
+      </div>
       <button class="x" id="drawerX" title="닫기">✕</button>
       <div class="code" id="dCode"></div>
       <h3 id="dTitle"></h3>
@@ -677,6 +687,50 @@ function ensureDrawer() {
   mask.addEventListener('click', closeDrawer);
   drawer.querySelector('#drawerX').addEventListener('click', closeDrawer);
   drawer.querySelector('#dCancel').addEventListener('click', closeDrawer);
+
+  // 글꼴 확대/축소 — localStorage에 기억하여 다음에 열 때도 유지
+  let zoom = 1;
+  try { zoom = parseFloat(localStorage.getItem(DRAWER_ZOOM_KEY)) || 1; } catch (_) { /* ignore */ }
+  const zoomPct = drawer.querySelector('#dZoomPct');
+  const applyZoom = () => {
+    drawer.style.setProperty('--drawer-zoom', zoom);
+    zoomPct.textContent = `${Math.round(zoom * 100)}%`;
+  };
+  applyZoom();
+  drawer.querySelector('#dZoomOut').addEventListener('click', () => {
+    zoom = Math.max(ZOOM_MIN, Math.round((zoom - ZOOM_STEP) * 100) / 100);
+    applyZoom();
+    try { localStorage.setItem(DRAWER_ZOOM_KEY, String(zoom)); } catch (_) { /* ignore */ }
+  });
+  drawer.querySelector('#dZoomIn').addEventListener('click', () => {
+    zoom = Math.min(ZOOM_MAX, Math.round((zoom + ZOOM_STEP) * 100) / 100);
+    applyZoom();
+    try { localStorage.setItem(DRAWER_ZOOM_KEY, String(zoom)); } catch (_) { /* ignore */ }
+  });
+
+  // 폭 조절 핸들 — 일반 작성 드로어(.drawer)에서만 동작, 큰 상세 드로어(.drawer-item)는 폭 고정
+  const resizeHandle = drawer.querySelector('#drawerResize');
+  let dragging = false;
+  resizeHandle.addEventListener('mousedown', (e) => {
+    if (drawer.classList.contains('drawer-item')) return;
+    dragging = true;
+    resizeHandle.classList.add('active');
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const w = Math.min(window.innerWidth * 0.96, Math.max(420, window.innerWidth - e.clientX));
+    drawer.style.width = `${Math.round(w)}px`;
+  });
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    resizeHandle.classList.remove('active');
+    document.body.style.userSelect = '';
+    try { localStorage.setItem(DRAWER_WIDTH_KEY, String(parseInt(drawer.style.width, 10))); } catch (_) { /* ignore */ }
+  });
+
   drawerEls = { mask, drawer };
   return drawerEls;
 }
@@ -695,6 +749,9 @@ export function closeDrawer() {
 export function openDrawer(opt) {
   const { mask, drawer } = ensureDrawer();
   drawer.classList.remove('drawer-item');
+  let savedWidth = null;
+  try { savedWidth = parseInt(localStorage.getItem(DRAWER_WIDTH_KEY), 10); } catch (_) { /* ignore */ }
+  drawer.style.width = savedWidth ? `${savedWidth}px` : '';
   drawer.querySelector('#dCode').textContent = opt.code || '';
   drawer.querySelector('#dTitle').textContent = opt.title || '';
   drawer.querySelector('#dFootNote').textContent = '';
@@ -891,6 +948,7 @@ export function openItemDrawer(itemId, onSaved) {
   const attachmentCount = (r.attachments || []).length;
 
   drawer.classList.add('drawer-item');
+  drawer.style.width = '';
   drawer.querySelector('#dCode').textContent = `${item.code} · ${halfLabel(half)}`;
   drawer.querySelector('#dTitle').textContent = item.title;
   drawer.querySelector('#dFootNote').innerHTML = editable
