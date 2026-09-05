@@ -820,6 +820,13 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 8. 기록의 보존
    (기록명 / 보존기간 / 보존부서)`;
 
+/* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
+   원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
+   상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260905_full';
+MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
+OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
+
 export const ALL_ITEMS = [...MSSA_ITEMS, ...OSHA_ITEMS, ...ISO_ITEMS];
 
 export const FRAMEWORKS = {
