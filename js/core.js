@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_618';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260904_618';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260905_seed';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260905_seed';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -651,8 +651,42 @@ export async function loadAll() {
     }
   }
   migrateDocStatus();
+  await seedInitialData();
   state.loaded = true;
   emit();
+}
+
+/* ---------------- 초기 시드 데이터 (한 번만 실행) ----------------
+   docs/seed/shms_seed.json에 담긴 CAPA·점검·조직·메모·심사개요·증빙 초기값을
+   앱에 처음 접속한 사용자에게 자동으로 채워준다. 이미 데이터가 있는 컬렉션은
+   건드리지 않는다. 실명은 부서명·직책으로 마스킹되어 있다.
+   MIG_KEY로 재실행을 방지하며, 다시 채우고 싶으면 v를 올린다.
+------------------------------------------------------------ */
+async function seedInitialData() {
+  const MIG_KEY = 'shms.data_seed_v1';
+  try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
+  try {
+    const url = new URL('../docs/seed/shms_seed.json?v=20260905_seed', import.meta.url);
+    const res = await fetch(url.href);
+    if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
+    const seed = await res.json();
+    const applyIfEmpty = (key, arr) => {
+      if (Array.isArray(arr) && arr.length && !state[key].length) {
+        state[key] = arr;
+        lsSet(key, arr);
+      }
+    };
+    applyIfEmpty('capa',           seed.shms_capa);
+    applyIfEmpty('inspections',    seed.shms_inspections);
+    applyIfEmpty('org',            seed.shms_org);
+    applyIfEmpty('memos',          seed.shms_memos);
+    applyIfEmpty('auditOverview',  seed.shms_audit_overview);
+    applyIfEmpty('evidence',       seed.shms_evidence);
+    try { localStorage.setItem(MIG_KEY, String(Date.now())); } catch (_) { /* ignore */ }
+    console.info('[SHMS] 초기 시드 데이터 적용 완료');
+  } catch (e) {
+    console.warn('[SHMS] 시드 로드 오류(무시하고 계속):', e);
+  }
 }
 
 function migrateDocStatus() {
