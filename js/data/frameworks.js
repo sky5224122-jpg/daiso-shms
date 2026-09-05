@@ -506,9 +506,9 @@ export const OSHA_ITEMS = [
     requirement:'문서별 법정 보존연한을 문서관리대장에 명시하고, 보존기한 도래 시 폐기 심의를 거친다. 전자문서 보존 시 무결성을 확보한다.',
     evidence:['문서관리대장(보존연한 표기)','보존 서류 목록 및 보관 위치','폐기 심의 기록'], cycle:'연 1회', docRefs:['SHP-09'], isoRefs:['7.5.3'], severity:'medium',
     penalty:'과태료 3백만원 이하 (법 제175조)',
-    requiredDocs:[],
-    companyStatus:'[26H1 평가] 문서관리 절차서(SHP-09, AAD-HSHT-P-2022-006(3)/007(4)) 운영 중. 법정 보존기간별 서류목록(위험성평가 3년, 건강진단 5년, 석면 30년 등) 체계화 및 전자문서 보존 현황 정리 필요',
-    evidenceFiles:[] },
+    requiredDocs:['기록관리 절차서 제7조 기록 및 보존 표(문서번호·문서명·보존기간·보존부서)','기록관리대장(AAD-HSHT-F-2022-021)'],
+    companyStatus:'[26H1 평가] ●적정. 기록관리 절차서(SHP-09, AAD-HSHT-P-2022-006(3)·007(4)) 제7조 「기록 및 보존」에 문서번호·문서명·보존기간·보존부서 표와 보존 규정 완비. 기록물 보존기간 최소 10년 이상, 중처법 시행령 관련 안전보건관리체계 이행·개선·산재예방 조치는 시행일부터 5년, 발암성 물질 취급자 건강진단 개인기록부는 30년 보존 규정 반영. 위험성평가·예산집행·작업환경측정·건강진단은 관계 법령이 정한 보존기간 이상 보존. 전자문서는 표준문서 서버에 백업·보관.',
+    evidenceFiles:['SHP-09 기록관리 절차서 제7조 기록 및 보존 표','기록관리대장(AAD-HSHT-F-2022-021)'] },
 
   { id:'OSHA-618', framework:'osha', group:'밀폐공간', code:'안전보건규칙 제618~632조', title:'밀폐공간 안전보건조치',
     clause:'사업주는 밀폐공간에서 근로자에게 작업을 하도록 하는 경우 산소 및 유해가스 농도를 측정하고, 환기·보호구 지급 등 필요한 조치를 하여야 한다.',
@@ -823,7 +823,7 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 /* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
    원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
    상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
-import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260905_full';
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260905_docno';
 MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
 OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
 
