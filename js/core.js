@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_isoterm';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260904_isoterm';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260904_evi';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260904_evi';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',

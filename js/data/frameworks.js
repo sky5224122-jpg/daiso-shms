@@ -174,7 +174,7 @@ export const MSSA_ITEMS = [
     cycle:'반기 1회', docRefs:['SHP-15','SHP-18','SHP-19'], isoRefs:['10.2'], severity:'high',
     requiredDocs:["개선내역 및 조치결과문서"],
     companyStatus:'별도 인력 배치 및 예산 추가 편성에 대한 사항 없음',
-    evidenceFiles:[]
+    evidenceFiles:['26년 상반기 중처법 이행상태평가 보고서(내 조치사항 절 포함)','[본사] 26년 상반기 안전보건 예산집행 내역']
   },
   {
     id:'MSSA-5-3', framework:'mssa', group:'시행령 제5조 · 안전보건 관계 법령 의무이행 관리조치',
@@ -196,7 +196,7 @@ export const MSSA_ITEMS = [
     cycle:'반기 1회', docRefs:['SHP-07'], isoRefs:['7.2'], severity:'medium',
     requiredDocs:["개선 내역 및 조치결과 문서(해당시)","이행결과 관련 문서(해당 행정기관 제출 서류)"],
     companyStatus:'[26H1 평가] 교육 미실시 확인 시 보충교육 즉시 시행. TBM 미참석자 개별 교육 재실시. 관리감독자 반기평가 시 안전보건교육 실시 여부 점검 항목 반영. 26년 상반기 교육 미실시 사유 발생 미확인',
-    evidenceFiles:[]
+    evidenceFiles:['26년 상반기 중처법 이행상태평가 보고서(교육 실시 결과)','[본사] 26년 상반기 중처법 관리감독자 평가']
   }
 ];
 
@@ -229,7 +229,7 @@ export const OSHA_ITEMS = [
     penalty:'과태료 5백만원 이하 (법 제175조)',
     requiredDocs:["관리감독자 지정 보고서","관리감독자 임명장","관리감독자 지정 검토서"],
     companyStatus:'2026년 관리감독자 지정 및 전자결재 상신(파트장/팀장)_3월',
-    evidenceFiles:[] },
+    evidenceFiles:['[본사] 26년 상반기 중처법 관리감독자 평가','[남사] 관리감독자 지정 보고','[안성] 관리감독자 지정명단·지정서'] },
 
   { id:'OSHA-017', framework:'osha', group:'경영책임 · 조직', code:'법 제17~19조', title:'안전관리자·보건관리자·안전보건관리담당자 선임',
     clause:'사업주는 사업장에 안전관리자·보건관리자·안전보건관리담당자를 두어 안전·보건에 관한 기술적인 사항에 관하여 사업주 또는 안전보건관리책임자를 보좌하고 관리감독자에게 지도·조언하도록 하여야 한다.',
@@ -310,7 +310,7 @@ export const OSHA_ITEMS = [
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조); 사망 시 7년 이하 징역 또는 1억원 이하 벌금',
     requiredDocs:[],
     companyStatus:'보건조치 대상: 근골격계 관련 작업, 환경 위생, 폭염한파, 유해화학물질',
-    evidenceFiles:[] },
+    evidenceFiles:['25년 혹서기 물류허브센터 온열질환 대응현황 보고.pdf','25년 물류 허브센터 혹한기 및 화재 안전사고 예방활동 점검 보고.pdf','23년 근골격계 부담작업 유해요인조사 종합보고서.pdf','[남사] 26년 팀별 사용 화학물질 점검 및 개선 결과보고','[남사] 남사센터 화학물질 관리대장'] },
 
   { id:'OSHA-039A', framework:'osha', group:'보건관리', code:'안전보건규칙 제657조', title:'근골격계 유해요인조사',
     clause:'사업주는 근골격계 부담작업에 근로자를 종사하도록 하는 경우 3년마다 유해요인조사를 실시하여야 한다.',
@@ -364,7 +364,7 @@ export const OSHA_ITEMS = [
     penalty:'1년 이하 징역 또는 1천만원 이하 벌금 (법 제170조)',
     requiredDocs:[],
     companyStatus:'[26H1 평가] 매장 인테리어 공사 시 해당 여부 검토. 인테리어팀 도급사 안전서류 체계 관리 중(26년 상반기 적격업체평가 실시). 유해위험방지계획서 제출 대상 공사 해당 시 제출 절차 확인 필요',
-    evidenceFiles:[] },
+    evidenceFiles:['[본사] 26년 상반기 도급 적격업체평가표(인테리어팀)'] },
 
   { id:'OSHA-051', framework:'osha', group:'비상 · 사고대응', code:'법 제51~52조', title:'사업주·근로자의 작업중지권',
     clause:'사업주는 산업재해가 발생할 급박한 위험이 있을 때에는 즉시 작업을 중지시키고 근로자를 작업장소에서 대피시키는 등 필요한 안전보건상의 조치를 한 후 작업을 다시 시작하여야 한다. 근로자도 급박한 위험이 있는 경우 작업을 중지하고 대피할 수 있다.',
@@ -408,7 +408,7 @@ export const OSHA_ITEMS = [
     evidence:['안전보건 정보 제공서','수급인 교육 기록','작업장 유해위험요인 안내서'], cycle:'수시', docRefs:['SHP-12'], isoRefs:['8.1.4'], severity:'high',
     penalty:'과태료 3천만원 이하 (법 제175조)',
     requiredDocs:["도급계약 체결 전 정보제공 문서"],
-    companyStatus:'포탈 사이트에있는자료 넣어주시면 됩니다.(없습니다. 새로만들어야합니다.)',
+    companyStatus:'[26H1 평가] 도급인 안전보건 정보 제공 문서 신규 작성 필요. 인테리어·매장CS·시설관리 각 팀별 도급사 대상 안전보건 정보 제공서 표준화 예정',
     evidenceFiles:[] },
 
   { id:'OSHA-080', framework:'osha', group:'기계·설비 안전', code:'법 제80조', title:'유해위험기계 등의 방호조치',
@@ -427,7 +427,7 @@ export const OSHA_ITEMS = [
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:[],
     companyStatus:'[26H1 평가] 물류센터 유해위험기계기구 설비대장 관리. 남사·부산 지게차·컨베이어·리프트·압력용기 등 설비 안전인증 현황 관리. 자율안전검사 확인서 구비. 매장 화물용리프트 안전검사 대상 관리(26.08.10)',
-    evidenceFiles:[] },
+    evidenceFiles:['[남사] 유해위험기계기구 설비대장','[남사] 자율안전검사 확인서','[부산] 유해위험기계기구 목록표(안전검사)'] },
 
   { id:'OSHA-093', framework:'osha', group:'기계·설비 안전', code:'법 제93조', title:'안전검사 대상 기계 등의 안전검사',
     clause:'유해하거나 위험한 기계·기구·설비로서 대통령령으로 정하는 것을 사용하는 사업주는 안전검사를 받아야 한다.',
@@ -463,7 +463,7 @@ export const OSHA_ITEMS = [
     penalty:'과태료 3백만원 이하 (법 제175조)',
     requiredDocs:["화학물질 경고표시 부착 현황"],
     companyStatus:'염화칼슘 제품에 경고표시 有. 매장별 MSDS 비치 및 확인. 인테리어부 확인 필요',
-    evidenceFiles:[] },
+    evidenceFiles:['다녹스 염화칼슘 관리요령 및 MSDS_2026.pdf','[남사] 남사센터 화학물질 관리대장','[부산] MSDS 관리대장(설비관리팀·시설관리팀)'] },
 
   { id:'OSHA-119', framework:'osha', group:'건축물·석면', code:'법 제119조', title:'석면조사',
     clause:'건축물이나 설비를 철거하거나 해체하려는 자는 해당 건축물이나 설비의 석면 함유 여부를 조사하여야 한다.',
