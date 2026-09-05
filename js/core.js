@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260905_docno';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260905_docno';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260905_teams';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260905_teams';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -666,7 +666,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260905_docno', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260905_teams', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
