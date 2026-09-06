@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260906_final';
+} from './data/frameworks.js?v=20260906_ref';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260906_final';
+} from './core.js?v=20260906_ref';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -448,7 +448,7 @@ export function bindDashboardEvents(root, openItem) {
 
 /* ---------------- 법령/ISO 이행관리 목록 ---------------- */
 
-const listFilter = { q: '', status: 'all', group: 'all', hideNa: true };
+const listFilter = { q: '', status: 'all', group: 'all', hideNa: true, hideRef: true };
 
 export function renderCompliance(fw) {
   const F = FRAMEWORKS[fw];
@@ -459,6 +459,8 @@ export function renderCompliance(fw) {
 
   const filtered = items.filter(i => {
     const r = getRecord(i.id, half);
+    // 법령 원문 참조 조항은 기본으로 숨긴다(이행 대상 아님).
+    if (listFilter.hideRef && i.refOnly) return false;
     if (listFilter.hideNa && listFilter.status !== 'na' && (r.status || 'none') === 'na') return false;
     if (listFilter.status !== 'all' && (r.status || 'none') !== listFilter.status) return false;
     if (listFilter.group !== 'all' && i.group !== listFilter.group) return false;
@@ -502,6 +504,10 @@ export function renderCompliance(fw) {
     <label class="hide-na-toggle" title="해당없음 항목을 목록에서 숨깁니다">
       <input type="checkbox" id="cHideNa" ${listFilter.hideNa ? 'checked' : ''}><span>해당없음 숨기기</span>
     </label>
+    ${items.some(i => i.refOnly) ? `
+    <label class="hide-na-toggle" title="법령 원문 참조 조항(이행 대상 아님)을 숨깁니다">
+      <input type="checkbox" id="cHideRef" ${listFilter.hideRef ? 'checked' : ''}><span>참조 조항 숨기기</span>
+    </label>` : ''}
     <div style="flex:1"></div>
     <button class="btn" id="cPrint">🖨️ 이행현황 인쇄</button>
   </div>
@@ -1265,6 +1271,9 @@ export function bindComplianceEvents(root, rerender) {
   const hna = $('#cHideNa', root);
   if (hna) hna.addEventListener('change', e => { listFilter.hideNa = e.target.checked; rerender(); });
 
+  const href = $('#cHideRef', root);
+  if (href) href.addEventListener('change', e => { listFilter.hideRef = e.target.checked; rerender(); });
+
   const pr = $('#cPrint', root);
   if (pr) pr.addEventListener('click', () => window.print());
 
@@ -1285,4 +1294,4 @@ export function bindComplianceEvents(root, rerender) {
   });
 }
 
-export function resetFilter() { listFilter.q = ''; listFilter.status = 'all'; listFilter.group = 'all'; listFilter.hideNa = true; }
+export function resetFilter() { listFilter.q = ''; listFilter.status = 'all'; listFilter.group = 'all'; listFilter.hideNa = true; listFilter.hideRef = true; }

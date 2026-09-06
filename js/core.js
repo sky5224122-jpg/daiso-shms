@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260906_final';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260906_final';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260906_ref';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260906_ref';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -666,7 +666,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260906_final', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260906_ref', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
@@ -951,14 +951,17 @@ export function deleteBackup(key) {
 /** 이행률: 해당없음(na) 제외, 상태 점수 평균 */
 export function progressOf(items, half = state.half) {
   let sum = 0, n = 0, counts = { done:0, progress:0, hold:0, none:0, na:0 };
-  items.forEach(it => {
+  // refOnly(법령 원문 참조 조항)는 이행 대상이 아니므로 이행률 집계에서 제외한다.
+  const target = items.filter(it => !it.refOnly);
+  target.forEach(it => {
     const r = getRecord(it.id, half);
     const s = r.status || 'none';
     counts[s] = (counts[s] || 0) + 1;
     const score = { done:100, progress:60, hold:30, none:0 }[s];
     if (score !== undefined) { sum += score; n++; }
   });
-  return { pct: n ? Math.round(sum / n) : 0, counts, total: items.length, evaluated: n };
+  return { pct: n ? Math.round(sum / n) : 0, counts, total: target.length, evaluated: n,
+           refCount: items.length - target.length };
 }
 
 /** 기한 임박/초과 항목 */
