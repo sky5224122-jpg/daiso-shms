@@ -470,8 +470,8 @@ export const OSHA_ITEMS = [
     requirement:'건축물 해체·리모델링 전 석면조사를 실시한다. 석면 함유 건축자재가 있는 매장은 관리계획을 수립하고 손상 방지·비산 방지 조치를 한다.',
     evidence:['석면조사 결과보고서','석면 함유 건축물 관리대장','석면 관리계획','비산 방지 조치 기록'], cycle:'수시', docRefs:['SHP-10'], isoRefs:['8.1.2','6.1.2'], severity:'critical',
     penalty:'5년 이하 징역 또는 5천만원 이하 벌금 (법 제169조)',
-    requiredDocs:[],
-    companyStatus:'[26H1 평가] 매장 임차 건물 석면 해당 여부 확인 필요. 인테리어 공사(리모델링·철거) 시 석면조사 실시 절차 확인 필요. 물류센터 석면조사 현황 확인 필요',
+    requiredDocs:['해당없음 판단 근거(사업장 현황 확인서)'],
+    companyStatus:'[26H1 평가] ○해당없음. 전 사업장(본사·매장·물류허브센터) 석면 조사·관리 대상에 해당하지 않음을 확인. 매장은 임차 건물로 건축물 해체·철거 주체가 아니며, 회사가 직접 시행하는 건축물 철거·해체 공사가 없어 법 제119조 석면조사 의무 대상에 해당하지 않음. ※ 향후 회사가 직접 건축물 철거·리모델링을 시행하는 경우 해당 시점에 석면조사를 실시해야 하므로 이 항목을 재검토할 것',
     evidenceFiles:[] },
 
   { id:'OSHA-125', framework:'osha', group:'보건관리', code:'법 제125조', title:'작업환경측정 실시 및 결과 보고·공지',
@@ -479,9 +479,9 @@ export const OSHA_ITEMS = [
     requirement:'해당 유해인자 취급 사업장은 6개월에 1회 이상 측정하고, 결과를 근로자에게 알리며 30일 이내 보고한다. 비해당 시 판단 근거를 남긴다.',
     evidence:['작업환경측정 결과보고서','근로자 공지 증빙','측정 대상 해당 여부 판단서'], cycle:'반기 1회', docRefs:['SHP-20'], isoRefs:['9.1.1'], severity:'medium',
     penalty:'과태료 1천만원 이하 (법 제175조)',
-    requiredDocs:[],
-    companyStatus:'[26H1 평가] 남사센터 화학물질 관리대장 작성·점검(26년). 근골격계부담작업 유해요인조사 결과보고(25년, 남사). 작업환경측정 대상 유해인자 해당 여부 판단서 작성 필요',
-    evidenceFiles:[] },
+    requiredDocs:['해당없음 판단 근거(취급 유해인자 현황 확인서)'],
+    companyStatus:'[26H1 평가] ○해당없음. 전 사업장(본사·매장·물류허브센터)에 시행규칙 별표21의 작업환경측정 대상 유해인자(화학적·물리적·분진 등) 취급 작업이 없어 법 제125조 측정 의무 대상에 해당하지 않음. 물류센터 취급 화학물질은 세척제·염화칼슘 등 일반 소비재 수준으로 MSDS 관리대장(OSHA-110)으로 관리 중. ※ 향후 유해인자 취급 작업이 신설되면 해당 시점에 재검토할 것',
+    evidenceFiles:['[남사] 26년 화학물질 관리대장(측정 대상 유해인자 미해당 확인)','[부산] 설비관리팀·시설관리팀 MSDS 관리대장'] },
 
   { id:'OSHA-128', framework:'osha', group:'보건관리', code:'법 제128조의2', title:'휴게시설 설치·운영',
     clause:'사업주는 근로자가 신체적 피로와 정신적 스트레스를 해소할 수 있도록 휴식시간에 이용할 수 있는 휴게시설을 갖추어야 한다.',
@@ -512,12 +512,12 @@ export const OSHA_ITEMS = [
 
   { id:'OSHA-618', framework:'osha', group:'밀폐공간', code:'안전보건규칙 제618~632조', title:'밀폐공간 안전보건조치',
     clause:'사업주는 밀폐공간에서 근로자에게 작업을 하도록 하는 경우 산소 및 유해가스 농도를 측정하고, 환기·보호구 지급 등 필요한 조치를 하여야 한다.',
-    requirement:'허브센터(남사·부산·안성) 및 본사 저수조 등에 존재하는 밀폐공간(폐수처리조·집수정·저수조·피트·탱크·배관·소화용수조 등)을 파악하고, 작업 전 산소·유해가스 측정·환기를 실시한다. 밀폐공간 출입금지 표지를 부착하고, 비상시 구조 장비를 갖춘다. 밀폐공간 작업허가서를 발행하여 관리한다.',
-    evidence:['밀폐공간 목록(사업장별)','밀폐공간 작업허가서','산소·유해가스 측정 기록','환기 설비 점검 기록','밀폐공간 출입금지 표지 사진','구조 장비 비치 현황','근로자 특별교육 이수 기록'], cycle:'수시', docRefs:['SHP-10','SHP-13','SHI-01','SHI-22'], isoRefs:['8.1.2','8.2'], severity:'critical',
+    requirement:'물류허브센터(남사·부산·안성)의 물탱크(저수조·소화용수조) 청소 작업이 밀폐공간 작업에 해당한다. 작업 전 산소농도(18~23.5%)·유해가스 농도를 측정하고 환기를 실시하며, 밀폐공간 작업허가서를 발행한다. 출입금지 표지를 부착하고 감시인을 배치하며, 송기마스크 등 호흡용 보호구와 구조 장비를 갖춘다. 작업자에게 특별교육을 실시한다. ※ 본사·매장은 밀폐공간 미해당.',
+    evidence:['밀폐공간 목록(물류허브센터 물탱크)','밀폐공간 작업허가서','산소·유해가스 측정 기록','환기 실시 기록','출입금지 표지 사진','감시인 배치 기록','호흡용 보호구·구조 장비 비치 현황','밀폐공간 특별교육 이수 기록','물탱크 청소 위탁 시 수급업체 안전조치 확인'], cycle:'수시', docRefs:['SHP-10','SHP-12','SHP-13','SHI-22'], isoRefs:['8.1.2','8.1.4','8.2'], severity:'critical',
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
-    requiredDocs:['밀폐공간 관리대장(사업장별)','밀폐공간 작업허가서 양식','산소·유해가스 측정장비 관리대장','밀폐공간 근로자 특별교육 자료'],
-    companyStatus:'[26H1 평가] ▲보완. 물류허브센터(남사·부산·안성) 밀폐공간 해당 대상 존재 확인 — 폐수처리 집수정, 소화용수 저수조, 설비 피트 등. 본사는 저수조 한웰(외부업체) 관할. 현재 밀폐공간 통합 관리대장·작업허가서 양식·산소농도 측정장비 점검기록 등 명시적 이행 증빙 미확보 상태로, 하반기 우선 개선과제로 등록 필요: ① 사업장별 밀폐공간 목록 작성 → ② 밀폐공간 출입금지 표지 부착 → ③ 작업허가서 양식·발행 절차 마련 → ④ 산소·유해가스 측정장비 배치 및 점검주기 관리 → ⑤ 밀폐공간 작업자 특별교육 실시(안전보건규칙 별표 5 특별교육 대상)',
-    evidenceFiles:['[남사] 유해위험기계기구 설비대장(피트·집수정 등 밀폐공간 대상 확인 필요)','[부산] 유해위험기계기구 목록표(밀폐공간 항목 별도 관리 필요)','SHI-22 안전작업허가 지침서 — 밀폐공간 작업허가 절차 준용'] }
+    requiredDocs:['밀폐공간 관리대장(물류허브센터 물탱크 목록)','밀폐공간 작업허가서 양식','산소·유해가스 측정장비 관리대장','밀폐공간 특별교육 교안·이수 기록','물탱크 청소 도급 시 안전보건 조치 확인서'],
+    companyStatus:'[26H1 평가] ▲보완 — 대상: 물류허브센터(남사·부산·안성)만 해당 / 본사·매장 ○미해당. 해당 작업은 물탱크(저수조·소화용수조) 청소 작업이며 연 1~2회 정기 실시. 물탱크 청소는 통상 외부 전문업체에 도급하므로 도급인 안전보건조치(법 제63조) 의무가 함께 적용됨. 현재 밀폐공간 관리대장·작업허가서 양식·산소농도 측정 기록 등 명시적 이행 증빙 미확보 상태. [하반기 개선과제] ① 3개 센터 물탱크 목록·위치 작성(밀폐공간 관리대장) ② 물탱크 출입구 밀폐공간 출입금지 표지 부착 ③ 밀폐공간 작업허가서 양식 제정(SHI-22 안전작업허가 지침서에 밀폐공간 절차 추가) ④ 산소농도측정기 배치 또는 청소업체 보유 장비 확인 절차 마련 ⑤ 물탱크 청소 도급계약 시 밀폐공간 안전조치(측정·환기·감시인·송기마스크) 이행 확인 절차 반영 ⑥ 작업 입회 담당자 특별교육 실시',
+    evidenceFiles:['[남사] 물탱크(저수조) 청소 작업 기록 — 확보 필요','[부산] 물탱크(저수조) 청소 작업 기록 — 확보 필요','[안성] 물탱크(저수조) 청소 작업 기록 — 확보 필요','물탱크 청소 위탁업체 안전보건 조치 확인서 — 신규 작성 필요','SHI-22 안전작업허가 지침서 — 밀폐공간 작업허가 절차 추가 필요'] }
 ];
 
 /* ------------------------------------------------------------
@@ -716,7 +716,7 @@ export const DOC_MASTER = [
     purpose:'매장·물류센터 작업의 안전기준 수립과 일상점검·관리 위계 적용 방법을 규정한다.', isoRefs:['8.1.1','8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHP-11', companyDocNo:'AAD-HSHT-P-2022-009(4)', type:'procedure', title:'변경관리 절차서', category:'운용',
     purpose:'신규 오픈·리뉴얼·설비/인력/법규 변경 시 사전 안전성 검토 방법을 규정한다.', isoRefs:['8.1.3'], lawRefs:[] },
-  { docNo:'SHP-12', type:'procedure', title:'도급·용역·위탁 안전보건 관리 절차서', category:'운용',
+  { docNo:'SHP-12', type:'procedure', title:'도급용역위탁 안전보건 평가기준 및 관리 절차서', category:'운용', companyDocNo:'AAD-HSHT-P-2026-010(2)',
     purpose:'수급인 평가·계약·현장관리·합동점검 및 안전보건협의체 운영을 규정한다.', isoRefs:['8.1.4'], lawRefs:['MSSA-4-9','OSHA-062'] },
   { docNo:'SHP-13', companyDocNo:'AAD-HSHT-P-2022-011(6)', type:'procedure', title:'비상시 대비 및 대응 절차서', category:'운용',
     purpose:'중대산업재해 및 화재·정전 등 비상상황의 대응조치·구호조치·추가피해 방지조치와 훈련 방법을 규정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8','OSHA-051','OSHA-054'] },
@@ -732,10 +732,10 @@ export const DOC_MASTER = [
     purpose:'사고·아차사고·부적합의 조사, 근본원인 분석, 시정조치 및 효과성 검증 방법을 규정한다.', isoRefs:['10.1','10.2','10.3'], lawRefs:['OSHA-054'] },
   { docNo:'SHP-19', companyDocNo:'AAD-HSHT-P-2026-005(0)', type:'procedure', title:'안전보건 예산 편성 및 집행 관리 절차서', category:'지원',
     purpose:'안전보건 예산의 편성·집행·실적관리 방법을 규정한다.', isoRefs:['7.1'], lawRefs:['MSSA-4-4'] },
-  { docNo:'SHP-20', type:'procedure', title:'근로자 건강관리 절차서', category:'운용',
+  { docNo:'SHP-20', type:'procedure', title:'건강진단 및 유해요인 관리 절차서', category:'운용', companyDocNo:'AAD-HSHT-P-2026-025(1)',
     purpose:'건강진단, 작업환경측정, 근골격계 유해요인조사 및 사후관리 방법을 규정한다.', isoRefs:['8.1.2','9.1.1'], lawRefs:['OSHA-125','OSHA-129','OSHA-039'] },
   { docNo:'SHP-21', type:'procedure', title:'고객응대근로자 보호 절차서', category:'운용',
-    purpose:'폭언 등으로 인한 건강장해 예방조치와 피해 근로자 보호 절차를 규정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-041'] },
+    purpose:'폭언 등으로 인한 건강장해 예방조치와 피해 근로자 보호 절차를 규정한다. ※ 감정노동 보호는 SHI-09(AAD-HSHT-G-2026-014) 지침서로 운영 중.', isoRefs:['8.1.2'], lawRefs:['OSHA-041'] },
   { docNo:'SHP-22', type:'procedure', title:'지속적 개선 절차서', category:'개선', companyDocNo:'AAD-HSHT-P-2022-016(3)',
     purpose:'안전보건경영시스템의 적절성·충족성·효과성을 지속적으로 개선하는 방법을 규정한다.', isoRefs:['10.3'], lawRefs:[] },
   { docNo:'SHP-23', type:'procedure', title:'산업안전보건위원회 운영 절차서', category:'리더십', companyDocNo:'AAD-HSHT-P-2026-020(0)',
@@ -748,13 +748,13 @@ export const DOC_MASTER = [
   { docNo:'SHI-01', companyDocNo:'AAD-HSHT-G-2022-006(4)', type:'instruction', title:'작업장 안전기준 지침서', category:'현장', purpose:'점장(관리감독자)이 매일 수행하는 안전점검 항목과 방법을 정한다.', isoRefs:['8.1.1'], lawRefs:['OSHA-016'] },
   { docNo:'SHI-02', companyDocNo:'AAD-HSHT-G-2022-007(4)', type:'instruction', title:'중량물 취급 지침서', category:'현장', purpose:'롤테이너 이동·적재 및 중량물 취급 시 부딪힘·끼임·근골격계 재해 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-039'] },
   { docNo:'SHI-03', companyDocNo:'AAD-HSHT-G-2022-008(4)', type:'instruction', title:'고소작업 안전 지침서', category:'현장', purpose:'진열대 상단 작업 등 사다리 사용 시 추락 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
-  { docNo:'SHI-04', type:'instruction', title:'화재예방 및 소방시설 관리 지침서', category:'현장', purpose:'소방시설 점검, 피난통로 확보, 화기취급 관리 방법을 정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
-  { docNo:'SHI-05', type:'instruction', title:'미끄러짐·넘어짐 예방 지침서', category:'현장', purpose:'바닥 물기·장애물 제거 및 통로 확보 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
+  { docNo:'SHI-04', type:'instruction', title:'화기·전기·고소작업 안전 지침서', category:'현장', companyDocNo:'AAD-HSHT-G-2026-024(1)', purpose:'화기취급 작업 안전기준, 소방시설 점검, 피난통로 확보 방법을 정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
+  { docNo:'SHI-05', type:'instruction', title:'매장·물류 동선 및 적치안전 지침서(미끄러짐·넘어짐 예방)', category:'현장', companyDocNo:'AAD-HSHT-G-2026-026(1)', purpose:'바닥 물기·장애물 제거 및 통로 확보 기준을 정한다. ※ SHI-27과 동일 문서로 운영.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-06', companyDocNo:'AAD-HSHT-G-2022-009(4)', type:'instruction', title:'감전재해 예방 지침서', category:'현장', purpose:'분전반·조명·냉난방 설비의 안전점검과 감전 예방 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-07', companyDocNo:'AAD-HSHT-G-2022-004(4)', type:'instruction', title:'보호구 지급 지침서', category:'현장', purpose:'작업별 보호구 선정·지급·착용·폐기 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-08', companyDocNo:'AAD-HSHT-G-2022-019(5)', type:'instruction', title:'현장 응급처치 관리 지침서', category:'비상', purpose:'재해자 발생 시 응급처치, 119 신고, 병원 인계 절차를 정한다.', isoRefs:['8.2'], lawRefs:['MSSA-4-8'] },
-  { docNo:'SHI-09', type:'instruction', title:'고객 폭언·폭행 대응 지침서', category:'현장', purpose:'감정노동 상황 발생 시 현장 대응 단계와 보고 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-041'] },
-  { docNo:'SHI-10', type:'instruction', title:'물류센터 지게차·컨베이어 안전 지침서', category:'물류', purpose:'물류센터 하역장비 운용 시 안전기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
+  { docNo:'SHI-09', type:'instruction', title:'직무스트레스 및 감정노동 보호 지침서', category:'현장', companyDocNo:'AAD-HSHT-G-2026-014(1)', purpose:'감정노동 상황 발생 시 현장 대응 단계와 보고 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-041'] },
+  { docNo:'SHI-10', type:'instruction', title:'지게차 등 운반기계 안전 지침서', category:'물류', companyDocNo:'AAD-HSHT-G-2026-020(1)', purpose:'물류센터 하역장비(지게차·컨베이어 등) 운용 시 안전기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-11', companyDocNo:'AAD-HSHT-G-2026-025(0)', type:'instruction', title:'폭염·한랭 및 계절위험 대응 지침서', category:'보건', purpose:'온열·한랭 질환 예방을 위한 물·그늘·휴식 관리 기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-039'] },
   { docNo:'SHI-12', companyDocNo:'AAD-HSHT-G-2022-018(3)', type:'instruction', title:'작업중지 요청 지침서', category:'비상', purpose:'급박한 위험 시 근로자·관리감독자의 작업중지 판단과 재개 승인 절차를 정한다.', isoRefs:['7.3','8.2'], lawRefs:['OSHA-051'] },
   { docNo:'SHI-13', type:'instruction', title:'표준안전작업수칙 지침서', category:'현장', companyDocNo:'AAD-HSHT-G-2022-001(4)', purpose:'각 작업별 표준안전작업수칙을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
@@ -823,7 +823,7 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 /* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
    원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
    상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
-import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260906_ref';
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260906_na';
 MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
 OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
 
