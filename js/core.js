@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_refseparate1';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_refseparate1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_evidencelink1';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_evidencelink1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -654,7 +654,7 @@ export async function loadAll() {
   }
   migrateDocStatus();
   await seedInitialData();
-  seedRecordsFromCompanyStatus();
+  await seedRecordsFromCompanyStatus();
   state.loaded = true;
   emit();
 }
@@ -666,26 +666,25 @@ export async function loadAll() {
    - 심사·점검 시 각 조항 화면에서 "이행 현황"·"증빙자료 목록"이 비어 보이지 않도록 함.
    - MIG_KEY로 재실행을 방지하되, companyStatus가 갱신되면 그때 v를 올려 재적용.
 --------------------------------------------------------------- */
-function seedRecordsFromCompanyStatus() {
-  const MIG_KEY = 'shms.records_seed_v1';
-  const recCount = Object.keys(state.records || {}).length;
-  // MIG_KEY 세팅되었어도 실제 records가 없으면(원격 초기화 등) 재시드한다.
-  try { if (localStorage.getItem(MIG_KEY) && recCount > 0) return; } catch (_) { return; }
+async function seedRecordsFromCompanyStatus() {
+  const MIG_KEY = 'shms.records_seed_v2';
+  try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   const half = state.half;
   let changed = 0;
+  const changedRows = [];
   ALL_ITEMS.forEach(it => {
     if (it.refOnly) return;                       // 참조 조항은 제외
     if (!it.companyStatus && !(it.evidenceFiles || []).length) return;
     const key = recordKey(it.id, half);
     const cur = state.records[key];
-    // 이미 사용자가 뭔가 작성한 경우 건드리지 않음
-    if (cur && (cur.implementation || cur.userStatus || cur.userDocs || cur.userEvidence || (cur.attachments || []).length)) return;
-    // status 자동 판정: '●적정' → done, '해당없음' → na, '▲보완' → hold, 그 외 → progress
-    let status = 'progress';
+    // 기존 작성내용은 유지하고, 비어 있는 기준자료·참고 링크만 보강한다.
+    let status = cur?.status || 'progress';
     const s = it.companyStatus || '';
-    if (/●적정/.test(s) && !/▲보완/.test(s)) status = 'done';
-    else if (/해당없음|○해당없음/.test(s)) status = 'na';
-    else if (/▲보완/.test(s)) status = 'hold';
+    if (!cur) {
+      if (/●적정/.test(s) && !/▲보완/.test(s)) status = 'done';
+      else if (/해당없음|○해당없음/.test(s)) status = 'na';
+      else if (/▲보완/.test(s)) status = 'hold';
+    }
     // reportLinks를 attachments(kind:link)로 변환
     const links = (it.reportLinks || []).map(l => ({
       kind: 'link',
@@ -694,23 +693,36 @@ function seedRecordsFromCompanyStatus() {
       note: '앱 내 등록된 보고서',
       date: today()
     }));
-    state.records[key] = {
+    const existingEvidence = String(cur?.userEvidence || '').split('\n').map(x => x.trim()).filter(Boolean);
+    const evidenceLines = [...existingEvidence];
+    for (const line of (it.evidenceFiles || [])) if (line && !evidenceLines.includes(line)) evidenceLines.push(line);
+    const existingAttachments = Array.isArray(cur?.attachments) ? [...cur.attachments] : [];
+    const attachmentUrls = new Set(existingAttachments.map(a => a.url).filter(Boolean));
+    for (const link of links) if (!attachmentUrls.has(link.url)) { existingAttachments.push(link); attachmentUrls.add(link.url); }
+    const next = {
       ...(cur || {}),
       item_id: it.id, half,
       status,
-      implementation: it.companyStatus || '',
-      userStatus:     it.companyStatus || '',
-      userDocs:       (it.requiredDocs || []).join('\n'),
-      userEvidence:   (it.evidenceFiles || []).join('\n'),
-      attachments:    [...(cur?.attachments || []), ...links],
+      implementation: cur?.implementation || it.companyStatus || '',
+      userStatus:     cur?.userStatus || it.companyStatus || '',
+      userDocs:       cur?.userDocs || (it.requiredDocs || []).join('\n'),
+      userEvidence:   evidenceLines.join('\n'),
+      attachments:    existingAttachments,
       updated_at: new Date().toISOString(),
-      updated_by: '앱 시드 데이터'
+      updated_by: cur?.updated_by || '기준자료 자동 연결'
     };
-    changed++;
+    const before = JSON.stringify(cur || null);
+    if (JSON.stringify(next) !== before) { state.records[key] = next; changed++; changedRows.push(next); }
   });
   if (changed > 0) {
     lsSet('records', state.records);
+    let remoteOk = true;
+    if (conn.mode === 'supabase') {
+      const results = await Promise.all(changedRows.map(row => remoteUpsert(TABLES.records, recordToRemote(row), 'item_id,half')));
+      remoteOk = results.every(result => result?.ok !== false);
+    }
     console.info(`[SHMS] 이행기록 시드 ${changed}건 자동 반영`);
+    if (conn.mode === 'supabase' && !remoteOk) return;
   }
   try { localStorage.setItem(MIG_KEY, String(Date.now())); } catch (_) {}
 }
@@ -725,7 +737,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260907_refseparate1', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260907_evidencelink1', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
