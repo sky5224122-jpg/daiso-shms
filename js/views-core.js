@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260907_datesync1';
+} from './data/frameworks.js?v=20260907_guestwrite1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260907_datesync1';
+} from './core.js?v=20260907_guestwrite1';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -251,7 +251,7 @@ export function renderDashboard() {
 
   const isGuest = state.user?.role === 'guest';
   return `
-  ${isGuest ? '<div class="guest-banner" style="margin:12px 0">게스트(심사위원) 열람 모드 — 각 조항을 클릭하면 이행 현황·증빙자료를 확인할 수 있습니다. 📄 보고서 링크를 클릭하면 실제 증빙 파일이 열립니다.</div>' : ''}
+  ${isGuest ? '<div class="guest-banner" style="margin:12px 0">게스트 공동작성 계정 — 자료 조회·등록·수정과 첨부파일 등록·열람이 가능합니다. 삭제는 마스터 관리자만 할 수 있습니다.</div>' : ''}
   <div class="banner">
     <div class="i">🏛️</div>
     <div><b>${esc(halfLabel(half))} 이행 현황</b> — 중대재해처벌법 시행령 제4조·제5조, 산업안전보건법, 안전보건관리체계 국제인증기준 요구사항을
@@ -967,7 +967,7 @@ export function openItemDrawer(itemId, onSaved) {
 
   const isGuest = state.user?.role === 'guest';
   drawer.querySelector('#dBody').innerHTML = `
-    ${isGuest ? '<div class="guest-banner">게스트 열람 모드 — 아래 📄 보고서 링크를 클릭하면 증빙자료를 확인할 수 있습니다</div>' : ''}
+    ${isGuest ? '<div class="guest-banner">게스트 공동작성 계정 — 이행 내용과 첨부자료를 등록·수정할 수 있습니다. 삭제는 마스터 관리자만 할 수 있습니다.</div>' : ''}
     <div class="drawer-summary">
       <div class="drawer-summary-item"><span>이행 상태</span><strong class="tone-${esc(r.status || 'none')}">${esc(currentStatus.label)}</strong></div>
       <div class="drawer-summary-item"><span>점검 주기</span><strong>${esc(item.cycle)}</strong></div>

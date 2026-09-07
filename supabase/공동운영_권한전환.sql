@@ -30,7 +30,12 @@ set search_path = public
 as $$
 begin
   insert into public.shms_profiles (id, email, name, role)
-  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'name', new.email), 'safety')
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'name', new.email),
+    case when lower(split_part(new.email, '@', 1)) in ('guest01','guest02','guest03') then 'guest' else 'safety' end
+  )
   on conflict (id) do nothing;
   return new;
 end;

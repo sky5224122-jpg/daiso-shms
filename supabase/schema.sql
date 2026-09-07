@@ -19,7 +19,7 @@ create table if not exists public.shms_profiles (
   email      text,
   name       text,
   dept       text,
-  -- master | safety | head : 작성·수정 가능
+  -- master | safety | head | guest : 작성·수정 가능
   -- auditor | part | store | ref : 읽기 전용
   role       text not null default 'safety',
   created_at timestamptz not null default now()
@@ -51,7 +51,11 @@ as $$
 begin
   insert into public.shms_profiles (id, login_id, email, name, role)
   values (new.id, lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))), new.email,
-          coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'login_id', new.email), 'safety')
+          coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'login_id', new.email),
+          case
+            when lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))) in ('guest01','guest02','guest03') then 'guest'
+            else 'safety'
+          end)
   on conflict (id) do nothing;
   return new;
 end;
@@ -86,7 +90,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.shms_profiles p
-    where p.id = auth.uid() and p.role in ('master', 'safety', 'head')
+    where p.id = auth.uid() and p.role in ('master', 'safety', 'head', 'guest')
   );
 $$;
 
