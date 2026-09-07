@@ -5,16 +5,16 @@
 
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
-  DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES, documentDisplayTitle
-} from './data/frameworks.js?v=20260907_evidencelink1';
+  DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES, documentDisplayTitle, documentSourceFiles
+} from './data/frameworks.js?v=20260907_docpdf1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260907_evidencelink1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260907_evidencelink1';
+} from './core.js?v=20260907_docpdf1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260907_docpdf1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -121,6 +121,7 @@ function openDocDrawer(docId, rerender) {
   const d = state.documents.find(x => x.id === docId);
   if (!d) return;
   const editable = canEdit();
+  const sourceFiles = documentSourceFiles(d);
   const isoTitles = (d.iso_refs || []).map(c => {
     const it = ISO_ITEMS.find(i => i.code === c || i.code.split('~')[0] === c);
     return it ? `${c} ${it.title}` : c;
@@ -159,6 +160,7 @@ function openDocDrawer(docId, rerender) {
       </div>
       <div class="fld"><label>문서명</label>
         <input class="inp" id="gTitle" value="${esc(d.title)}" ${editable ? '' : 'disabled'}></div>
+      ${sourceFiles.length ? `<div class="fld"><label>승인 원본 PDF</label><div class="report-links">${sourceFiles.map(name => `<a class="btn sm" href="docs/documents/${encodeURIComponent(name)}" target="_blank" rel="noopener">📄 ${esc(name)} ↗</a>`).join('')}</div><small style="color:var(--text-3)">압축파일과 지정된 안전보건관리규정에서 확인한 원본 파일명입니다.</small></div>` : ''}
       <div class="fld-row">
         <div class="fld"><label>분류</label>
           <input class="inp" id="gCat" value="${esc(d.category || '')}" ${editable ? '' : 'disabled'}></div>

@@ -1,3 +1,5 @@
+import { DOCUMENT_SOURCE_FILES } from './document-files.js?v=20260907_docpdf1';
+
 /* ============================================================
    법령 · 국제표준 기준 데이터 (Compliance Framework Master)
    - MSSA : 중대재해 처벌 등에 관한 법률 (중처법)
@@ -811,11 +813,20 @@ export function documentDisplayTitle(doc) {
   const title = String(doc.title || master?.title || '').trim();
   const companyNo = String(doc.company_doc_no || doc.companyDocNo || master?.companyDocNo || '').trim();
   const type = doc.type || master?.type;
+  const sourceFiles = documentSourceFiles(doc);
+  if (sourceFiles.length && ['procedure', 'instruction', 'manual'].includes(type)) return sourceFiles.join(' / ');
   if (!title) return companyNo;
   if (companyNo && ['procedure', 'instruction', 'manual'].includes(type)) {
     return `${companyNo} ${title}`;
   }
   return title;
+}
+
+export function documentSourceFiles(doc) {
+  const master = DOC_MASTER.find(m => m.docNo === doc?.doc_no || m.docNo === doc?.docNo);
+  const companyNo = String(doc?.company_doc_no || doc?.companyDocNo || master?.companyDocNo || '').trim();
+  const keys = companyNo.split(',').map(v => v.trim().replace(/\(\d+\)$/, '')).filter(Boolean);
+  return [...new Set(keys.flatMap(key => DOCUMENT_SOURCE_FILES[key] || []))];
 }
 
 /* 절차서 본문 기본 목차 — 수기 작성 시 시작 템플릿 */
@@ -854,7 +865,7 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 /* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
    원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
    상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
-import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260907_evidencelink1';
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260907_docpdf1';
 MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
 OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
 
