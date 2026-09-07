@@ -5,13 +5,13 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER, documentDisplayTitle
-} from './data/frameworks.js?v=20260907_doctitles1';
+} from './data/frameworks.js?v=20260907_refseparate1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260907_doctitles1';
+} from './core.js?v=20260907_refseparate1';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -995,7 +995,6 @@ export function openItemDrawer(itemId, onSaved) {
             ${linkedDocs.map(d => { const label = documentDisplayTitle({ doc_no: d.docNo, title: d.title, company_doc_no: d.companyDocNo, type: d.type }); return `<span class="tag doc">${esc(d.docNo)} ${esc(label)}</span>`; }).join('')}
           </div>
           ${item.linkedApp ? `<div class="linked-app"><a class="btn sm" href="${esc(item.linkedApp.url)}" target="_blank" rel="noopener">관련 앱에서 확인 ↗</a></div>` : ''}
-          ${(item.reportLinks || []).length ? `<div class="report-links"><span class="ref-icon">📄</span>${item.reportLinks.map(l => `<a class="btn sm" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')}</div>` : ''}
         </div>
         <div class="ref-box ref-evidence">
           <div class="t"><span class="ref-icon">03</span>권장 증빙</div>
@@ -1009,6 +1008,7 @@ export function openItemDrawer(itemId, onSaved) {
         <div><span class="section-kicker">EVIDENCE FILES</span><h4>첨부자료 · 외부 링크</h4></div>
         <span class="attach-count">${attachmentCount}건 등록</span>
       </div>
+      ${(item.reportLinks || []).length ? `<div class="report-links" style="margin:0 0 12px"><span class="ref-icon">📄</span><span style="font-weight:800;color:var(--text-2);margin-right:4px">기준 참고자료</span>${item.reportLinks.map(l => `<a class="btn sm" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')}</div>` : ''}
       <div class="attach-list" id="fAttachList">
         ${(r.attachments || []).map((a, i) => attachmentRowHtml(a, i, editable)).join('')}
         ${!(r.attachments || []).length ? '<div class="attach-empty"><span>＋</span><strong>등록된 첨부자료가 없습니다</strong><small>아래에서 파일 또는 외부 링크를 추가하세요</small></div>' : ''}
