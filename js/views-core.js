@@ -4,14 +4,14 @@
 
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
-  STATUS, STATUS_ORDER, CYCLES, DOC_MASTER
-} from './data/frameworks.js?v=20260907_orgchart3';
+  STATUS, STATUS_ORDER, CYCLES, DOC_MASTER, documentDisplayTitle
+} from './data/frameworks.js?v=20260907_doctitles1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260907_orgchart3';
+} from './core.js?v=20260907_doctitles1';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -636,7 +636,7 @@ function itemCard(i, half) {
       ${linkedDocs.length ? `
       <div class="lrow">
         <span class="lk lk-doc">📁 관련문서</span>
-        <span class="lv">${linkedDocs.map(d => `<span class="chip chip-doc" title="${esc(d.title || '')}">${esc(d.docNo)}<em>${esc((d.title || '').slice(0, 22))}</em></span>`).join('')}</span>
+        <span class="lv">${linkedDocs.map(d => { const label = documentDisplayTitle({ doc_no: d.docNo, title: d.title, company_doc_no: d.companyDocNo, type: d.type }); return `<span class="chip chip-doc" title="${esc(label)}">${esc(d.docNo)}<em>${esc(label.slice(0, 22))}</em></span>`; }).join('')}</span>
       </div>` : ''}
       ${(i.isoRefs || []).length ? `
       <div class="lrow">
@@ -992,7 +992,7 @@ export function openItemDrawer(itemId, onSaved) {
             <span class="tag">점검주기 ${esc(item.cycle)}</span>
             ${(item.isoRefs || []).map(c => `<span class="tag iso">ISO ${esc(c)}</span>`).join('')}
             ${(item.lawRefs || []).map(c => `<span class="tag law">${esc(c)}</span>`).join('')}
-            ${linkedDocs.map(d => `<span class="tag doc">${esc(d.docNo)} ${esc(d.title)}</span>`).join('')}
+            ${linkedDocs.map(d => { const label = documentDisplayTitle({ doc_no: d.docNo, title: d.title, company_doc_no: d.companyDocNo, type: d.type }); return `<span class="tag doc">${esc(d.docNo)} ${esc(label)}</span>`; }).join('')}
           </div>
           ${item.linkedApp ? `<div class="linked-app"><a class="btn sm" href="${esc(item.linkedApp.url)}" target="_blank" rel="noopener">관련 앱에서 확인 ↗</a></div>` : ''}
           ${(item.reportLinks || []).length ? `<div class="report-links"><span class="ref-icon">📄</span>${item.reportLinks.map(l => `<a class="btn sm" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')}</div>` : ''}

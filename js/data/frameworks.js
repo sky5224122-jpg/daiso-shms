@@ -802,6 +802,22 @@ export const DOC_MASTER = [
   { docNo:'SHF-12', type:'form', title:'안전보건 예산 편성·집행 대장', category:'양식', purpose:'예산 편성과 집행 실적을 기록한다.', isoRefs:['7.1'], lawRefs:['MSSA-4-4'] }
 ];
 
+// 문서체계 전 화면에서 사용하는 표준 표시명.
+// 회사 문서번호가 있는 절차서·지침서는 실제 문서 식별에 필요한 번호를
+// 제목 앞에 함께 표시하고, 문서번호가 없는 초안·양식은 기존 제목을 유지한다.
+export function documentDisplayTitle(doc) {
+  if (!doc) return '';
+  const master = DOC_MASTER.find(m => m.docNo === doc.doc_no || m.docNo === doc.docNo);
+  const title = String(doc.title || master?.title || '').trim();
+  const companyNo = String(doc.company_doc_no || doc.companyDocNo || master?.companyDocNo || '').trim();
+  const type = doc.type || master?.type;
+  if (!title) return companyNo;
+  if (companyNo && ['procedure', 'instruction', 'manual'].includes(type)) {
+    return `${companyNo} ${title}`;
+  }
+  return title;
+}
+
 /* 절차서 본문 기본 목차 — 수기 작성 시 시작 템플릿 */
 export const DOC_BODY_TEMPLATE = `1. 목 적
    (본 절차서를 제정한 목적을 기술)
@@ -838,7 +854,7 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 /* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
    원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
    상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
-import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260907_orgchart3';
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260907_doctitles1';
 MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
 OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
 

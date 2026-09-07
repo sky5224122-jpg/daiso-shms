@@ -5,16 +5,16 @@
 
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
-  DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260907_orgchart3';
+  DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES, documentDisplayTitle
+} from './data/frameworks.js?v=20260907_doctitles1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260907_orgchart3';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260907_orgchart3';
+} from './core.js?v=20260907_doctitles1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260907_doctitles1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -105,7 +105,7 @@ function docCard(d) {
       <span class="st ${st.cls}">${st.label}</span>
       ${canDelete() ? `<button class="btn sm" data-del-doc="${esc(d.id)}">삭제</button>` : ''}
     </div>
-    <h4>${esc(d.title)}</h4>
+    <h4>${esc(documentDisplayTitle(d))}</h4>
     <div style="font-size:11.8px;color:var(--text-2);line-height:1.65;
       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(d.purpose || '목적이 작성되지 않았습니다.')}</div>
     <div class="m">
@@ -133,7 +133,7 @@ function openDocDrawer(docId, rerender) {
 
   openDrawer({
     code: `${d.company_doc_no || d.doc_no} · ${DOC_TYPES[d.type]?.label || d.type}`,
-    title: d.title,
+    title: documentDisplayTitle(d),
     editable,
     body: `
       ${(isoTitles.length || lawTitles.length) ? `
@@ -905,7 +905,7 @@ export function renderAudit() {
       return `<tr data-item="${esc(i.id)}" style="cursor:pointer">
         <td><span class="tag iso">${esc(i.code)}</span></td>
         <td class="cell-title">${esc(i.title)}</td>
-        <td>${docs.length ? docs.map(d => `<div style="margin-bottom:3px"><span class="tag doc">${esc(d.docNo)}</span> ${esc(d.title.slice(0, 16))}</div>`).join('') : '<span style="color:var(--faint)">—</span>'}</td>
+        <td>${docs.length ? docs.map(d => { const label = documentDisplayTitle({ doc_no: d.docNo, title: d.title, company_doc_no: d.companyDocNo, type: d.type }); return `<div style="margin-bottom:3px"><span class="tag doc">${esc(d.docNo)}</span> ${esc(label.slice(0, 28))}</div>`; }).join('') : '<span style="color:var(--faint)">—</span>'}</td>
         <td style="line-height:1.6">${r.implementation ? esc(r.implementation.slice(0, 160)) + (r.implementation.length > 160 ? '…' : '') : '<span style="color:var(--bad);font-weight:700">미작성 — 심사 지적 위험</span>'}
           ${r.evidence ? `<div class="cell-sub">📎 ${esc(r.evidence.slice(0, 70))}</div>` : ''}</td>
         <td>${laws.length ? laws.map(l => `<div><span class="tag law">${esc(l.code)}</span></div>`).join('') : '<span style="color:var(--faint)">—</span>'}</td>
