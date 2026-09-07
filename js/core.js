@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_legalfinal1';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_legalfinal1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles } from './data/frameworks.js?v=20260907_doccontent1';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_doccontent1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -653,10 +653,50 @@ export async function loadAll() {
     }
   }
   migrateDocStatus();
+  await hydrateDocumentContent();
   await seedInitialData();
   await seedRecordsFromCompanyStatus();
   state.loaded = true;
   emit();
+}
+
+/* 승인 문서 본문·식별정보 보강
+   Supabase에 이미 만들어진 문서 행이 마스터 시드보다 우선 병합되므로,
+   기존 행의 body가 비어 있으면 승인 본문을 채워 공동 화면에서도 동일하게
+   보이도록 한다. 사용자가 직접 작성한 본문은 덮어쓰지 않는다. */
+async function hydrateDocumentContent() {
+  const changed = [];
+  state.documents.forEach(doc => {
+    const master = DOC_MASTER.find(m => m.docNo === doc.doc_no);
+    if (!master) return;
+    let dirty = false;
+    if (!doc.title && master.title) { doc.title = master.title; dirty = true; }
+    if (!doc.company_doc_no && master.companyDocNo) { doc.company_doc_no = master.companyDocNo; dirty = true; }
+    if (!doc.version && master.companyDocNo) { doc.version = docDefaultVersion(master.companyDocNo); dirty = true; }
+    const sourceBody = DOC_BODIES.get(doc.doc_no);
+    if (!String(doc.body || '').trim() && sourceBody) { doc.body = sourceBody; dirty = true; }
+    // 본문 추출본이 없는 문서는 승인 원본·목적·식별정보를 먼저 등록해
+    // 빈 문서로 남지 않게 한다. 원문 세부 내용은 상세창의 원본 PDF에서 확인한다.
+    if (!String(doc.body || '').trim() && ['manual', 'procedure', 'instruction'].includes(master.type)) {
+      const files = documentSourceFiles(doc);
+      doc.body = [
+        `문서번호: ${master.companyDocNo || '미정'}`,
+        `문서명: ${master.title}`,
+        `목적: ${master.purpose || '안전보건 업무의 기준과 실행방법을 정한다.'}`,
+        files.length ? `승인 원본 PDF: ${files.join(' / ')}` : '승인 원본 PDF: 현재 등록된 파일 없음',
+        '※ 세부 조항과 서식은 상세창의 승인 원본 PDF를 기준으로 확인하십시오.'
+      ].join('\n');
+      dirty = true;
+    }
+    if (dirty) changed.push(doc);
+  });
+  if (!changed.length) return;
+  persistAll();
+  emit();
+  if (conn.mode === 'supabase' && state.user?.role !== 'guest') {
+    await Promise.allSettled(changed.map(doc => remoteUpsert(TABLES.documents, { ...doc, ...stamp() }, 'id')));
+  }
+  try { localStorage.setItem('shms.doc_content_hydration_v1', String(Date.now())); } catch (_) { /* ignore */ }
 }
 
 /* ---------------- 이행기록 자동 시드 (companyStatus 기반) ----------------
@@ -737,7 +777,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260907_legalfinal1', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260907_doccontent1', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
