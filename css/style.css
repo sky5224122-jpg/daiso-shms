@@ -670,7 +670,7 @@ table.tbl td.num{font-family:var(--font-num);font-weight:800;text-align:right}
 .org-chart-lead::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:43px;background:#9aabc2}
 .org-chart-role{display:block;margin-bottom:4px;color:#c7d8f0;font-size:11px;font-weight:700}
 .org-chart-lead strong{font-size:18px}
-.org-chart-branches{position:relative;display:grid;grid-template-columns:1.35fr 1fr;gap:28px}
+.org-chart-branches{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:28px}
 .org-chart-branches::before{content:"";position:absolute;left:25%;right:25%;top:-22px;height:2px;background:#9aabc2}
 .org-chart-branch{position:relative;padding:18px;border:1px solid #d8e2f1;border-radius:15px;background:#fff}
 .org-chart-branch::before{content:"";position:absolute;left:50%;bottom:100%;width:2px;height:23px;background:#9aabc2}
