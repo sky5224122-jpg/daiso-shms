@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260906_int';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260906_int';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260906_ev2';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260906_ev2';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -652,8 +652,65 @@ export async function loadAll() {
   }
   migrateDocStatus();
   await seedInitialData();
+  seedRecordsFromCompanyStatus();
   state.loaded = true;
   emit();
+}
+
+/* ---------------- 이행기록 자동 시드 (companyStatus 기반) ----------------
+   각 항목의 companyStatus(회사 이행 현황 평가)와 evidenceFiles(증빙 목록)를
+   현재 반기(state.half) records에 자동 반영한다.
+   - 이미 사용자가 작성한 records는 건드리지 않는다.
+   - 심사·점검 시 각 조항 화면에서 "이행 현황"·"증빙자료 목록"이 비어 보이지 않도록 함.
+   - MIG_KEY로 재실행을 방지하되, companyStatus가 갱신되면 그때 v를 올려 재적용.
+--------------------------------------------------------------- */
+function seedRecordsFromCompanyStatus() {
+  const MIG_KEY = 'shms.records_seed_v1';
+  const recCount = Object.keys(state.records || {}).length;
+  // MIG_KEY 세팅되었어도 실제 records가 없으면(원격 초기화 등) 재시드한다.
+  try { if (localStorage.getItem(MIG_KEY) && recCount > 0) return; } catch (_) { return; }
+  const half = state.half;
+  let changed = 0;
+  ALL_ITEMS.forEach(it => {
+    if (it.refOnly) return;                       // 참조 조항은 제외
+    if (!it.companyStatus && !(it.evidenceFiles || []).length) return;
+    const key = recordKey(it.id, half);
+    const cur = state.records[key];
+    // 이미 사용자가 뭔가 작성한 경우 건드리지 않음
+    if (cur && (cur.implementation || cur.userStatus || cur.userDocs || cur.userEvidence || (cur.attachments || []).length)) return;
+    // status 자동 판정: '●적정' → done, '해당없음' → na, '▲보완' → hold, 그 외 → progress
+    let status = 'progress';
+    const s = it.companyStatus || '';
+    if (/●적정/.test(s) && !/▲보완/.test(s)) status = 'done';
+    else if (/해당없음|○해당없음/.test(s)) status = 'na';
+    else if (/▲보완/.test(s)) status = 'hold';
+    // reportLinks를 attachments(kind:link)로 변환
+    const links = (it.reportLinks || []).map(l => ({
+      kind: 'link',
+      name: l.label,
+      url: l.url,
+      note: '앱 내 등록된 보고서',
+      date: today()
+    }));
+    state.records[key] = {
+      ...(cur || {}),
+      item_id: it.id, half,
+      status,
+      implementation: it.companyStatus || '',
+      userStatus:     it.companyStatus || '',
+      userDocs:       (it.requiredDocs || []).join('\n'),
+      userEvidence:   (it.evidenceFiles || []).join('\n'),
+      attachments:    [...(cur?.attachments || []), ...links],
+      updated_at: new Date().toISOString(),
+      updated_by: '앱 시드 데이터'
+    };
+    changed++;
+  });
+  if (changed > 0) {
+    lsSet('records', state.records);
+    console.info(`[SHMS] 이행기록 시드 ${changed}건 자동 반영`);
+  }
+  try { localStorage.setItem(MIG_KEY, String(Date.now())); } catch (_) {}
 }
 
 /* ---------------- 초기 시드 데이터 (한 번만 실행) ----------------
@@ -666,7 +723,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260906_int', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260906_ev2', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
