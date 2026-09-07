@@ -363,6 +363,12 @@ table.tbl td.num{font-family:var(--font-num);font-weight:800;text-align:right}
   background:repeating-linear-gradient(135deg,#fafbfd,#fafbfd 9px,#f4f6fa 9px,#f4f6fa 18px);
   color:var(--faint);font-style:italic;border-left-color:var(--line-strong);text-align:center;padding:16px 13px;
 }
+.structured-text{display:grid;gap:6px}
+.structured-line{padding-left:0;line-height:1.72}
+.structured-line.heading{margin-top:3px;font-weight:900;color:var(--brand-navy)}
+.structured-line.list{padding-left:8px}
+.structured-empty{color:var(--faint);font-style:italic}
+.structured-preview{margin:0 0 8px;padding:11px 13px;border:1px solid #d6deea;border-left:3px solid #5279b8;border-radius:9px;background:#f7f9fc;color:var(--text-2);font-size:12px;line-height:1.7}
 
 /* 팩트 그리드 */
 .item-facts{

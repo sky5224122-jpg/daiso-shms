@@ -5,15 +5,38 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER, documentDisplayTitle
-} from './data/frameworks.js?v=20260907_doccontent1';
+} from './data/frameworks.js?v=20260907_evidenceformat1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260907_doccontent1';
+} from './core.js?v=20260907_evidenceformat1';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
+
+// 저장된 원문은 보존하고 화면에서만 문장·항목을 나누어 표시합니다.
+function readableTextParts(value) {
+  const raw = String(value || '').replace(/\r\n?/g, '\n').trim();
+  if (!raw) return [];
+  return raw
+    .replace(/\s+(?=\[(?:현황|개선|조치|평가)\])/g, '\n\n')
+    .replace(/\s+(?=[①②③④⑤⑥⑦⑧⑨⑩])/g, '\n')
+    .replace(/다\.\s+/g, '다.\n')
+    .split(/\n+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function readableTextHtml(value, empty = '작성된 내용이 없습니다.') {
+  const parts = readableTextParts(value);
+  if (!parts.length) return `<div class="structured-empty">${esc(empty)}</div>`;
+  return `<div class="structured-text">${parts.map(part => {
+    const isHeading = /^\[(?:현황|개선|조치|평가)\]/.test(part);
+    const isList = /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(part);
+    return `<div class="structured-line${isHeading ? ' heading' : ''}${isList ? ' list' : ''}">${esc(part)}</div>`;
+  }).join('')}</div>`;
+}
 
 /* ---------------- 공용 조각 ---------------- */
 
@@ -621,7 +644,7 @@ function itemCard(i, half) {
         <div class="item-block-t"><span class="ic">✍️</span>이행 현황
           ${r.implementation ? '<span class="mini-ok">작성됨</span>' : '<span class="mini-no">미작성</span>'}</div>
         <div class="item-note ${r.implementation ? '' : 'empty'}">${
-          r.implementation ? esc(r.implementation) : '이행 현황이 아직 작성되지 않았습니다. 카드를 클릭해 작성하세요.'}</div>
+          r.implementation ? readableTextHtml(r.implementation) : '이행 현황이 아직 작성되지 않았습니다. 카드를 클릭해 작성하세요.'}</div>
       </div>
     </div>
 
@@ -883,7 +906,7 @@ export function createAttachmentManager(root, { attachments = [], editable = fal
     root.querySelector('#xAttachLinkBtn')?.addEventListener('click', () => {
       const urlEl = root.querySelector('#xAttachUrl');
       const url = attachmentUrl(urlEl.value);
-      if (!url) { toast('http 또는 https 형식의 올바른 링크를 입력해 주세요.', 'bad'); urlEl.focus(); return; }
+      if (!url) { toast('웹 주소(http/https) 또는 앱 내부 문서 경로를 입력해 주세요.', 'bad'); urlEl.focus(); return; }
       list.push({
         id: uid('att'), kind: 'link', url,
         name: root.querySelector('#xAttachLinkName').value.trim() || url,
@@ -1069,6 +1092,7 @@ export function openItemDrawer(itemId, onSaved) {
       </div>
       <div class="fld">
         <label><span class="field-no">02</span>당사 준비현황</label>
+        <div class="structured-preview" id="fCompanyPreview">${readableTextHtml((r.userStatus || item.companyStatus || ''), '현재 준비·이행 상황이 입력되면 이곳에 문단별로 표시됩니다.')}</div>
         <textarea class="inp" id="fCompany" style="min-height:82px" placeholder="현재 준비·이행 상황을 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userStatus || item.companyStatus || ''))}</textarea>
       </div>
       <div class="fld">
@@ -1132,6 +1156,10 @@ export function openItemDrawer(itemId, onSaved) {
   }
 
   if (editable) {
+    drawer.querySelector('#fCompany')?.addEventListener('input', e => {
+      const preview = drawer.querySelector('#fCompanyPreview');
+      if (preview) preview.innerHTML = readableTextHtml(e.target.value, '현재 준비·이행 상황이 입력되면 이곳에 문단별로 표시됩니다.');
+    });
     drawer.querySelector('#fAttachFileBtn')?.addEventListener('click', async () => {
       const fileEl = drawer.querySelector('#fAttachFile');
       const file = fileEl.files?.[0];
@@ -1166,7 +1194,7 @@ export function openItemDrawer(itemId, onSaved) {
     drawer.querySelector('#fAttachLinkBtn')?.addEventListener('click', () => {
       const urlEl = drawer.querySelector('#fAttachUrl');
       const url = attachmentUrl(urlEl.value);
-      if (!url) { toast('http 또는 https 형식의 올바른 링크를 입력해 주세요.', 'bad'); urlEl.focus(); return; }
+      if (!url) { toast('웹 주소(http/https) 또는 앱 내부 문서 경로를 입력해 주세요.', 'bad'); urlEl.focus(); return; }
       attachments.push({
         id: uid('att'), kind: 'link', url,
         name: drawer.querySelector('#fAttachLinkName').value.trim() || url,

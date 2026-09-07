@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles } from './data/frameworks.js?v=20260907_doccontent1';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_doccontent1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles } from './data/frameworks.js?v=20260907_evidenceformat1';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_evidenceformat1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -368,8 +368,11 @@ async function attachmentAuthHeader() {
 }
 
 export function attachmentUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value || /^(javascript|data|file|blob|vbscript):/i.test(value) || value.startsWith('//')) return '';
   try {
-    const u = new URL(String(raw || '').trim());
+    const base = typeof document !== 'undefined' && document.baseURI ? document.baseURI : 'https://localhost/';
+    const u = new URL(value, base);
     return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
   } catch (_) { return ''; }
 }
@@ -450,7 +453,7 @@ function openBlob(blob, name = 'attachment') {
 export async function viewAttachment(att) {
   if (att?.kind === 'link' || att?.url) {
     const url = attachmentUrl(att.url);
-    if (!url) throw new Error('http 또는 https 형식의 올바른 링크가 아닙니다.');
+    if (!url) throw new Error('웹 주소(http/https) 또는 앱 내부 문서 경로가 아닙니다.');
     window.open(url, '_blank', 'noopener,noreferrer');
     return;
   }
@@ -777,7 +780,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260907_doccontent1', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260907_evidenceformat1', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
