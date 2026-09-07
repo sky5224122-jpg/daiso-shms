@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES
-} from './data/frameworks.js?v=20260907_datesync1';
+} from './data/frameworks.js?v=20260907_orgchart1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260907_datesync1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260907_datesync1';
+} from './core.js?v=20260907_orgchart1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260907_orgchart1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -722,6 +722,41 @@ export function renderOrg() {
     <div><b>조직 및 법정 선임 현황</b> — 중처법 시행령 제4조 제2·5·6호와 산업안전보건법 제15~19조의 선임 의무를 관리합니다.
     선임자별 <b>선임일·자격·직무수행 평가</b>를 기록하면 그대로 심사 증빙이 됩니다.</div>
   </div>
+
+  <section class="org-chart-card" aria-label="안전보건팀 업무 조직도">
+    <div class="org-chart-head">
+      <div>
+        <span class="eyebrow">ORGANIZATION</span>
+        <h2>안전보건팀 업무 조직도</h2>
+        <p>산업안전보건법과 중대재해처벌법 대응 업무를 전담 체계로 운영합니다.</p>
+      </div>
+      <span class="org-chart-period">2026년 하반기</span>
+    </div>
+    <div class="org-chart">
+      <div class="org-chart-lead">
+        <span class="org-chart-role">안전보건팀 총괄</span>
+        <strong>박찬욱 과장/팀장</strong>
+      </div>
+      <div class="org-chart-branches">
+        <div class="org-chart-branch industrial">
+          <div class="org-chart-branch-title"><span>산안법 전담</span><b>산업안전보건법 이행</b></div>
+          <div class="org-chart-members">
+            <div class="org-chart-member"><strong>강동현 차장</strong><span>산안법 이행관리</span></div>
+            <div class="org-chart-member"><strong>유준하 대리</strong><span>산재관리 · 도급안전</span></div>
+            <div class="org-chart-member"><strong>박윤하 주임</strong><span>본사·매장 보건관리</span></div>
+            <div class="org-chart-member"><strong>윤정인 사원</strong><span>본사·매장 보건관리</span></div>
+          </div>
+        </div>
+        <div class="org-chart-branch serious">
+          <div class="org-chart-branch-title"><span>중처법 전담</span><b>중대재해처벌법 대응</b></div>
+          <div class="org-chart-members">
+            <div class="org-chart-member"><strong>박찬욱 과장</strong><span>중처법 대응 총괄</span></div>
+            <div class="org-chart-member"><strong>서유림 주임</strong><span>중처법 대응 파트 지원</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="grid g4" style="margin-bottom:18px">
     ${kpi({ title:'👥 등록 선임자', value:list.length, unit:'명', desc:'법정 선임 인원 등록 현황' })}

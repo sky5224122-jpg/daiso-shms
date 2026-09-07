@@ -658,6 +658,35 @@ table.tbl td.num{font-family:var(--font-num);font-weight:800;text-align:right}
 .banner.warn{background:linear-gradient(135deg,#fdf5e6,#fff);border-color:rgba(232,147,12,.3);border-left-color:var(--warn)}
 .banner.warn b{color:#b45309}
 
+/* 조직 · 법정선임 화면의 안전보건팀 업무 조직도 */
+.org-chart-card{margin:0 0 18px;padding:24px 26px 28px;background:linear-gradient(145deg,#fff 0%,#f7faff 100%);border:1px solid #d8e2f1;border-radius:18px;box-shadow:0 10px 28px rgba(22,52,94,.08)}
+.org-chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:20px;border-bottom:1px solid #dfe7f2}
+.org-chart-head .eyebrow{display:block;margin-bottom:5px;color:#e11d48;font-size:10px;font-weight:900;letter-spacing:.16em}
+.org-chart-head h2{margin:0;color:#132b52;font-size:21px;letter-spacing:-.03em}
+.org-chart-head p{margin:6px 0 0;color:#667085;font-size:13px}
+.org-chart-period{flex:none;padding:7px 12px;border:1px solid #cdd9e9;border-radius:999px;background:#fff;color:#344b70;font-size:12px;font-weight:800}
+.org-chart{max-width:1100px;margin:26px auto 0}
+.org-chart-lead{position:relative;width:300px;margin:0 auto 42px;padding:15px 22px;border:1px solid #153a70;border-radius:12px;background:linear-gradient(135deg,#10284e,#244e88);box-shadow:0 9px 20px rgba(16,40,78,.2);color:#fff;text-align:center}
+.org-chart-lead::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:43px;background:#9aabc2}
+.org-chart-role{display:block;margin-bottom:4px;color:#c7d8f0;font-size:11px;font-weight:700}
+.org-chart-lead strong{font-size:18px}
+.org-chart-branches{position:relative;display:grid;grid-template-columns:1.35fr 1fr;gap:28px}
+.org-chart-branches::before{content:"";position:absolute;left:25%;right:25%;top:-22px;height:2px;background:#9aabc2}
+.org-chart-branch{position:relative;padding:18px;border:1px solid #d8e2f1;border-radius:15px;background:#fff}
+.org-chart-branch::before{content:"";position:absolute;left:50%;bottom:100%;width:2px;height:23px;background:#9aabc2}
+.org-chart-branch.industrial{border-top:4px solid #2563a8}
+.org-chart-branch.serious{border-top:4px solid #d4334f}
+.org-chart-branch-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #e5ebf3}
+.org-chart-branch-title span{padding:6px 10px;border-radius:8px;background:#eef5ff;color:#174c8b;font-size:12px;font-weight:900}
+.org-chart-branch.serious .org-chart-branch-title span{background:#fff0f3;color:#b4233c}
+.org-chart-branch-title b{color:#344054;font-size:12px}
+.org-chart-members{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.org-chart-branch.serious .org-chart-members{grid-template-columns:1fr}
+.org-chart-member{min-height:66px;padding:13px 15px;border:1px solid #e1e8f2;border-radius:11px;background:#f9fbfe}
+.org-chart-member strong{display:block;margin-bottom:5px;color:#172b4d;font-size:15px}
+.org-chart-member span{display:block;color:#667085;font-size:12px;line-height:1.4}
+@media(max-width:900px){.org-chart-branches{grid-template-columns:1fr}.org-chart-branches::before{display:none}.org-chart-branch::before{display:none}.org-chart-lead{margin-bottom:18px}.org-chart-lead::after{display:none}}
+
 /* 설정·백업 — 운영 흐름 지도 */
 .ops-map-card{margin:0 0 18px;overflow:hidden;border:1px solid #ccd8e8;border-radius:15px;background:#fff;box-shadow:0 12px 34px rgba(20,43,78,.08)}
 .ops-map-head{display:flex;align-items:flex-start;gap:24px;padding:21px 24px;color:#fff;background:radial-gradient(circle at 90% -40%,rgba(76,119,185,.48),transparent 38%),linear-gradient(128deg,#0c1930,#17345f)}
