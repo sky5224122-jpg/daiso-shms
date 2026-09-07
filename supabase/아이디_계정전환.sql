@@ -45,10 +45,7 @@ begin
     lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))),
     new.email,
     coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'login_id', new.email),
-    case
-      when lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))) in ('guest01','guest02','guest03') then 'guest'
-      else 'safety'
-    end
+    'safety'
   )
   on conflict (id) do update set
     login_id = excluded.login_id,

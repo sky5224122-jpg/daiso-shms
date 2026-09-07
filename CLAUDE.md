@@ -122,7 +122,7 @@ node --check js/data/frameworks.js
 운영 주소는 **Supabase Auth 계정 로그인**을 사용합니다. 화면의 아이디는 내부 로그인 별칭이며,
 Supabase에는 `<아이디>@accounts.daiso-shms.local` 형식으로만 저장됩니다. 실제 이메일 입력이나 이메일 인증은 요구하지 않습니다.
 
-- 작성·수정: `master`, `safety`, `head`, `guest` 역할
+- 작성·수정: `master`, `safety`, `head` 역할
 - 삭제: `master` 역할만 가능하며, Supabase RLS와 Cloudflare R2 Worker가 서버에서 다시 확인
 - 조회: 로그인한 사용자는 가능
 - 신규 계정 만들기 화면은 남아 있고, 현재 스키마상 신규 가입자는 `safety` 역할로 생성된다. 즉 신규 가입자도 작성·수정 권한을 갖는다. 이 정책을 바꾸려면 사용자 승인 후 `supabase/schema.sql`과 운영 DB 정책을 함께 바꾼다.
@@ -134,16 +134,15 @@ Supabase 연결 자체가 실패한 경우에만 과거 공용 비밀번호 해�
 
 ### 권한 판정
 
-- 화면 편집 권한: `canEdit()` — `role`이 `master|safety|head|guest`인 경우 true
+- 화면 편집 권한: `canEdit()` — `role`이 `master|safety|head`인 경우만 true
 - 삭제 권한: `canDelete()` — Supabase의 `master` 역할만 true
 - **화면의 버튼 비활성화는 편의 기능일 뿐**이며, 실제 통제는 Supabase RLS의 `shms_can_edit()`·`shms_can_delete()`와 R2 Worker가 수행한다.
 - 권한 로직을 바꿀 때는 `core.js`, `supabase/schema.sql`, R2 Worker 정책의 영향 범위를 함께 확인한다.
 
-### 게스트 공동작성 현황 (2026-09-07 변경)
+### 게스트·증빙 열람 현황 (2026-09-07 확인)
 
-- `guest01`~`guest03`은 게스트 코드 확인 후 Supabase 인증 계정으로 로그인한다. 계정이 없으면 최초 로그인 시 자동 생성된다.
-- 게스트는 수파베이스 공동 자료 조회·등록·수정, R2 첨부 등록·열람, 자료 백업이 가능하다.
-- 삭제·설정·복원은 기존대로 마스터 관리자만 가능하다.
+- `guest01`~`guest03`은 Supabase 사용자가 아니라 앱 내부의 읽기 전용 게스트 세션이다.
+- 게스트는 초기 시드 기반 이행 현황과 `reportLinks`로 연결된 정적 증빙만 열람하며, Supabase 원격 자료와 R2 첨부 원본은 열람하지 못한다.
 - `docs/evidence/`에는 현재 총 40개 실제 증빙 파일이 있고, 이 중 37개가 2026-09-07 작업에서 추가되었다.
 - **중요:** `docs/evidence/`와 `docs/reports/` 파일은 공개 GitHub Pages 정적 경로다. 앱의 게스트 코드와 무관하게 정확한 URL을 알면 직접 접근할 수 있으므로 민감정보·개인정보 파일을 두지 않는다. 접근통제가 필요한 원본은 Supabase 인증을 거치는 R2에 저장한다.
 - 게스트 종합의견·심사의견 작성 기능은 현재 구현되지 않았다.
