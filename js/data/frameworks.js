@@ -513,7 +513,7 @@ export const OSHA_ITEMS = [
   { id:'OSHA-618', framework:'osha', group:'밀폐공간', code:'안전보건규칙 제618~632조', title:'밀폐공간 안전보건조치',
     clause:'사업주는 밀폐공간에서 근로자에게 작업을 하도록 하는 경우 산소 및 유해가스 농도를 측정하고, 환기·보호구 지급 등 필요한 조치를 하여야 한다.',
     requirement:'물류허브센터(남사·부산·안성)의 물탱크(저수조·소화용수조) 청소 작업이 밀폐공간 작업에 해당한다. 작업 전 산소농도(18~23.5%)·유해가스 농도를 측정하고 환기를 실시하며, 밀폐공간 작업허가서를 발행한다. 출입금지 표지를 부착하고 감시인을 배치하며, 송기마스크 등 호흡용 보호구와 구조 장비를 갖춘다. 작업자에게 특별교육을 실시한다. ※ 본사·매장은 밀폐공간 미해당.',
-    evidence:['밀폐공간 목록(물류허브센터 물탱크)','밀폐공간 작업허가서','산소·유해가스 측정 기록','환기 실시 기록','출입금지 표지 사진','감시인 배치 기록','호흡용 보호구·구조 장비 비치 현황','밀폐공간 특별교육 이수 기록','물탱크 청소 위탁 시 수급업체 안전조치 확인'], cycle:'수시', docRefs:['SHP-10','SHP-12','SHP-13','SHI-22'], isoRefs:['8.1.2','8.1.4','8.2'], severity:'critical',
+    evidence:['밀폐공간 목록(물류허브센터 물탱크)','밀폐공간 작업허가서','산소·유해가스 측정 기록','환기 실시 기록','출입금지 표지 사진','감시인 배치 기록','호흡용 보호구·구조 장비 비치 현황','밀폐공간 특별교육 이수 기록','물탱크 청소 위탁 시 수급업체 안전조치 확인'], cycle:'수시', docRefs:['SHP-10','SHP-12','SHP-13','SHI-22','SHI-29'], isoRefs:['8.1.2','8.1.4','8.2'], severity:'critical',
     penalty:'3년 이하 징역 또는 3천만원 이하 벌금 (법 제169조)',
     requiredDocs:['밀폐공간 관리대장(물류허브센터 물탱크 목록)','밀폐공간 작업허가서 양식','산소·유해가스 측정장비 관리대장','밀폐공간 특별교육 교안·이수 기록','물탱크 청소 도급 시 안전보건 조치 확인서'],
     companyStatus:'[26H1 평가] ▲보완 — 대상: 물류허브센터(남사·부산·안성)만 해당 / 본사·매장 ○미해당. 해당 작업은 물탱크(저수조·소화용수조) 청소 작업이며 연 1~2회 정기 실시. 물탱크 청소는 통상 외부 전문업체에 도급하므로 도급인 안전보건조치(법 제63조) 의무가 함께 적용됨. 현재 밀폐공간 관리대장·작업허가서 양식·산소농도 측정 기록 등 명시적 이행 증빙 미확보 상태. [하반기 개선과제] ① 3개 센터 물탱크 목록·위치 작성(밀폐공간 관리대장) ② 물탱크 출입구 밀폐공간 출입금지 표지 부착 ③ 밀폐공간 작업허가서 양식 제정(SHI-22 안전작업허가 지침서에 밀폐공간 절차 추가) ④ 산소농도측정기 배치 또는 청소업체 보유 장비 확인 절차 마련 ⑤ 물탱크 청소 도급계약 시 밀폐공간 안전조치(측정·환기·감시인·송기마스크) 이행 확인 절차 반영 ⑥ 작업 입회 담당자 특별교육 실시',
@@ -772,6 +772,9 @@ export const DOC_MASTER = [
   { docNo:'SHI-25', type:'instruction', title:'비일상적인 재해예방 활동 지침서', category:'현장', companyDocNo:'AAD-HSHT-G-2022-016(3)', purpose:'비정형 작업·돌발 상황의 재해예방 활동 방법을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
   { docNo:'SHI-26', type:'instruction', title:'안전회의(TBM) 실시 지침서', category:'현장', companyDocNo:'AAD-HSHT-G-2022-017(3)', purpose:'작업 전 안전회의(TBM)의 실시 방법과 기록을 정한다.', isoRefs:['7.3','8.1.1'], lawRefs:['OSHA-029'] },
   { docNo:'SHI-27', type:'instruction', title:'매장·물류 동선 및 적치안전 지침서', category:'현장', companyDocNo:'AAD-HSHT-G-2026-026(0)', purpose:'매장 및 물류센터의 동선 확보·적치 안전기준을 정한다.', isoRefs:['8.1.2'], lawRefs:['OSHA-037'] },
+  { docNo:'SHI-28', type:'instruction', title:'[물류센터] 위험기계기구 및 안전검사 지침서', category:'물류', purpose:'물류허브센터의 위험기계기구(지게차·컨베이어·스태커크레인·압력용기 등) 관리 및 안전검사 실시 방법을 정한다. ※ 부산허브센터 AAD-WWHS-G-2022-013을 HSHT 체계로 통합 제정 예정.', isoRefs:['8.1.2'], lawRefs:['OSHA-093'] },
+  { docNo:'SHI-29', type:'instruction', title:'[물류센터] 밀폐공간 안전작업 지침서', category:'물류', purpose:'물류허브센터의 밀폐공간(물탱크·저수조·집수정·소화용수조 등) 작업 시 산소·유해가스 측정, 환기, 작업허가서 발행, 감시인 배치, 특별교육 방법을 정한다. ※ 부산허브센터 AAD-WWHS-G-2022-015를 HSHT 체계로 통합 제정 예정.', isoRefs:['8.1.2','8.2'], lawRefs:['OSHA-618'] },
+  { docNo:'SHI-30', type:'instruction', title:'[물류센터] 안전제안·안전회의(BO&F) 관리 지침서', category:'물류', purpose:'물류허브센터의 안전제안 접수·처리 및 안전회의(BO&F: Behavior Observation & Feedback) 운영 방법을 정한다. ※ 부산허브센터 AAD-WWHS-G-2022-020을 HSHT 체계로 통합 제정 예정. 매장 TBM(SHI-26)과 별도.', isoRefs:['5.4','7.4'], lawRefs:['MSSA-4-7'] },
 
   { docNo:'SHF-01', type:'form', title:'위험성평가표(4M/KRAS)', category:'양식', purpose:'위험성평가 실시 결과를 기록한다.', isoRefs:['6.1.2'], lawRefs:['OSHA-036'] },
   { docNo:'SHF-02', type:'form', title:'일상점검 체크리스트', category:'양식', purpose:'매장 일상 안전점검 결과를 기록한다.', isoRefs:['8.1.1'], lawRefs:['OSHA-016'] },
@@ -823,7 +826,7 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 /* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
    원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
    상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
-import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260906_na';
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260906_int';
 MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
 OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
 
