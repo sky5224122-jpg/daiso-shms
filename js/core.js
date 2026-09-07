@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_orgchart1';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_orgchart1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_orgchart2';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_orgchart2';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -725,7 +725,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260907_orgchart1', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260907_orgchart2', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
@@ -810,23 +810,37 @@ function persistAll() {
 /* ---------------- 저장 (upsert) ---------------- */
 async function remoteUpsert(table, row, conflict) {
   if (conn.mode !== 'supabase') return { ok: true, local: true };
-  try {
-    // HTML 날짜 입력란은 비어 있으면 빈 문자열("")을 반환하지만,
-    // PostgreSQL date 열은 빈 문자열을 허용하지 않는다. 빈 날짜 하나 때문에
-    // 첨부자료를 포함한 전체 행의 공동 저장이 실패하지 않도록 null로 변환한다.
-    const dateFields = [
-      'due_date', 'last_checked', 'issued_date', 'revised_date', 'next_review',
-      'date', 'raised_date', 'appointed_date', 'training_date', 'eval_date', 'audit_date'
-    ];
-    const remoteRow = { ...row };
+  const dateFields = [
+    'due_date', 'last_checked', 'issued_date', 'revised_date', 'next_review',
+    'date', 'raised_date', 'appointed_date', 'training_date', 'eval_date', 'audit_date'
+  ];
+  const normalizeDates = value => {
+    const remoteRow = { ...value };
     dateFields.forEach(field => {
-      if (remoteRow[field] === '') remoteRow[field] = null;
+      const v = remoteRow[field];
+      if (v === '' || v == null) remoteRow[field] = null;
+      else if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v))) remoteRow[field] = null;
     });
+    return remoteRow;
+  };
+  const attempt = async () => {
+    const remoteRow = normalizeDates(row);
     const q = conn.client.from(table).upsert(remoteRow, conflict ? { onConflict: conflict } : undefined);
     const { error } = await q;
     if (error) throw error;
+  };
+  try {
+    // 빈 날짜는 null로 보내고, 만료된 세션이면 한 번 갱신한 뒤 재시도한다.
+    await attempt();
     return { ok: true };
   } catch (e) {
+    if (/JWT|token|RLS|row-level security/i.test(e?.message || '')) {
+      try {
+        await conn.client.auth.refreshSession();
+        await attempt();
+        return { ok: true };
+      } catch (retryError) { e = retryError; }
+    }
     conn.error = e?.message || String(e);
     return { ok: false, error: conn.error };
   }
