@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles } from './data/frameworks.js?v=20260907_nameswap1';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_nameswap1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles } from './data/frameworks.js?v=20260907_nameswap2';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_nameswap2';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -780,7 +780,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260907_nameswap1', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260907_nameswap2', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
@@ -1248,4 +1248,17 @@ export function canEdit() {
 /** 삭제는 관리자 비밀번호로 로그인한 사용자에게만 허용한다. */
 export function canDelete() {
   return state.user?.role === 'master' && (conn.mode === 'supabase' || state.user?.source === 'master-gate');
+}
+
+const GUEST_OPINIONS_KEY = 'shms.guest_opinions';
+export function getGuestOpinion(itemId, half = state.half) {
+  try { return (JSON.parse(localStorage.getItem(GUEST_OPINIONS_KEY) || '{}'))[`${itemId}::${half}`] || {}; } catch (_) { return {}; }
+}
+export function saveGuestOpinion(itemId, patch, half = state.half) {
+  try {
+    const all = JSON.parse(localStorage.getItem(GUEST_OPINIONS_KEY) || '{}');
+    all[`${itemId}::${half}`] = { ...all[`${itemId}::${half}`], ...patch, updatedAt: new Date().toISOString() };
+    localStorage.setItem(GUEST_OPINIONS_KEY, JSON.stringify(all));
+    return true;
+  } catch (_) { return false; }
 }

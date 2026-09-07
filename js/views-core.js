@@ -5,13 +5,14 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER, documentDisplayTitle
-} from './data/frameworks.js?v=20260907_nameswap1';
+} from './data/frameworks.js?v=20260907_nameswap2';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
-  attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile
-} from './core.js?v=20260907_nameswap1';
+  attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile,
+  getGuestOpinion, saveGuestOpinion
+} from './core.js?v=20260907_nameswap2';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -989,6 +990,7 @@ export function openItemDrawer(itemId, onSaved) {
   const linkedDocs = (item.docRefs || []).map(no => DOC_MASTER.find(d => d.docNo === no)).filter(Boolean);
 
   const isGuest = state.user?.role === 'guest';
+  const guestOp = getGuestOpinion(itemId, half);
   drawer.querySelector('#dBody').innerHTML = `
     ${isGuest ? '<div class="guest-banner">게스트 열람 모드 — 아래 📄 보고서 링크를 클릭하면 증빙자료를 확인할 수 있습니다</div>' : ''}
     <div class="drawer-summary">
@@ -1116,6 +1118,23 @@ export function openItemDrawer(itemId, onSaved) {
       </div>
     </section>
 
+    <section class="drawer-section guest-opinion-section">
+      <div class="drawer-section-head">
+        <div><span class="section-kicker">AUDITOR REVIEW</span><h4>종합의견 · 심사의견</h4></div>
+        ${isGuest ? '<span class="section-caption">심사위원이 직접 작성합니다</span>' : '<span class="section-caption">심사위원(게스트)이 작성한 의견</span>'}
+      </div>
+      <div class="fld">
+        <label><span class="field-no">07</span>종합의견 <em>이행 수준에 대한 전체 평가</em></label>
+        <textarea class="inp guest-opinion-field" id="fGuestSummary" style="min-height:88px" placeholder="이 항목의 이행 수준에 대한 종합적인 의견을 기재해 주세요. (예: 적합, 경미부적합, 관찰사항 등)" ${isGuest ? '' : 'disabled'}>${esc(guestOp.summary || '')}</textarea>
+      </div>
+      <div class="fld">
+        <label><span class="field-no">08</span>심사의견 <em>보완·개선 권고사항</em></label>
+        <textarea class="inp guest-opinion-field" id="fGuestOpinion" style="min-height:88px" placeholder="보완이 필요한 사항, 우수한 점, 개선 권고사항 등을 기재해 주세요." ${isGuest ? '' : 'disabled'}>${esc(guestOp.opinion || '')}</textarea>
+      </div>
+      ${isGuest ? '<button type="button" class="btn primary" id="guestOpSave" style="width:100%;margin-top:8px">의견 저장</button>' : ''}
+      ${guestOp.updatedAt ? `<div class="drawer-updated">심사의견 최종 수정 ${esc(String(guestOp.updatedAt).slice(0, 16).replace('T', ' '))}</div>` : ''}
+    </section>
+
     ${r.updated_at ? `<div class="drawer-updated">최종 수정 ${esc(String(r.updated_at).slice(0, 16).replace('T', ' '))} · ${esc(r.updated_by || '')}</div>` : ''}
   `;
 
@@ -1140,6 +1159,14 @@ export function openItemDrawer(itemId, onSaved) {
       deleteBtn.disabled = false;
     }
   };
+  drawer.querySelector('#guestOpSave')?.addEventListener('click', () => {
+    const summary = drawer.querySelector('#fGuestSummary')?.value?.trim() || '';
+    const opinion = drawer.querySelector('#fGuestOpinion')?.value?.trim() || '';
+    if (!summary && !opinion) { toast('의견을 입력해 주세요.', 'bad'); return; }
+    const ok = saveGuestOpinion(itemId, { summary, opinion }, half);
+    toast(ok ? '심사의견이 저장되었습니다.' : '저장에 실패했습니다.', ok ? 'ok' : 'bad');
+  });
+
   let attachments = [...(r.attachments || [])];
   const removedAttachments = [];
 
