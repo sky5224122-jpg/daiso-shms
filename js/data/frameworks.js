@@ -1,4 +1,4 @@
-import { DOCUMENT_SOURCE_FILES } from './document-files.js?v=20260907_docpdf1';
+import { DOCUMENT_SOURCE_FILES } from './document-files.js?v=20260907_legalfinal1';
 
 /* ============================================================
    법령 · 국제표준 기준 데이터 (Compliance Framework Master)
@@ -419,9 +419,10 @@ export const OSHA_ITEMS = [
     requirement:'수급업체 작업 전 해당 사업장의 유해·위험요인, 안전보건수칙, 비상연락망 등 정보를 서면으로 제공하고 교육한다.',
     evidence:['안전보건 정보 제공서','수급인 교육 기록','작업장 유해위험요인 안내서'], cycle:'수시', docRefs:['SHP-12'], isoRefs:['8.1.4'], severity:'high',
     penalty:'과태료 3천만원 이하 (법 제175조)',
-    requiredDocs:["도급계약 체결 전 정보제공 문서"],
-    companyStatus:'[26H1 평가] 도급인 안전보건 정보 제공 문서 신규 작성 필요. 인테리어·매장CS·시설관리 각 팀별 도급사 대상 안전보건 정보 제공서 표준화 예정',
-    evidenceFiles:[] },
+    requiredDocs:["AAD-HSHT-G-2022-015(3) 도급인의 안전보건조치 활동 지침서"],
+    companyStatus:'[26H1 평가] 도급인의 안전·보건 정보 제공은 AAD-HSHT-G-2022-015(3) 도급인의 안전보건조치 활동 지침서에 따라 관리한다. 도급·용역·위탁 계약 전 위험정보 제공과 작업 전 교육·협의를 해당 지침으로 운영한다.',
+    evidenceFiles:['AAD-HSHT-G-2022-015(3)_도급인의 안전보건조치 활동 지침서_26_0827.pdf'],
+    reportLinks:[{label:'AAD-HSHT-G-2022-015(3) 도급인의 안전보건조치 활동 지침서',url:'docs/documents/AAD-HSHT-G-2022-015(3)_도급인의 안전보건조치 활동 지침서_26_0827.pdf'}] },
 
   { id:'OSHA-080', framework:'osha', group:'기계·설비 안전', code:'법 제80조', title:'유해위험기계 등의 방호조치',
     clause:'누구든지 동력으로 작동되는 기계·기구로서 작동 부분에 의한 위험을 방지하기 위한 기계·기구에 대하여 방호조치를 하지 아니하고는 양도, 대여, 설치 또는 사용하여서는 아니 된다.',
@@ -865,7 +866,7 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 /* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
    원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
    상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
-import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260907_docpdf1';
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260907_legalfinal1';
 MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
 OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
 
