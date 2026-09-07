@@ -4,7 +4,7 @@
     "generated_at": "2026-09-05",
     "app_version": "V1.0.0",
     "scope": "절차서/지침서/실행문서 제외한 나머지 6개 항목(CAPA·이행점검·조직·메모·심사개요·증빙)",
-    "note": "실명은 부서명·직책으로 마스킹 처리됨 (CLAUDE.md 원칙 준수)"
+    "note": "실명은 부서명·직책·직급으로 마스킹 처리됨 (CLAUDE.md 원칙 준수). 2026-09-07 본사 선임현황 갱신 및 잔존 실명 마스킹 보완."
   },
   "shms_capa": [
     {
@@ -59,7 +59,7 @@
       "description": "매장 TBM 실행률은 4~7월 평균 90%대이나, 실행 증빙이 종이 서명부·사진 위주로 산재되어 있어 중처법 시행령 제4조 8호(반기 점검) 증빙 확보가 비효율적. 일부 매장 미참여자 파악·재교육 절차가 지연됨.",
       "root_cause": "① 모바일 TBM 앱 도입은 완료됐으나 전 매장 사용률 편차 큼 ② TBM 실행 데이터가 전산 DB로 통합 축적되지 않음 ③ 미참여자 자동 알림·재교육 프로세스 부재",
       "action": "① 모바일 TBM 앱 전 매장(1,700여개) 확대 및 QR 출결 정착(26.12월까지) ② TBM 실행 데이터 안전보건팀 대시보드 연동 ③ 미참여자 자동 리마인드·재교육 지정 프로세스 시행",
-      "owner": "안전보건팀 서유림, IT본부 협업",
+      "owner": "안전보건팀 OOO, IT본부 협업",
       "due_date": "2026-12-31",
       "verify": "① 27년 1분기 매장별 TBM 전산 실행률 95% 이상 ② 안전보건팀 대시보드에서 실시간 실행현황 확인 가능",
       "status": "acting"
@@ -129,7 +129,7 @@
       "finding": "저실행매장 27곳 파악",
       "action": "저실행매장 관리자 재교육(1차) 실시",
       "action_needed": "Y",
-      "inspector": "안전보건팀 서유림"
+      "inspector": "안전보건팀 OOO"
     },
     {
       "id": "INSP-2026-H1-006",
@@ -142,7 +142,7 @@
       "finding": "저실행매장 22곳으로 감소",
       "action": "지속 모니터링",
       "action_needed": "N",
-      "inspector": "안전보건팀 서유림"
+      "inspector": "안전보건팀 OOO"
     },
     {
       "id": "INSP-2026-H1-007",
@@ -155,7 +155,7 @@
       "finding": "저실행매장 18곳",
       "action": "지속 모니터링, CAPA-2026-004 진행 중",
       "action_needed": "N",
-      "inspector": "안전보건팀 서유림"
+      "inspector": "안전보건팀 OOO"
     },
     {
       "id": "INSP-2026-H1-008",
@@ -168,7 +168,7 @@
       "finding": "저실행매장 15곳",
       "action": "지속 모니터링",
       "action_needed": "N",
-      "inspector": "안전보건팀 서유림"
+      "inspector": "안전보건팀 OOO"
     },
     {
       "id": "INSP-2026-H1-009",
@@ -233,7 +233,7 @@
       "finding": "",
       "action": "",
       "action_needed": "N",
-      "inspector": "OOO·허대욱·OOO·OOO·서유림 등 7명"
+      "inspector": "OOO·OOO·OOO·OOO·OOO 등 7명"
     },
     {
       "id": "INSP-2026-H2-003",
@@ -276,75 +276,75 @@
     },
     {
       "id": "ORG-003",
-      "position": "안전보건팀장",
-      "name": "OOO",
+      "position": "안전보건팀장 / 중처법전담(겸직)",
+      "name": "OOO(팀장·과장)",
       "site": "본사",
       "appointed_date": null,
-      "qualification": "안전보건팀 총괄",
+      "qualification": "산업안전기사, 소방설비기사(선임근거: 중대재해처벌법 시행령 제4조제2호나목)",
       "training_date": null,
       "eval_date": "2026-06-30",
       "eval_result": "적정",
-      "note": ""
+      "note": "안전보건팀 총괄, 중처법전담조직 겸직 지정"
     },
     {
       "id": "ORG-004",
-      "position": "안전보건관리자",
-      "name": "OOO",
+      "position": "안전관리자",
+      "name": "OOO(차장)",
       "site": "본사",
-      "appointed_date": null,
-      "qualification": "안전관리자 자격(선임신고 완료), 내부심사원 자격(25.06.09 만료 — 갱신 필요)",
+      "appointed_date": "2021-10-08",
+      "qualification": "산업안전기사(산안법 제17조)",
       "training_date": null,
       "eval_date": "2026-06-30",
       "eval_result": "적정",
-      "note": "주요 안전보건 실행업무 담당, 이행상태평가 실무 총괄"
+      "note": "내부심사원 자격 갱신 필요(25.06.09 만료)"
     },
     {
       "id": "ORG-005",
-      "position": "보건관리자",
-      "name": "확인 필요",
+      "position": "안전관리자",
+      "name": "OOO(대리)",
       "site": "본사",
-      "appointed_date": null,
-      "qualification": "간호사 자격, 건강관리실 운영",
+      "appointed_date": "2025-10-17",
+      "qualification": "산업안전기사(산안법 제17조)",
       "training_date": null,
       "eval_date": null,
       "eval_result": "",
-      "note": ""
+      "note": "본사 안전관리자 2명 중 1명"
     },
     {
       "id": "ORG-006",
-      "position": "안전보건팀 실무",
-      "name": "허대욱",
+      "position": "중처법전담 실무",
+      "name": "OOO(주임)",
       "site": "본사",
       "appointed_date": null,
-      "qualification": "내부심사원, 위험성평가 담당",
+      "qualification": "산업안전기사(선임근거: 중대재해처벌법 시행령 제4조제2호나목)",
       "training_date": null,
       "eval_date": null,
       "eval_result": "",
-      "note": ""
+      "note": "중처법 전담 실무(팀장 겸직과 별도 전담자)"
     },
     {
       "id": "ORG-007",
-      "position": "안전보건팀 실무",
-      "name": "OOO",
+      "position": "보건관리자",
+      "name": "OOO(주임)",
       "site": "본사",
-      "appointed_date": null,
-      "qualification": "내부심사원, 안전보건교육 담당",
+      "appointed_date": "2025-06-18",
+      "qualification": "간호사(산안법 제18조)",
       "training_date": null,
       "eval_date": null,
       "eval_result": "",
-      "note": ""
+      "note": "건강관리실 운영, 본사 보건관리자 2명 중 1명"
     },
     {
       "id": "ORG-008",
-      "position": "안전보건팀 실무",
-      "name": "서유림",
+      "position": "보건관리자",
+      "name": "OOO(사원)",
       "site": "본사",
-      "appointed_date": null,
-      "qualification": "내부심사원, TBM 전산화 담당",
+      "appointed_date": "2025-12-24",
+      "qualification": "간호사(산안법 제18조)",
       "training_date": null,
       "eval_date": null,
       "eval_result": "",
-      "note": ""
+      "note": "본사 보건관리자 2명 중 1명"
     },
     {
       "id": "ORG-009",
@@ -443,7 +443,7 @@
     {
       "id": "AUD-2024-001",
       "audit_date": "2024-06-11",
-      "auditor": "자체(OOO·허대욱·OOO·OOO·서유림)",
+      "auditor": "자체(OOO·OOO·OOO·OOO·OOO)",
       "result": "경미 부적합",
       "half": "2024-H1",
       "content": "24년도 ISO 45001 사후심사 대비 자체심사. 24.05.24~06.11 실시. 허브센터·매장 대상, 총 43건 발견(경미 부적합 다수) 및 매장별 8건 지적사항 별도 관리. 이후 KVM 사후심사 대응."
@@ -462,7 +462,7 @@
       "auditor": "자체(내부심사팀 7명)",
       "result": "예정",
       "half": "2026-H2",
-      "content": "26년 하반기 정기 내부심사 계획(15.1). 26.11.16~17 이틀간 본사 전부서 및 매장·물류 표본 대상. 심사팀: OOO·허대욱·OOO·OOO·서유림 등 7명. 심사원 자격 만료자 갱신교육 선행 필요."
+      "content": "26년 하반기 정기 내부심사 계획(15.1). 26.11.16~17 이틀간 본사 전부서 및 매장·물류 표본 대상. 심사팀: OOO·OOO·OOO·OOO·OOO 등 7명. 심사원 자격 만료자 갱신교육 선행 필요."
     }
   ],
   "shms_evidence": [

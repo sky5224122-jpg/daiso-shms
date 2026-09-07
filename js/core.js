@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260906_ev2';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260906_ev2';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_g1';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_g1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -462,6 +462,7 @@ export async function viewAttachment(att) {
     return;
   }
   if (att?.storage === 'r2' && att.key) {
+    if (state.user?.role === 'guest') throw new Error('게스트 계정은 클라우드 첨부파일을 열람할 수 없습니다. 각 항목의 📄 보고서 링크를 이용해 주세요.');
     const api = attachmentApiUrl();
     if (!api) throw new Error('Cloudflare 첨부파일 API가 설정되지 않았습니다.');
     const headers = await attachmentAuthHeader();
@@ -605,7 +606,8 @@ export async function loadAll() {
   state.auditOverview = lsGet('auditOverview', []);
   state.auditLog    = lsGet('auditLog', []);
 
-  if (conn.mode === 'supabase') {
+  const isGuest = state.user?.role === 'guest';
+  if (conn.mode === 'supabase' && !isGuest) {
     try {
       const [rec, doc, capa, insp, org, evi, memo, auditOv] = await Promise.all([
         conn.client.from(TABLES.records).select('*'),
@@ -723,7 +725,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260906_ev2', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260907_g1', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
