@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_orgchart2';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_orgchart2';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS } from './data/frameworks.js?v=20260907_orgchart3';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260907_orgchart3';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -725,7 +725,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260907_orgchart2', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260907_orgchart3', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();
@@ -841,7 +841,10 @@ async function remoteUpsert(table, row, conflict) {
         return { ok: true };
       } catch (retryError) { e = retryError; }
     }
-    conn.error = e?.message || String(e);
+    const rawError = e?.message || String(e);
+    conn.error = /row-level security|RLS/i.test(rawError)
+      ? '공동 저장 권한 정책이 아직 적용되지 않았습니다. Supabase에서 첨부공동저장_RLS복구.sql을 실행해 주세요.'
+      : rawError;
     return { ok: false, error: conn.error };
   }
 }
