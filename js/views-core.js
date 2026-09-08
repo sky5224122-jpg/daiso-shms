@@ -5,14 +5,14 @@
 import {
   MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ALL_ITEMS, FRAMEWORKS,
   STATUS, STATUS_ORDER, CYCLES, DOC_MASTER, documentDisplayTitle
-} from './data/frameworks.js?v=20260908_docorder1';
+} from './data/frameworks.js?v=20260908_drawer1';
 import {
   $, $$, el, esc, state, getRecord, saveRecord, deleteRecord, progressOf, dueSoon, docStats, APP,
   canEdit, canDelete, halfLabel, fmtDate, today, toast, showSpinner, hideSpinner, uid,
   saveRow, deleteRow,
   attachmentUrl, formatBytes, prepareAttachmentFile, saveAttachmentFile, viewAttachment, deleteAttachmentFile,
   getGuestOpinion, saveGuestOpinion
-} from './core.js?v=20260908_docorder1';
+} from './core.js?v=20260908_drawer1';
 
 const AUDIT_RESULTS = ['적합', '경미 부적합', '중대 부적합', '관찰사항'];
 
@@ -37,6 +37,27 @@ function readableTextHtml(value, empty = '작성된 내용이 없습니다.') {
     const isList = /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(part);
     return `<div class="structured-line${isHeading ? ' heading' : ''}${isList ? ' list' : ''}">${esc(part)}</div>`;
   }).join('')}</div>`;
+}
+
+const DRAWER_HIDDEN_KEY = 'shms.drawer_hidden_fields';
+
+function readDrawerHidden(itemId) {
+  try {
+    const all = JSON.parse(localStorage.getItem(DRAWER_HIDDEN_KEY) || '{}');
+    return all[itemId] || {};
+  } catch (_) { return {}; }
+}
+
+function writeDrawerHidden(itemId, hidden) {
+  try {
+    const all = JSON.parse(localStorage.getItem(DRAWER_HIDDEN_KEY) || '{}');
+    all[itemId] = hidden;
+    localStorage.setItem(DRAWER_HIDDEN_KEY, JSON.stringify(all));
+  } catch (_) { /* 숨김 설정은 보조 기능이므로 저장 실패를 막지 않습니다. */ }
+}
+
+function drawerHideButton(key, hidden, label = '숨기기') {
+  return `<button type="button" class="drawer-hide-toggle" data-drawer-hide="${esc(key)}" aria-expanded="${hidden ? 'false' : 'true'}">${hidden ? '표시' : label}</button>`;
 }
 
 /* ---------------- 공용 조각 ---------------- */
@@ -978,6 +999,9 @@ export function openItemDrawer(itemId, onSaved) {
   const editable = canEdit();
   const currentStatus = STATUS[r.status] || STATUS.none;
   const attachmentCount = (r.attachments || []).length;
+  const hiddenFields = readDrawerHidden(itemId);
+  const hiddenClass = key => hiddenFields[key] ? ' is-hidden' : '';
+  const hideButton = key => drawerHideButton(key, !!hiddenFields[key]);
 
   drawer.classList.add('drawer-item');
   drawer.style.width = '';
@@ -990,6 +1014,7 @@ export function openItemDrawer(itemId, onSaved) {
   const linkedDocs = (item.docRefs || []).map(no => DOC_MASTER.find(d => d.docNo === no)).filter(Boolean);
 
   const isGuest = state.user?.role === 'guest';
+  const opinionEditable = !!state.user;
   const guestOp = getGuestOpinion(itemId, half);
   drawer.querySelector('#dBody').innerHTML = `
   ${isGuest ? '<div class="guest-banner">게스트 전체 권한 모드 — 이행내용과 첨부자료를 등록·수정·삭제할 수 있습니다.</div>' : ''}
@@ -1000,18 +1025,18 @@ export function openItemDrawer(itemId, onSaved) {
       <div class="drawer-summary-item"><span>첨부자료</span><strong>${attachmentCount}건</strong></div>
     </div>
 
-    <section class="drawer-section drawer-reference">
+    <section class="drawer-section drawer-reference${hiddenClass('section_reference')}" data-hide-wrap="section_reference">
       <div class="drawer-section-head">
         <div><span class="section-kicker">REFERENCE</span><h4>기준과 요구사항</h4></div>
-        <span class="section-caption">판단 근거를 먼저 확인하세요</span>
+        <span class="section-caption">판단 근거를 먼저 확인하세요</span>${hideButton('section_reference')}
       </div>
       <div class="reference-grid">
-        <div class="ref-box ref-clause">
-          <div class="t"><span class="ref-icon">01</span>조문 요지</div>
+        <div class="ref-box ref-clause${hiddenClass('reference_clause')}" data-hide-wrap="reference_clause">
+          <div class="t"><span class="ref-icon">01</span>조문 요지${hideButton('reference_clause')}</div>
           <div class="c">${esc(item.clause)}</div>
         </div>
-        <div class="ref-box ref-action">
-          <div class="t"><span class="ref-icon">02</span>이행해야 할 내용</div>
+        <div class="ref-box ref-action${hiddenClass('reference_requirement')}" data-hide-wrap="reference_requirement">
+          <div class="t"><span class="ref-icon">02</span>이행해야 할 내용${hideButton('reference_requirement')}</div>
           <div class="c">${esc(item.requirement)}</div>
           <div class="chip-row">
             <span class="tag">점검주기 ${esc(item.cycle)}</span>
@@ -1021,17 +1046,17 @@ export function openItemDrawer(itemId, onSaved) {
           </div>
           ${item.linkedApp ? `<div class="linked-app"><a class="btn sm" href="${esc(item.linkedApp.url)}" target="_blank" rel="noopener">관련 앱에서 확인 ↗</a></div>` : ''}
         </div>
-        <div class="ref-box ref-evidence">
-          <div class="t"><span class="ref-icon">03</span>권장 증빙</div>
+        <div class="ref-box ref-evidence${hiddenClass('reference_evidence')}" data-hide-wrap="reference_evidence">
+          <div class="t"><span class="ref-icon">03</span>권장 증빙${hideButton('reference_evidence')}</div>
           <ol>${(item.evidence || []).map(e => `<li>${esc(e)}</li>`).join('')}</ol>
         </div>
       </div>
     </section>
 
-    <section class="drawer-section attachment-section">
+    <section class="drawer-section attachment-section${hiddenClass('section_attachments')}" data-hide-wrap="section_attachments">
       <div class="drawer-section-head">
         <div><span class="section-kicker">EVIDENCE FILES</span><h4>첨부자료 · 외부 링크</h4></div>
-        <span class="attach-count">${attachmentCount}건 등록</span>
+        <span class="attach-count">${attachmentCount}건 등록</span>${hideButton('section_attachments')}
       </div>
       ${(item.reportLinks || []).length ? `<div class="report-links" style="margin:0 0 12px"><span class="ref-icon">📄</span><span style="font-weight:800;color:var(--text-2);margin-right:4px">기준 참고자료</span>${item.reportLinks.map(l => `<a class="btn sm" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')}</div>` : ''}
       <div class="attach-list" id="fAttachList">
@@ -1062,10 +1087,10 @@ export function openItemDrawer(itemId, onSaved) {
       <div class="storage-note"><span>i</span><p>사진(JPG·PNG·WebP)은 WebP로 단계적으로 압축하되, <b>식별 가능한 최소 품질·해상도</b>를 지킵니다. 50KB는 목표값이며 넘더라도 품질 보호본을 저장합니다. 15MB를 넘는 PDF·Office·한글·ZIP은 자동으로 최고 압축 ZIP으로 변환하며, 변환 후에도 15MB를 넘는 경우에만 저장되지 않습니다.</p></div>
     </section>
 
-    <section class="drawer-section">
+    <section class="drawer-section${hiddenClass('section_implementation')}" data-hide-wrap="section_implementation">
       <div class="drawer-section-head">
         <div><span class="section-kicker">IMPLEMENTATION</span><h4>이행 기록</h4></div>
-        <span class="section-caption">실행 현황과 증빙을 한 곳에서 관리하세요</span>
+        <span class="section-caption">실행 현황과 증빙을 한 곳에서 관리하세요</span>${hideButton('section_implementation')}
       </div>
       <div class="fld-row drawer-meta-fields">
         <div class="fld">
@@ -1087,56 +1112,69 @@ export function openItemDrawer(itemId, onSaved) {
           <input class="inp" type="date" id="fDue" value="${esc(r.due_date)}" ${editable ? '' : 'disabled'}>
         </div>
       </div>
-      <div class="fld">
-        <label><span class="field-no">01</span>이행 현황 <em>무엇을 · 언제 · 누가 · 어떻게 했는지</em></label>
+      <div class="fld drawer-detail-field${hiddenClass('field_01')}" data-hide-wrap="field_01">
+        <label><span class="field-no">01</span>이행 현황 <em>무엇을 · 언제 · 누가 · 어떻게 했는지</em>${hideButton('field_01')}</label>
         <textarea class="inp" id="fImpl" style="min-height:156px" placeholder="예) 2026.07.15 경영책임자 명의 안전보건 경영방침을 제정하고 전 매장 376개소 게시 완료. 연간 목표는 재해율 0.15% 이하, 위험성평가 실시율 100%로 설정하여 이사회 승인(2026.02.20)을 받음." ${editable ? '' : 'disabled'}>${esc(r.implementation)}</textarea>
         <div class="help">날짜·주체·수량을 포함하면 기록의 완성도가 높아집니다.</div>
       </div>
-      <div class="fld">
-        <label><span class="field-no">02</span>당사 준비현황</label>
+      <div class="fld drawer-detail-field${hiddenClass('field_02')}" data-hide-wrap="field_02">
+        <label><span class="field-no">02</span>당사 준비현황${hideButton('field_02')}</label>
         <div class="structured-preview" id="fCompanyPreview">${readableTextHtml((r.userStatus || item.companyStatus || ''), '현재 준비·이행 상황이 입력되면 이곳에 문단별로 표시됩니다.')}</div>
         <textarea class="inp" id="fCompany" style="min-height:82px" placeholder="현재 준비·이행 상황을 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userStatus || item.companyStatus || ''))}</textarea>
       </div>
-      <div class="fld">
-        <label><span class="field-no">03</span>작성 및 보관자료 목록</label>
+      <div class="fld drawer-detail-field${hiddenClass('field_03')}" data-hide-wrap="field_03">
+        <label><span class="field-no">03</span>작성 및 보관자료 목록${hideButton('field_03')}</label>
         <textarea class="inp" id="fDocs" style="min-height:96px" placeholder="업무에 필요한 자료 목록을 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userDocs || (item.requiredDocs || []).join('\n')))}</textarea>
         ${(item.requiredDocs && item.requiredDocs.length && !r.userDocs) ? `<div class="help info-help">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
       </div>
-      <div class="fld">
-        <label><span class="field-no">04</span>보유 증빙자료 <em>문서명 · 보관 위치</em></label>
+      <div class="fld drawer-detail-field${hiddenClass('field_04')}" data-hide-wrap="field_04">
+        <label><span class="field-no">04</span>보유 증빙자료 <em>문서명 · 보관 위치</em>${hideButton('field_04')}</label>
         <textarea class="inp" id="fEvi" placeholder="예)&#10;1. 안전보건 경영방침 선언문(대표이사 서명본) — 안전보건팀 문서고 / SHP-02 첨부&#10;2. 매장 게시 사진 376건 — 이행증빙 자료함&#10;3. 이사회 의사록(2026.02.20) — 경영지원팀" ${editable ? '' : 'disabled'}>${esc(r.evidence)}</textarea>
       </div>
-      <div class="fld">
-        <label><span class="field-no">05</span>증빙자료 파일 목록</label>
+      <div class="fld drawer-detail-field${hiddenClass('field_05')}" data-hide-wrap="field_05">
+        <label><span class="field-no">05</span>증빙자료 파일 목록${hideButton('field_05')}</label>
         <textarea class="inp" id="fEvFiles" style="min-height:96px" placeholder="보유 중인 증빙자료 파일명·문서번호를 한 줄에 하나씩 기재하세요." ${editable ? '' : 'disabled'}>${esc((r.userEvidence || (item.evidenceFiles || []).join('\n')))}</textarea>
         ${(item.evidenceFiles && item.evidenceFiles.length && !r.userEvidence) ? `<div class="help info-help">기준 데이터에서 자동 표시 중 · 편집하면 이 항목에 별도 저장됩니다</div>` : ''}
       </div>
-      <div class="fld">
-        <label><span class="field-no">06</span>미흡사항 / 개선 필요사항</label>
+      <div class="fld drawer-detail-field${hiddenClass('field_06')}" data-hide-wrap="field_06">
+        <label><span class="field-no">06</span>미흡사항 / 개선 필요사항${hideButton('field_06')}</label>
         <textarea class="inp" id="fFind" style="min-height:88px" placeholder="점검 결과 확인된 부족한 부분과 보완 계획을 기재합니다. (없으면 '해당없음')" ${editable ? '' : 'disabled'}>${esc(r.findings)}</textarea>
         <div class="help">미흡사항은 개선조치(CAPA) 화면에서 별도 등록해 종결까지 관리하는 것을 권장합니다.</div>
       </div>
     </section>
 
-    <section class="drawer-section guest-opinion-section">
+    <section class="drawer-section guest-opinion-section${hiddenClass('section_opinions')}" data-hide-wrap="section_opinions">
       <div class="drawer-section-head">
         <div><span class="section-kicker">AUDITOR REVIEW</span><h4>종합의견 · 심사의견</h4></div>
-        ${isGuest ? '<span class="section-caption">심사위원이 직접 작성합니다</span>' : '<span class="section-caption">심사위원(게스트)이 작성한 의견</span>'}
+        <span class="section-caption">로그인한 모든 사용자가 작성할 수 있습니다</span>${hideButton('section_opinions')}
       </div>
-      <div class="fld">
-        <label><span class="field-no">07</span>종합의견 <em>이행 수준에 대한 전체 평가</em></label>
-        <textarea class="inp guest-opinion-field" id="fGuestSummary" style="min-height:88px" placeholder="이 항목의 이행 수준에 대한 종합적인 의견을 기재해 주세요. (예: 적합, 경미부적합, 관찰사항 등)" ${isGuest ? '' : 'disabled'}>${esc(guestOp.summary || '')}</textarea>
+      <div class="fld drawer-detail-field${hiddenClass('field_07')}" data-hide-wrap="field_07">
+        <label><span class="field-no">07</span>종합의견 <em>이행 수준에 대한 전체 평가</em>${hideButton('field_07')}</label>
+        <textarea class="inp guest-opinion-field" id="fGuestSummary" style="min-height:88px" placeholder="이 항목의 이행 수준에 대한 종합적인 의견을 기재해 주세요. (예: 적합, 경미부적합, 관찰사항 등)" ${opinionEditable ? '' : 'disabled'}>${esc(guestOp.summary || '')}</textarea>
       </div>
-      <div class="fld">
-        <label><span class="field-no">08</span>심사의견 <em>보완·개선 권고사항</em></label>
-        <textarea class="inp guest-opinion-field" id="fGuestOpinion" style="min-height:88px" placeholder="보완이 필요한 사항, 우수한 점, 개선 권고사항 등을 기재해 주세요." ${isGuest ? '' : 'disabled'}>${esc(guestOp.opinion || '')}</textarea>
+      <div class="fld drawer-detail-field${hiddenClass('field_08')}" data-hide-wrap="field_08">
+        <label><span class="field-no">08</span>심사의견 <em>보완·개선 권고사항</em>${hideButton('field_08')}</label>
+        <textarea class="inp guest-opinion-field" id="fGuestOpinion" style="min-height:88px" placeholder="보완이 필요한 사항, 우수한 점, 개선 권고사항 등을 기재해 주세요." ${opinionEditable ? '' : 'disabled'}>${esc(guestOp.opinion || '')}</textarea>
       </div>
-      ${isGuest ? '<button type="button" class="btn primary" id="guestOpSave" style="width:100%;margin-top:8px">의견 저장</button>' : ''}
+      ${opinionEditable ? '<button type="button" class="btn primary" id="guestOpSave" style="width:100%;margin-top:8px">의견 저장</button>' : ''}
       ${guestOp.updatedAt ? `<div class="drawer-updated">심사의견 최종 수정 ${esc(String(guestOp.updatedAt).slice(0, 16).replace('T', ' '))}</div>` : ''}
     </section>
 
     ${r.updated_at ? `<div class="drawer-updated">최종 수정 ${esc(String(r.updated_at).slice(0, 16).replace('T', ' '))} · ${esc(r.updated_by || '')}</div>` : ''}
   `;
+
+  drawer.querySelectorAll('[data-drawer-hide]').forEach(button => {
+    button.addEventListener('click', () => {
+      const key = button.dataset.drawerHide;
+      const wrap = drawer.querySelector(`[data-hide-wrap="${CSS.escape(key)}"]`);
+      if (!wrap) return;
+      const hidden = wrap.classList.toggle('is-hidden');
+      const next = { ...readDrawerHidden(itemId), [key]: hidden };
+      writeDrawerHidden(itemId, next);
+      button.textContent = hidden ? '표시' : '숨기기';
+      button.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+    });
+  });
 
   const saveBtn = drawer.querySelector('#dSave');
   const deleteBtn = drawer.querySelector('#dDelete');

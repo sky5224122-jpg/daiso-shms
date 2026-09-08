@@ -505,6 +505,15 @@ table.tbl td.num{font-family:var(--font-num);font-weight:800;text-align:right}
 .drawer-section-head .section-kicker{display:block;margin-bottom:3px;font-size:9px;font-weight:950;letter-spacing:1.35px;color:#c51f3a}
 .drawer-section-head h4{margin:0;font-size:15.5px;line-height:1.35;letter-spacing:-.15px;color:#17253b}
 .drawer-section-head .section-caption{margin-left:auto;font-size:10.8px;color:#7b8798;text-align:right}
+.drawer-hide-toggle{flex:0 0 auto;border:1px solid #cbd5e1;border-radius:999px;background:#fff;color:#475569;font-size:10px;font-weight:800;padding:4px 8px;cursor:pointer;white-space:nowrap}
+.drawer-hide-toggle:hover{border-color:#5279b8;color:#1d4ed8;background:#f8fbff}
+.drawer-section-head > .drawer-hide-toggle{margin-left:0}
+.drawer-detail-field.is-hidden > :not(label){display:none}
+.ref-box.is-hidden > :not(.t){display:none}
+.drawer-section.is-hidden > :not(.drawer-section-head){display:none}
+.drawer-detail-field.is-hidden{padding-bottom:2px}
+.ref-box .t{display:flex;align-items:center;gap:7px}
+.ref-box .t .drawer-hide-toggle{margin-left:auto}
 .drawer-section .fld:last-child{margin-bottom:0}
 .drawer-section .fld > label{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:11.5px;color:#334155}
 .drawer-section .fld > label em{font-size:10.8px;font-weight:600;font-style:normal;color:#8793a5}
