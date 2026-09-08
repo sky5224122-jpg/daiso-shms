@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles, documentSourceTitle } from './data/frameworks.js?v=20260908_docsync1';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260908_docsync1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles, documentSourceTitle } from './data/frameworks.js?v=20260908_docorder1';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260908_docorder1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -667,7 +667,7 @@ export async function loadAll() {
 let documentBodySupplementsPromise;
 function loadDocumentBodySupplements() {
   if (!documentBodySupplementsPromise) {
-    const url = new URL('../docs/seed/document_body_supplements.json?v=20260908_docsync1', import.meta.url);
+    const url = new URL('../docs/seed/document_body_supplements.json?v=20260908_docorder1', import.meta.url);
     documentBodySupplementsPromise = fetch(url.href)
       .then(res => res.ok ? res.json() : {})
       .catch(() => ({}));
@@ -814,7 +814,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260908_docsync1', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260908_docorder1', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();

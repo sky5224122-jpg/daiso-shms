@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES, documentDisplayTitle, documentSourceFiles
-} from './data/frameworks.js?v=20260908_docsync1';
+} from './data/frameworks.js?v=20260908_docorder1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260908_docsync1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260908_docsync1';
+} from './core.js?v=20260908_docorder1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260908_docorder1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -23,6 +23,13 @@ const confirmDel = msg => window.confirm(msg);
    ============================================================ */
 
 const docFilter = { type: 'all', q: '' };
+const DOC_STAGE_ORDER = ['manual', 'procedure', 'instruction', 'form'];
+const DOC_STAGE_LABELS = {
+  manual: '1. 규정·매뉴얼',
+  procedure: '2. 절차서',
+  instruction: '3. 지침서',
+  form: '4. 양식·기록'
+};
 
 export function renderDocuments() {
   const s = docStats();
@@ -30,14 +37,16 @@ export function renderDocuments() {
     .filter(d => docFilter.type === 'all' || d.type === docFilter.type)
     .filter(d => !docFilter.q ||
       `${d.doc_no} ${d.title} ${d.category} ${d.purpose}`.toLowerCase().includes(docFilter.q.toLowerCase()))
-    .sort((a, b) => a.doc_no.localeCompare(b.doc_no));
-
-  const cats = [...new Set(docs.map(d => d.category))];
+    .sort((a, b) => (DOC_STAGE_ORDER.indexOf(a.type) - DOC_STAGE_ORDER.indexOf(b.type))
+      || a.doc_no.localeCompare(b.doc_no));
+  const groups = DOC_STAGE_ORDER
+    .map(type => ({ type, docs: docs.filter(d => d.type === type) }))
+    .filter(group => group.docs.length);
 
   return `
   <div class="banner">
     <div class="i">📁</div>
-    <div><b>안전보건 문서체계</b> — 매뉴얼(1단계) → 절차서(2단계) → 지침서(3단계) → 양식·기록(4단계)의 4단계 구조입니다.
+    <div><b>안전보건 문서체계</b> — 규정·매뉴얼(1단계) → 절차서(2단계) → 지침서(3단계) → 양식·기록(4단계) 순서의 4단계 구조입니다.
     문서를 클릭하면 <b>목적·적용범위·본문을 직접 작성</b>하고 제·개정 이력을 남길 수 있습니다.
     인증심사에서는 이 계층구조와 개정이력이 핵심 확인 대상입니다.</div>
   </div>
@@ -76,13 +85,13 @@ export function renderDocuments() {
         <div style="flex:1"></div>
         <button class="btn" id="docPrint">🖨️ 문서목록 인쇄</button>
       </div>
-      ${cats.length === 0
+      ${groups.length === 0
         ? `<div class="card"><div class="empty"><div class="e">🔍</div><div class="t">문서가 없습니다</div></div></div>`
-        : cats.map(c => `
-          <div class="sec-t"><h2>${esc(c)}</h2><div class="l"></div>
-            <span class="n">${docs.filter(d => d.category === c).length}건</span></div>
+        : groups.map(group => `
+          <div class="sec-t"><h2>${esc(DOC_STAGE_LABELS[group.type])}</h2><div class="l"></div>
+            <span class="n">${group.docs.length}건</span></div>
           <div class="grid g2">
-            ${docs.filter(d => d.category === c).map(docCard).join('')}
+            ${group.docs.map(docCard).join('')}
           </div>`).join('')}
     </div>
   </div>`;
