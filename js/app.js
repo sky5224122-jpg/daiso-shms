@@ -6,11 +6,11 @@ import {
   APP, $, $$, esc, state, conn, initSupabase, loadAll, onChange,
   restoreSession, signIn, signUp, signOut, canEdit, currentHalf, recentHalves, halfLabel,
   getRecord, toast, showSpinner, hideSpinner, scheduleDailyAutoBackup
-} from './core.js?v=20260907_go1';
-import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260907_go1';
+} from './core.js?v=20260908_guestall1';
+import { MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, ROLES } from './data/frameworks.js?v=20260908_guestall1';
 import {
   renderDashboard, bindDashboardEvents, renderCompliance, bindComplianceEvents, openItemDrawer, resetFilter
-} from './views-core.js?v=20260907_go1';
+} from './views-core.js?v=20260908_guestall1';
 import {
   renderDocuments, bindDocumentEvents,
   renderInspection, bindInspectionEvents,
@@ -22,7 +22,7 @@ import {
   renderBackup, bindBackupEvents,
   renderRestore, bindRestoreEvents,
   renderMemo, bindMemoEvents
-} from './views-ext.js?v=20260907_go1';
+} from './views-ext.js?v=20260908_guestall1';
 
 /* ---------------- 화면 정의 ---------------- */
 /* roles가 없으면 로그인한 모든 사용자에게 보인다. roles가 있으면 그 권한만 접근할 수 있다. */
@@ -49,26 +49,23 @@ const NAV = [
     { key:'memo',       icon:'📝', label:'메모장',     crumb:'실행 관리', title:'심사결과·업무 메모장' }
   ]},
   { group: '시스템', items: [
-    { key:'settings', icon:'⚙️', label:'설정',       crumb:'시스템', title:'시스템 설정', roles:['master'] },
-    { key:'backup',   icon:'💾', label:'백업',       crumb:'시스템', title:'자료 백업', roles:['master','safety','head'] },
-    { key:'restore',  icon:'🔄', label:'복원',       crumb:'시스템', title:'자료 복원', roles:['master'] }
+    { key:'settings', icon:'⚙️', label:'설정',       crumb:'시스템', title:'시스템 설정', roles:['master','guest'] },
+    { key:'backup',   icon:'💾', label:'백업',       crumb:'시스템', title:'자료 백업', roles:['master','safety','head','guest'] },
+    { key:'restore',  icon:'🔄', label:'복원',       crumb:'시스템', title:'자료 복원', roles:['master','guest'] }
   ]}
 ];
 const NAV_FLAT = NAV.flatMap(g => g.items);
 
 const app = () => document.getElementById('app');
 
-/* ---------------- 게스트 읽기 전용 열람 ----------------
-   로그인 화면의 "게스트로 열람" 버튼에서 사용하는 코드다. Supabase 계정이 아니며
-   작성·수정·삭제 권한이 없다. 코드를 바꾸려면 새 해시를 만들어 GUEST_CODE_HASH를 교체한다.
+/* ---------------- 게스트 전체 권한 로그인 ----------------
+   고정된 게스트 아이디와 코드를 확인한 뒤 Supabase 계정으로 로그인한다.
+   계정이 아직 없으면 최초 로그인 시 생성하여 공동 자료의 조회·등록·수정·첨부·삭제를 허용한다.
+   코드를 바꾸려면 새 해시를 만들어 GUEST_CODE_HASH를 교체한다.
      node -e "console.log(require('crypto').createHash('sha256').update('새코드','utf8').digest('hex'))"
 ------------------------------------------------------------------------------- */
-const GUEST_SESSION_KEY = 'shms.guestsession';
 const GUEST_IDS = ['guest01', 'guest02', 'guest03'];
 const GUEST_CODE_HASH = '04b10b1ea8a3db83aa866819302939f8784264a53c6415111579c03c32e46452';
-
-/** 게스트로 열람할 때 부여되는 읽기 전용 로컬 세션 — Supabase 계정이 아니며 작성·수정·삭제 권한이 없다. */
-const GUEST_USER = { id: 'shms_guest', email: '', name: '게스트', role: 'guest', dept: '외부 게스트', source: 'guest' };
 
 async function gateSha256Hex(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text)));
@@ -127,20 +124,20 @@ function renderLogin() {
       </form>
       ${conn.mode === 'supabase' ? `
       <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
-        <button class="btn" type="button" id="lgGuestBtn" style="width:100%">게스트로 열람 (읽기 전용)</button>
+        <button class="btn" type="button" id="lgGuestBtn" style="width:100%">게스트 계정 로그인 (전체 권한)</button>
         <div id="guestBox" style="display:none;margin-top:10px">
           <label for="guestId">게스트 아이디</label>
           <input id="guestId" type="text" placeholder="예: guest01">
           <label for="guestCode">게스트 코드</label>
           <input id="guestCode" type="password" placeholder="발급받은 코드">
-          <button class="btn primary" type="button" id="guestConfirm" style="width:100%;margin-top:9px">게스트로 입장</button>
+          <button class="btn primary" type="button" id="guestConfirm" style="width:100%;margin-top:9px">게스트 계정으로 로그인</button>
           <div class="login-err" id="guestErr"></div>
         </div>
       </div>` : ''}
       <div class="login-hint">
         <b>${conn.mode === 'supabase' ? '🟢 Supabase 연결됨' : '🟡 로컬 저장 모드'}</b><br>
         ${conn.mode === 'supabase'
-          ? '아이디로 로그인하면 작성 자료가 모든 사용자에게 공유됩니다. 모든 가입 사용자는 작성·수정할 수 있고, master 관리자만 삭제할 수 있습니다.'
+          ? '아이디로 로그인하면 작성 자료가 모든 사용자에게 공유됩니다. 게스트 계정도 조회·등록·수정·첨부·삭제할 수 있습니다.'
           : `작성 자료는 이 브라우저에만 저장됩니다. 여러 명이 함께 쓰려면
              로그인 후 <b>[설정 · 백업]</b> 화면에서 Supabase를 연결하십시오.`}
       </div>
@@ -187,12 +184,28 @@ function renderLogin() {
   $('#guestConfirm')?.addEventListener('click', async () => {
     const err = $('#guestErr');
     err.textContent = '';
-    if (await checkGuestCode('guestId', 'guestCode')) {
-      sessionStorage.setItem(GUEST_SESSION_KEY, '1');
-      state.user = { ...GUEST_USER };
-      await boot();
-    } else {
+    if (!(await checkGuestCode('guestId', 'guestCode'))) {
       err.textContent = '게스트 코드가 올바르지 않습니다.';
+      return;
+    }
+    const loginId = $('#guestId').value.trim().toLowerCase();
+    const password = $('#guestCode').value;
+    showSpinner('게스트 공동 계정에 연결하는 중…');
+    try {
+      try {
+        await signIn({ loginId, password });
+      } catch (loginError) {
+        const result = await signUp({ loginId, password, name: `게스트 ${loginId.slice(-2)}` });
+        if (result.confirmRequired) {
+          throw new Error('게스트 계정의 이메일 확인이 필요합니다. 관리자에게 계정 상태를 확인해 주세요.');
+        }
+      }
+      saveRecentLoginId(loginId);
+      await boot();
+    } catch (ex) {
+      err.textContent = ex?.message || '게스트 계정에 연결하지 못했습니다.';
+    } finally {
+      hideSpinner();
     }
   });
 
@@ -272,7 +285,6 @@ function renderShell() {
   </div>`;
 
   $('#btnLogout').addEventListener('click', async () => {
-    sessionStorage.removeItem(GUEST_SESSION_KEY);
     await signOut();
     renderLogin();
   });
@@ -431,11 +443,7 @@ async function boot() {
 (async function main() {
   document.title = `${APP.name} | ${APP.org}`;
   await initSupabase();
-  if (sessionStorage.getItem(GUEST_SESSION_KEY) === '1') {
-    state.user = { ...GUEST_USER };
-  } else {
-    await restoreSession();
-  }
+  await restoreSession();
 
   onChange(() => { if (state.user && $('#navRoot')) renderNav(); });
   await boot();

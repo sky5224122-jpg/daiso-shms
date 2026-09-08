@@ -6,15 +6,15 @@
 import {
   ALL_ITEMS, MSSA_ITEMS, OSHA_ITEMS, ISO_ITEMS, FRAMEWORKS,
   DOC_TYPES, DOC_STATUS, DOC_BODY_TEMPLATE, DOC_MASTER, STATUS, ROLES, documentDisplayTitle, documentSourceFiles
-} from './data/frameworks.js?v=20260907_go1';
+} from './data/frameworks.js?v=20260908_guestall1';
 import {
   $, $$, esc, state, getRecord, saveDocument, saveRow, deleteRow, canEdit, canDelete,
   halfLabel, fmtDate, today, toast, docStats, progressOf, uid,
   getSupabaseConfig, setSupabaseConfig, conn, APP,
   getBackups, restoreBackup, deleteBackup,
   showSpinner, hideSpinner, attachmentStorageMode, getAttachmentStorageUsage, getAuditLog, formatBytes
-} from './core.js?v=20260907_go1';
-import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260907_go1';
+} from './core.js?v=20260908_guestall1';
+import { openDrawer, closeDrawer, kpi, statusBadge, attachmentPanelHtml, createAttachmentManager } from './views-core.js?v=20260908_guestall1';
 
 const confirmDel = msg => window.confirm(msg);
 
@@ -1021,7 +1021,7 @@ export function renderSettings() {
       <div class="ops-policy current">
         <div class="ops-policy-title"><span>현재 실제 동작</span><b>${conn.mode === 'supabase' ? 'Supabase 연결' : '로컬 저장'}</b></div>
         <ul>
-          <li>인증: ${usingSupabase ? '사용자 아이디로 로그인 · master 관리자만 삭제' : '공용 비밀번호는 작성·수정, 관리자 비밀번호만 삭제'}</li>
+          <li>인증: ${usingSupabase ? '사용자 아이디로 로그인 · master와 guest 전체 권한 계정은 삭제 가능' : '공용 비밀번호는 작성·수정, 관리자 비밀번호만 삭제'}</li>
           <li>업무데이터: ${esc(recordStore)}</li>
           <li>첨부파일: ${esc(fileStore)}</li>
           <li>자동 백업: 앱이 열려 있으면 매일 오전 9시 1회 · 최근 5개 보관</li>
@@ -1088,7 +1088,7 @@ export function renderSettings() {
           <tr><th>인증 방식</th><td>${authMethod}</td></tr>
           <tr><th>저장 모드</th><td>${conn.mode === 'supabase' ? 'Supabase + 로컬 캐시' : '로컬(localStorage) 전용'}</td></tr>
           <tr><th>첨부파일 저장</th><td>${fileMode === 'r2' ? 'Cloudflare R2 (Worker API)' : '현재 브라우저 IndexedDB 전용'}</td></tr>
-          ${canDelete() ? `<tr><th>시스템 버전<br><span style="font-size:10px;color:var(--faint)">마스터 전용</span></th><td>${esc(APP.version)}</td></tr>` : ''}
+          ${canDelete() ? `<tr><th>시스템 버전<br><span style="font-size:10px;color:var(--faint)">전체 권한 계정</span></th><td>${esc(APP.version)}</td></tr>` : ''}
         </tbody></table></div>
       ${usingSupabase ? `<div class="help" style="margin-top:12px">${authHelp}</div>` : ''}
       <div class="help" style="margin-top:12px;display:${usingSupabase ? 'none' : 'block'}">

@@ -92,16 +92,17 @@ async function authenticate(request, env) {
   return { ...payload, token };
 }
 
-async function isMaster(user, env) {
+async function canDeleteAllFiles(user, env) {
   const base = String(env.SUPABASE_URL || '').replace(/\/+$/, '');
   const anonKey = String(env.SUPABASE_ANON_KEY || '').trim();
   if (!base || !anonKey || !user?.sub || !user?.token) return false;
-  const res = await fetch(`${base}/rest/v1/shms_profiles?select=role&id=eq.${encodeURIComponent(user.sub)}`, {
+  const res = await fetch(`${base}/rest/v1/shms_profiles?select=role,login_id&id=eq.${encodeURIComponent(user.sub)}`, {
     headers: { apikey: anonKey, Authorization: `Bearer ${user.token}` }
   });
   if (!res.ok) return false;
   const rows = await res.json().catch(() => []);
-  return rows[0]?.role === 'master';
+  const profile = rows[0] || {};
+  return profile.role === 'master' || profile.role === 'guest' || /^guest0[1-3]$/.test(String(profile.login_id || ''));
 }
 
 function safePart(value, fallback) {
@@ -178,7 +179,7 @@ async function readFile(request, env, key) {
 }
 
 async function removeFile(request, env, key, user) {
-  if (!key.startsWith(`${safePart(user.sub, 'user')}/`) && !(await isMaster(user, env))) {
+  if (!key.startsWith(`${safePart(user.sub, 'user')}/`) && !(await canDeleteAllFiles(user, env))) {
     return json(request, env, { error: '본인이 등록한 첨부파일만 삭제할 수 있습니다.' }, 403);
   }
   const object = await env.SHMS_FILES.head(key);

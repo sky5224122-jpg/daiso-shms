@@ -6,7 +6,7 @@ Supabase Auth가 발급한 JWT를 검증한 뒤 Cloudflare R2에 첨부파일을
 
 - `POST /files`: 사진은 50KB를 목표로 안전 품질까지 압축하되 목표를 넘으면 품질 보호본을 저장하며, 모든 첨부는 최대 15MB로 R2에 저장
 - `GET /files/{key}`: 인증된 사용자가 파일 열람
-- `DELETE /files/{key}`: 업로드한 본인의 파일 또는 master 관리자의 모든 첨부파일 삭제
+- `DELETE /files/{key}`: 업로드한 본인의 파일 또는 master·guest 전체 권한 계정의 모든 첨부파일 삭제
 - `GET /usage`: 3GB 공용 첨부 저장공간 사용량 조회. 90%부터 경고하고 3GB에서 업로드 차단
 - R2 비밀키나 Supabase `service_role` 키를 브라우저에 노출하지 않음
 

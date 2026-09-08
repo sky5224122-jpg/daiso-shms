@@ -19,7 +19,7 @@ create table if not exists public.shms_profiles (
   email      text,
   name       text,
   dept       text,
-  -- master | safety | head : 작성·수정 가능
+  -- master | safety | head | guest : 작성·수정 가능
   -- auditor | part | store | ref : 읽기 전용
   role       text not null default 'safety',
   created_at timestamptz not null default now()
@@ -49,15 +49,27 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.shms_profiles (id, login_id, email, name, role)
-  values (new.id, lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))), new.email,
-          coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'login_id', new.email), 'safety')
+  insert into public.shms_profiles (id, login_id, email, name, role, dept)
+  values (
+    new.id,
+    lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))),
+    new.email,
+    coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'login_id', new.email),
+    case
+      when lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))) in ('guest01','guest02','guest03') then 'guest'
+      else 'safety'
+    end,
+    case
+      when lower(coalesce(new.raw_user_meta_data->>'login_id', split_part(new.email, '@', 1))) in ('guest01','guest02','guest03') then '외부 게스트'
+      else null
+    end
+  )
   on conflict (id) do nothing;
   return new;
 end;
 $$;
 
--- 삭제 권한은 마스터 계정만 가진다.
+-- 삭제 권한은 master 및 전체 권한 guest 계정이 가진다.
 create or replace function public.shms_can_delete()
 returns boolean
 language sql
@@ -67,7 +79,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.shms_profiles p
-    where p.id = auth.uid() and p.role = 'master'
+    where p.id = auth.uid() and p.role in ('master', 'guest')
   );
 $$;
 
@@ -86,7 +98,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.shms_profiles p
-    where p.id = auth.uid() and p.role in ('master', 'safety', 'head')
+    where p.id = auth.uid() and p.role in ('master', 'safety', 'head', 'guest')
   );
 $$;
 
@@ -246,7 +258,7 @@ create table if not exists public.shms_audit_overview (
 -- ============================================================
 -- RLS (행 수준 보안)
 --   · 로그인한 사용자는 전체 조회 가능
---   · 작성/수정은 safety·head·master, 삭제는 master만 가능
+--   · 작성/수정은 safety·head·master·guest, 삭제는 master·guest 가능
 -- ============================================================
 
 alter table public.shms_profiles    enable row level security;
@@ -270,7 +282,7 @@ alter table public.shms_org            enable row level security;
 alter table public.shms_memos          enable row level security;
 alter table public.shms_audit_overview enable row level security;
 
--- 프로필: 본인 것만 조회, 마스터만 전체 조회·수정
+-- 프로필: 본인 것만 조회, master·guest는 전체 조회·수정
 drop policy if exists shms_profiles_self_read on public.shms_profiles;
 create policy shms_profiles_self_read on public.shms_profiles
   for select to authenticated
