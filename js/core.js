@@ -3,8 +3,8 @@
    저장소: Supabase(운영) + localStorage(캐시·오프라인 폴백)
    ============================================================ */
 
-import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles } from './data/frameworks.js?v=20260908_guestall1';
-import { DOC_BODIES } from './data/doc-bodies.js?v=20260908_guestall1';
+import { DOC_MASTER, DOC_TYPES, ALL_ITEMS, documentSourceFiles, documentSourceTitle } from './data/frameworks.js?v=20260908_docsync1';
+import { DOC_BODIES } from './data/doc-bodies.js?v=20260908_docsync1';
 
 export const APP = {
   name: '안전보건관리체계 이행 관리 시스템',
@@ -661,21 +661,57 @@ export async function loadAll() {
   emit();
 }
 
-/* 승인 문서 본문·식별정보 보강
-   Supabase에 이미 만들어진 문서 행이 마스터 시드보다 우선 병합되므로,
-   기존 행의 body가 비어 있으면 승인 본문을 채워 공동 화면에서도 동일하게
-   보이도록 한다. 사용자가 직접 작성한 본문은 덮어쓰지 않는다. */
-async function hydrateDocumentContent() {
+/* 승인 문서 제목·본문·식별정보 동기화
+   절차서·지침서의 제목과 본문은 docs/documents의 승인 PDF를 기준으로 맞춘다.
+   Supabase의 이전 행이 먼저 병합되더라도 승인본과 다른 제목·본문은 바로잡는다. */
+let documentBodySupplementsPromise;
+function loadDocumentBodySupplements() {
+  if (!documentBodySupplementsPromise) {
+    const url = new URL('../docs/seed/document_body_supplements.json?v=20260908_docsync1', import.meta.url);
+    documentBodySupplementsPromise = fetch(url.href)
+      .then(res => res.ok ? res.json() : {})
+      .catch(() => ({}));
+  }
+  return documentBodySupplementsPromise;
+}
+
+function companyNoFromSourceFile(filename) {
+  return String(filename || '').match(/^(AAD-HSHT-[MPG]-\d{4}-\d{3})/)?.[1] || '';
+}
+
+export function officialDocumentBody(doc, supplements) {
+  const sourceFiles = documentSourceFiles(doc);
+  if (!sourceFiles.length || !['procedure', 'instruction'].includes(doc.type)) return '';
+  const baseBody = DOC_BODIES.get(doc.doc_no) || (doc.doc_no === 'SHI-05' ? DOC_BODIES.get('SHI-27') : '');
+  return sourceFiles.map((filename, index) => {
+    const companyNo = companyNoFromSourceFile(filename);
+    let body = supplements[companyNo]?.body || '';
+    if (!body) {
+      const baseMatches = sourceFiles.length === 1
+        || (doc.doc_no === 'SHP-09' && companyNo === 'AAD-HSHT-P-2022-006')
+        || (doc.doc_no === 'SHP-18' && companyNo === 'AAD-HSHT-P-2022-019');
+      if (baseMatches || index === 0) body = baseBody;
+    }
+    if (!body) return '';
+    return `문서명: ${documentSourceTitle(filename)}\n원본 파일: ${filename}\n\n${body}`;
+  }).filter(Boolean).join('\n\n============================================================\n\n');
+}
+
+export async function hydrateDocumentContent() {
+  const supplements = await loadDocumentBodySupplements();
   const changed = [];
   state.documents.forEach(doc => {
     const master = DOC_MASTER.find(m => m.docNo === doc.doc_no);
     if (!master) return;
     let dirty = false;
-    if (!doc.title && master.title) { doc.title = master.title; dirty = true; }
+    const officialTitle = master.title;
+    if (officialTitle && doc.title !== officialTitle) { doc.title = officialTitle; dirty = true; }
     if (!doc.company_doc_no && master.companyDocNo) { doc.company_doc_no = master.companyDocNo; dirty = true; }
     if (!doc.version && master.companyDocNo) { doc.version = docDefaultVersion(master.companyDocNo); dirty = true; }
-    const sourceBody = DOC_BODIES.get(doc.doc_no);
-    if (!String(doc.body || '').trim() && sourceBody) { doc.body = sourceBody; dirty = true; }
+    const officialBody = officialDocumentBody(doc, supplements);
+    const sourceBody = officialBody || DOC_BODIES.get(doc.doc_no);
+    if (officialBody && doc.body !== officialBody) { doc.body = officialBody; dirty = true; }
+    else if (!String(doc.body || '').trim() && sourceBody) { doc.body = sourceBody; dirty = true; }
     // 본문 추출본이 없는 문서는 승인 원본·목적·식별정보를 먼저 등록해
     // 빈 문서로 남지 않게 한다. 원문 세부 내용은 상세창의 원본 PDF에서 확인한다.
     if (!String(doc.body || '').trim() && ['manual', 'procedure', 'instruction'].includes(master.type)) {
@@ -778,7 +814,7 @@ async function seedInitialData() {
   const MIG_KEY = 'shms.data_seed_v1';
   try { if (localStorage.getItem(MIG_KEY)) return; } catch (_) { return; }
   try {
-    const url = new URL('../docs/seed/shms_seed.json?v=20260908_guestall1', import.meta.url);
+    const url = new URL('../docs/seed/shms_seed.json?v=20260908_docsync1', import.meta.url);
     const res = await fetch(url.href);
     if (!res.ok) { console.warn('[SHMS] 시드 파일 불러오기 실패:', res.status); return; }
     const seed = await res.json();

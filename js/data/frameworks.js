@@ -1,4 +1,4 @@
-import { DOCUMENT_SOURCE_FILES } from './document-files.js?v=20260908_guestall1';
+import { DOCUMENT_SOURCE_FILES } from './document-files.js?v=20260908_docsync1';
 
 /* ============================================================
    법령 · 국제표준 기준 데이터 (Compliance Framework Master)
@@ -723,7 +723,7 @@ export const DOC_MASTER = [
     purpose:'법정교육 및 적격성 확보를 위한 교육의 계획·실시·평가·기록 방법을 규정한다.', isoRefs:['7.2','7.3'], lawRefs:['OSHA-029','OSHA-032','MSSA-5-3','MSSA-5-4'] },
   { docNo:'SHP-08', companyDocNo:'AAD-HSHT-P-2022-005(4)', type:'procedure', title:'의사소통 및 정보제공 절차서', category:'지원',
     purpose:'내·외부 안전보건 의사소통 방법과 법령 요지 게시 관리를 규정한다.', isoRefs:['7.4'], lawRefs:['OSHA-034'] },
-  { docNo:'SHP-09', companyDocNo:'AAD-HSHT-P-2022-006(3), AAD-HSHT-P-2022-007(4)', type:'procedure', title:'표준문서 작성 및 관리·기록관리 절차서', category:'지원',
+  { docNo:'SHP-09', companyDocNo:'AAD-HSHT-P-2022-006(3), AAD-HSHT-P-2022-007(4)', type:'procedure', title:'표준문서 작성 및 관리 절차서 / 기록관리 절차서', category:'지원',
     purpose:'문서의 제·개정·배포·폐기와 기록의 법정 보존연한 관리 방법을 규정한다.', isoRefs:['7.5'], lawRefs:['OSHA-164','OSHA-025'] },
   { docNo:'SHP-10', companyDocNo:'AAD-HSHT-P-2022-008(3)', type:'procedure', title:'안전보건활동 운영 절차서', category:'운용',
     purpose:'매장·물류센터 작업의 안전기준 수립과 일상점검·관리 위계 적용 방법을 규정한다.', isoRefs:['8.1.1','8.1.2'], lawRefs:['OSHA-037'] },
@@ -741,7 +741,7 @@ export const DOC_MASTER = [
     purpose:'내부심사 계획·실시·부적합 처리·보고 방법과 심사원 자격을 규정한다.', isoRefs:['9.2'], lawRefs:[] },
   { docNo:'SHP-17', type:'procedure', title:'경영검토 절차서', category:'성과평가',
     purpose:'최고경영자의 경영검토 입력·출력 항목과 실시 주기를 규정한다.', isoRefs:['9.3'], lawRefs:['OSHA-014'] },
-  { docNo:'SHP-18', companyDocNo:'AAD-HSHT-P-2022-015(3), AAD-HSHT-P-2022-019(4)', type:'procedure', title:'부적합사항 시정조치·사고조사 및 재발방지 대책 실행 절차서', category:'개선',
+  { docNo:'SHP-18', companyDocNo:'AAD-HSHT-P-2022-015(3), AAD-HSHT-P-2022-019(4)', type:'procedure', title:'부적합사항 시정조치 절차서 / 사고조사 및 재발방지 대책 실행 절차서', category:'개선',
     purpose:'사고·아차사고·부적합의 조사, 근본원인 분석, 시정조치 및 효과성 검증 방법을 규정한다.', isoRefs:['10.1','10.2','10.3'], lawRefs:['OSHA-054'] },
   { docNo:'SHP-19', companyDocNo:'AAD-HSHT-P-2026-005(0)', type:'procedure', title:'안전보건 예산 편성 및 집행 관리 절차서', category:'지원',
     purpose:'안전보건 예산의 편성·집행·실적관리 방법을 규정한다.', isoRefs:['7.1'], lawRefs:['MSSA-4-4'] },
@@ -815,12 +815,41 @@ export function documentDisplayTitle(doc) {
   const companyNo = String(doc.company_doc_no || doc.companyDocNo || master?.companyDocNo || '').trim();
   const type = doc.type || master?.type;
   const sourceFiles = documentSourceFiles(doc);
-  if (sourceFiles.length && ['procedure', 'instruction', 'manual'].includes(type)) return sourceFiles.join(' / ');
+  if (sourceFiles.length && ['procedure', 'instruction', 'manual'].includes(type)) {
+    return master?.title || sourceFiles.map(documentSourceTitle).join(' / ');
+  }
   if (!title) return companyNo;
   if (companyNo && ['procedure', 'instruction', 'manual'].includes(type)) {
     return `${companyNo} ${title}`;
   }
   return title;
+}
+
+/** 승인 원본 파일명에서 문서번호·개정일 표기를 제외한 실제 문서 제목을 반환한다. */
+export function documentSourceTitle(filename) {
+  const raw = String(filename || '');
+  const companyNo = raw.match(/^(AAD-HSHT-[MPG]-\d{4}-\d{3})/)?.[1] || '';
+  const officialTitles = {
+    'AAD-HSHT-P-2022-006': '표준문서 작성 및 관리 절차서',
+    'AAD-HSHT-P-2022-007': '기록관리 절차서',
+    'AAD-HSHT-P-2022-015': '부적합사항 시정조치 절차서',
+    'AAD-HSHT-P-2022-019': '사고조사 및 재발방지 대책 실행 절차서',
+    'AAD-HSHT-P-2026-010': '도급·용역·위탁 안전보건 평가기준 및 관리 절차서',
+    'AAD-HSHT-P-2026-025': '건강진단 및 유해요인 관리 절차서',
+    'AAD-HSHT-G-2026-014': '직무스트레스 및 감정노동 보호 지침서',
+    'AAD-HSHT-G-2026-020': '지게차 등 운반기계 안전 지침서',
+    'AAD-HSHT-G-2026-024': '화기·전기·고소작업 안전 지침서',
+    'AAD-HSHT-G-2026-026': '매장·물류 동선 및 적치안전 지침서'
+  };
+  if (officialTitles[companyNo]) return officialTitles[companyNo];
+  return raw
+    .replace(/^AAD-HSHT-[MPG]-\d{4}-\d{3}\(\d+\)[ _]*/, '')
+    .replace(/_26_\d{4}(?=\.pdf$)/i, '')
+    .replace(/_최종(?=\.pdf$)/i, '')
+    .replace(/\.pdf$/i, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function documentSourceFiles(doc) {
@@ -866,7 +895,7 @@ export const DOC_BODY_TEMPLATE = `1. 목 적
 /* 중처법·산안법 전조 참조 데이터 병합 — 기존 상세 조항 외에 국가법령정보센터
    원문 요약(2026-09-05 강동현 안전보건팀 시드)에서 신규 253건을 참조용으로 추가.
    상세 이행이 필요한 항목은 별도로 companyStatus·evidenceFiles를 채운다. */
-import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260908_guestall1';
+import { MSSA_FULL_ITEMS, OSHA_FULL_ITEMS } from './laws-full.js?v=20260908_docsync1';
 MSSA_ITEMS.push(...MSSA_FULL_ITEMS);
 OSHA_ITEMS.push(...OSHA_FULL_ITEMS);
 
